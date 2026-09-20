@@ -11,6 +11,19 @@ Eddy is an original app. It takes its *feel* (floating one-hand chrome, expressi
 motion, a calm start page) from the lightweight-browser school of design, but shares no code, name,
 icons or assets with any other browser.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/home.png" width="180" alt="New-tab page">
+  <img src="docs/screenshots/browsing.png" width="180" alt="Browsing with the single bottom bar">
+  <img src="docs/screenshots/tabs.png" width="180" alt="Tab switcher">
+</p>
+<p align="center">
+  <img src="docs/screenshots/menu.png" width="180" alt="Page menu">
+  <img src="docs/screenshots/incognito.png" width="180" alt="Incognito tab">
+  <img src="docs/screenshots/settings.png" width="180" alt="Settings">
+</p>
+
 ## Build
 
 Requirements: JDK 21+ (tested on 26), Android SDK with platform 37 and build-tools 37.
@@ -73,3 +86,12 @@ runtime permissions, external apps, fullscreen video) leaves the ViewModel as a 
 - `blob:` downloads are not supported (the WebView hands over an unreadable URL).
 - Blocking is domain-based only; there is no cosmetic (element-hiding) filtering.
 - User-facing strings are inline English, not yet extracted to resources.
+
+## Privacy and legal
+
+Eddy has no advertising, analytics or telemetry. The full text is in [PRIVACY.md](PRIVACY.md) and
+[TERMS.md](TERMS.md); both mirror what the app shows under Settings > Legal.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
