@@ -17,8 +17,8 @@ android {
         applicationId = "app.eddy.browser"
         minSdk = 29
         targetSdk = 37
-        versionCode = 3
-        versionName = "0.2.1-beta"
+        versionCode = 4
+        versionName = "0.2.2-beta"
     }
 
     // Release signing reads keystore.properties (git-ignored). Without it, e.g. on CI, the release APK stays unsigned.

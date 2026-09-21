@@ -286,6 +286,8 @@ private fun WebContent(tab: BrowserTab, visible: Boolean, modifier: Modifier = M
             factory = {
                 (web.parent as? ViewGroup)?.removeView(web)
                 web.attachTo(activity)
+                // AndroidView defaults to WRAP_CONTENT, which puts WebView in wrap-content mode where 100vh/dvh resolve to 0.
+                web.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 web
             },
             update = { it.visibility = if (visible) View.VISIBLE else View.INVISIBLE },
