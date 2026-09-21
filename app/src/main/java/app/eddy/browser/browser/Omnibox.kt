@@ -108,6 +108,7 @@ fun BrowserBar(
     onExpand: () -> Unit,
     onSiteInfo: () -> Unit,
     onStop: () -> Unit,
+    onNewTab: () -> Unit,
     onTabs: () -> Unit,
     onMenu: () -> Unit,
     modifier: Modifier = Modifier,
@@ -117,10 +118,10 @@ fun BrowserBar(
     val loadingColor = MaterialTheme.colorScheme.primary
     val home = tab == null || tab.isHome
     val label = when {
-        tab == null || tab.isHome -> "Search or type a URL"
+        tab == null || tab.isHome -> "Search or type URL"
         tab.error != null -> UrlUtils.displayHost(tab.url).ifEmpty { "Page unavailable" }
         tab.host.isNotEmpty() -> tab.host
-        else -> tab.url.ifEmpty { "Search or type a URL" }
+        else -> tab.url.ifEmpty { "Search or type URL" }
     }
 
     Surface(
@@ -165,6 +166,7 @@ fun BrowserBar(
                         // Only shown while loading; reload lives in the menu and pull-to-refresh.
                         if (tab?.isLoading == true) EddyIconButton(Icons.Rounded.Close, "Stop loading", onStop)
                     }
+                    EddyIconButton(Icons.Rounded.Add, "New tab", onNewTab)
                     TabCountButton(tabCount, tab?.incognito == true, onTabs)
                     EddyIconButton(Icons.Rounded.MoreVert, "Menu", onMenu)
                 }

@@ -16,6 +16,7 @@ import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import app.eddy.browser.data.database.SiteSettings
+import app.eddy.browser.downloads.BlobDownloader
 import app.eddy.browser.data.models.CookieMode
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.UserAgentMode
@@ -29,6 +30,17 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     private val desktopUa by lazy { UserAgents.desktop(defaultUa) }
     private val connectivity = appContext.getSystemService(ConnectivityManager::class.java)
 
+    /** Each incognito session gets its own storage profile, so a new session can never see an old one. */
+    @Volatile var incognitoProfile: String = newProfileName()
+        private set
+
+    fun startIncognitoSession() { incognitoProfile = newProfileName() }
+
+    /** Password capture, autofill and blob downloads need message channels and start-up scripts (newer WebView only). */
+    val pageBridgeSupported: Boolean
+        get() = WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) &&
+            WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+
     val incognitoIsolated: Boolean
         get() = WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)
 
@@ -41,9 +53,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     fun create(tab: BrowserTab): EddyWebView {
         val view = EddyWebView(MutableContextWrapper(appContext))
         view.incognito = tab.incognito
-        if (tab.incognito && incognitoIsolated) WebViewCompat.setProfile(view, INCOGNITO_PROFILE)
+        if (tab.incognito && incognitoIsolated) WebViewCompat.setProfile(view, incognitoProfile)
 
-        view.setBackgroundColor(host.pageBackground)
+        // Pages that set no background of their own must render like they do in any browser: dark text on white.
+        // Tinting this with the app theme would make plain pages unreadable in dark mode.
+        view.setBackgroundColor(Color.WHITE)
         view.overScrollMode = View.OVER_SCROLL_NEVER
         view.isVerticalScrollBarEnabled = false
         if (tab.incognito) view.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
@@ -79,9 +93,25 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         view.onPull = { tab.pullDistance = it }
         view.onPullRelease = { if (it) view.reload() }
 
+        registerAutofill(tab, view)
         applyGlobal(view, host.settings)
         prepare(tab, view, tab.url)
         return view
+    }
+
+    /**
+     * Gives every page a message channel to the password manager. The origin passed to the host is the one
+     * the WebView reports for the sending frame, so a page cannot claim to be another site.
+     */
+    private fun registerAutofill(tab: BrowserTab, view: EddyWebView) {
+        if (!pageBridgeSupported) return
+        WebViewCompat.addWebMessageListener(view, AutofillScript.NAME, setOf("*")) { _, message, sourceOrigin, _, reply ->
+            message.data?.let { host.onAutofillMessage(tab, sourceOrigin.toString(), it, reply) }
+        }
+        WebViewCompat.addDocumentStartJavaScript(view, AutofillScript.SOURCE, setOf("*"))
+        WebViewCompat.addWebMessageListener(view, BlobDownloader.NAME, setOf("*")) { _, message, sourceOrigin, isMainFrame, _ ->
+            if (isMainFrame) message.data?.let { host.onBlobMessage(tab, sourceOrigin.toString(), it) }
+        }
     }
 
     /** Settings that do not depend on the current site; also re-run when the user changes a preference. */
@@ -140,7 +170,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     @SuppressLint("RequiresFeature")
     fun cookieManager(incognito: Boolean): CookieManager =
         if (incognito && incognitoIsolated) {
-            ProfileStore.getInstance().getOrCreateProfile(INCOGNITO_PROFILE).cookieManager
+            ProfileStore.getInstance().getOrCreateProfile(incognitoProfile).cookieManager
         } else {
             CookieManager.getInstance()
         }
@@ -164,7 +194,8 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     }
 
     companion object {
-        const val INCOGNITO_PROFILE = "eddy_incognito"
+        const val PROFILE_PREFIX = "eddy_incognito"
+        private fun newProfileName() = PROFILE_PREFIX + "_" + java.util.UUID.randomUUID().toString().take(8)
         private const val DNT_SCRIPT =
             "try{Object.defineProperty(navigator,'doNotTrack',{get:function(){return '1'}});" +
                 "Object.defineProperty(navigator,'globalPrivacyControl',{get:function(){return true}})}catch(e){}"

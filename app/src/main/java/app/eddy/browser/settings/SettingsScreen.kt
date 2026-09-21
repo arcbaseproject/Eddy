@@ -99,7 +99,7 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
                     SettingsPage.SITE_PERMISSIONS -> SitePermissionsSettings(vm)
                     SettingsPage.FILTER_LISTS -> FilterListsSettings(vm, settings)
                     SettingsPage.SEARCH_ENGINES -> SearchSettings(vm, settings)
-                    SettingsPage.ABOUT -> AboutSettings()
+                    SettingsPage.ABOUT -> AboutSettings(vm)
                     SettingsPage.PRIVACY_POLICY -> PrivacyPolicyPage()
                     SettingsPage.TERMS -> TermsPage()
                 }
@@ -213,13 +213,13 @@ private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
     if (confirmReset) {
         ConfirmDialog("Reset all settings?", "Eddy restores every setting to its default.", "Reset", { confirmReset = false }) {
             confirmReset = false
-            vm.launchSettings { Settings(shortcuts = it.shortcuts) }
+            vm.launchSettings { Settings(shortcuts = it.shortcuts, onboardingCompleted = it.onboardingCompleted) }
         }
     }
 }
 
 @Composable
-private fun AboutSettings() {
+private fun AboutSettings(vm: BrowserViewModel) {
     val context = LocalContext.current
     val roleManager = remember { context.getSystemService(RoleManager::class.java) }
     fun held() = roleManager.isRoleHeld(RoleManager.ROLE_BROWSER)
@@ -230,6 +230,8 @@ private fun AboutSettings() {
 
     SettingsGroup {
         ActionRow("Version", {}, BuildConfig.VERSION_NAME)
+        GroupDivider()
+        ActionRow("Replay welcome tour", vm::replayOnboarding, "Walk through Eddy's setup again")
         GroupDivider()
         if (isDefault) {
             ActionRow("Default browser", {}, "Eddy is your default browser", Icons.Rounded.CheckCircle)

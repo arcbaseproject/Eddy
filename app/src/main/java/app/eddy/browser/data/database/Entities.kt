@@ -71,3 +71,23 @@ data class SiteSettings(
         const val BLOCK = 0
     }
 }
+
+/** A saved login. [password] is AES-GCM ciphertext (see PasswordVault); usernames and origins are stored as typed. */
+@Entity(
+    tableName = "logins",
+    indices = [Index(value = ["origin", "username"], unique = true), Index("origin")],
+)
+data class LoginEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Scheme, host and port, e.g. https://example.com. Autofill matches this exactly. */
+    val origin: String,
+    val username: String,
+    val password: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val lastUsedAt: Long = 0,
+)
+
+/** Origins where the user chose "Never save". */
+@Entity(tableName = "login_blocklist")
+data class LoginBlock(@PrimaryKey val origin: String)

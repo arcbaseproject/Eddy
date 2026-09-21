@@ -64,6 +64,7 @@ class TabManager(
 
     fun newTab(url: String = "", incognito: Boolean = false, select: Boolean = true, opener: BrowserTab? = null): BrowserTab {
         val tab = BrowserTab(incognito = incognito, initialUrl = url).also { it.openerId = opener?.id }
+        if (incognito && tabs.none { it.incognito }) factory().startIncognitoSession()
         val at = opener?.let { tabs.indexOf(it) + 1 }?.takeIf { it > 0 } ?: tabs.size
         tabs.add(at, tab)
         // Build the view before selecting: select() may start ensureWebView() synchronously and would create a second one.
@@ -169,7 +170,7 @@ class TabManager(
         thumbnails.remove(tab.id)
         File(stateDir, "${tab.id}.bin").delete()
         if (wasSelected) selectAfterClose(index, tab)
-        if (tab.incognito && tabs.none { it.incognito }) endIncognitoSession()
+        if (tab.incognito && tabs.none { it.incognito }) sweepIncognitoProfiles()
         // There is always at least one normal tab; when the last one goes, a fresh new-tab page takes its place.
         if (tabs.none { !it.incognito }) newTab(select = wasSelected || selected == null || selected?.incognito != true)
         requestPersist()
@@ -210,17 +211,27 @@ class TabManager(
         if (next != null) select(next) else selectedId = null
     }
 
-    /** With profile isolation the whole incognito cookie jar and storage disappears with the profile. */
+    /**
+     * Deletes every incognito storage profile that is not used by an open incognito tab. WebView refuses to delete
+     * a profile while it is still winding down, so this retries for a while; anything left over is swept again the
+     * next time the app starts, before any incognito WebView exists.
+     */
     @android.annotation.SuppressLint("RequiresFeature")
-    private fun endIncognitoSession(attempt: Int = 0) {
+    fun sweepIncognitoProfiles(attempt: Int = 0) {
         if (!factory().incognitoIsolated) return
-        try {
-            ProfileStore.getInstance().deleteProfile(WebViewFactory.INCOGNITO_PROFILE)
-        } catch (e: IllegalStateException) {
-            // A WebView using the profile is still being torn down; try again shortly.
-            if (attempt < 3) mainHandler.postDelayed({ if (tabs.none { it.incognito }) endIncognitoSession(attempt + 1) }, 600)
-        } catch (_: RuntimeException) {
+        val active = if (tabs.any { it.incognito }) factory().incognitoProfile else null
+        val store = ProfileStore.getInstance()
+        var pending = false
+        for (name in store.allProfileNames) {
+            if (!name.startsWith(WebViewFactory.PROFILE_PREFIX) || name == active) continue
+            try {
+                store.deleteProfile(name)
+            } catch (_: IllegalStateException) {
+                pending = true
+            } catch (_: RuntimeException) {
+            }
         }
+        if (pending && attempt < 30) mainHandler.postDelayed({ sweepIncognitoProfiles(attempt + 1) }, 1000)
     }
 
     // ---- memory ---------------------------------------------------------------------------

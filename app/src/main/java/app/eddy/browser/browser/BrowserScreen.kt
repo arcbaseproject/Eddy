@@ -59,6 +59,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -69,6 +71,8 @@ import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.ToolbarPosition
 import app.eddy.browser.downloads.DownloadsScreen
 import app.eddy.browser.history.HistoryScreen
+import app.eddy.browser.onboarding.OnboardingScreen
+import app.eddy.browser.passwords.PasswordsScreen
 import app.eddy.browser.home.HomeScreen
 import app.eddy.browser.settings.SettingsScreen
 import app.eddy.browser.tabs.TabSwitcher
@@ -109,7 +113,10 @@ fun BrowserRoot(vm: BrowserViewModel) {
 
         CompositionLocalProvider(LocalFavicons provides vm.favicons) {
             Box(Modifier.fillMaxSize().background(scheme.background)) {
-                BrowserPage(vm, settings, selected)
+                // The page stays composed (so its WebView survives) but is hidden while an overlay covers it. On
+                // Android 10 with three-button navigation the bar otherwise showed through the overlay's bottom edge.
+                val covered = vm.screen != Screen.BROWSER || (!settings.onboardingCompleted && !vm.onboardingSuppressed)
+                Box(Modifier.fillMaxSize().alpha(if (covered) 0f else 1f)) { BrowserPage(vm, settings, selected) }
 
                 val overlayModifier = Modifier.graphicsLayer {
                     val s = 1f - 0.08f * backProgress
@@ -121,6 +128,7 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 Overlay(vm.screen == Screen.BOOKMARKS, overlayModifier) { BookmarksScreen(vm) }
                 Overlay(vm.screen == Screen.HISTORY, overlayModifier) { HistoryScreen(vm) }
                 Overlay(vm.screen == Screen.DOWNLOADS, overlayModifier) { DownloadsScreen(vm) }
+                Overlay(vm.screen == Screen.PASSWORDS, overlayModifier) { PasswordsScreen(vm) }
                 Overlay(vm.screen == Screen.SETTINGS, overlayModifier) { SettingsScreen(vm, settings) }
 
                 val snackbar = remember { SnackbarHostState() }
@@ -139,6 +147,14 @@ fun BrowserRoot(vm: BrowserViewModel) {
                     snackbar,
                     Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp + (lift * 76).dp),
                 )
+
+                AnimatedVisibility(
+                    visible = !settings.onboardingCompleted && !vm.onboardingSuppressed,
+                    enter = fadeIn(effectSpring()),
+                    exit = fadeOut(effectSpring()) + scaleOut(spatialSpring(), targetScale = 1.06f),
+                ) {
+                    OnboardingScreen(vm, settings)
+                }
 
                 PromptHost(vm)
                 if (vm.menuVisible) MenuSheet(vm, selected, vm.isBookmarked.collectAsStateWithLifecycle().value) { vm.menuVisible = false }
@@ -188,6 +204,8 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                     }
                 }
                 FindLayer(vm, atTop, Modifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter))
+                AutofillLayer(vm, tab, imeVisible, Modifier.align(Alignment.BottomCenter))
+                SaveLoginLayer(vm, tab, atTop, Modifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter))
             }
             if (!atTop) Chrome(vm, tab, atTop = false, hidden = imeVisible && !vm.editing)
         }
@@ -195,7 +213,8 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
         AnimatedVisibility(vm.editing, enter = fadeIn(effectSpring()), exit = fadeOut(effectSpring())) {
             Box(
                 Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f))
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = vm::stopEditing),
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = "Close address bar", role = androidx.compose.ui.semantics.Role.Button, onClick = vm::stopEditing)
+                    .semantics { contentDescription = "Close address bar" },
             )
         }
         AnimatedVisibility(
@@ -247,6 +266,7 @@ private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidde
             onExpand = vm::showChrome,
             onSiteInfo = { vm.siteInfoVisible = true },
             onStop = vm::reloadOrStop,
+            onNewTab = { vm.newTab(incognito = tab?.incognito == true) },
             onTabs = vm::openTabSwitcher,
             onMenu = { vm.menuVisible = true },
         )

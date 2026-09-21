@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Rational
+import android.webkit.MimeTypeMap
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -192,12 +193,33 @@ class MainActivity : ComponentActivity() {
         }
         if (cameraAllowed && wantsVideo) extra += Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         val intent = if (params.isCaptureEnabled && extra.isNotEmpty()) extra.first()
-        else Intent.createChooser(params.createIntent(), params.title ?: "Choose file").putExtra(Intent.EXTRA_INITIAL_INTENTS, extra.toTypedArray())
+        else Intent.createChooser(documentPickerIntent(params), params.title ?: "Choose file")
+            .putExtra(Intent.EXTRA_INITIAL_INTENTS, extra.toTypedArray())
         try {
             fileLauncher.launch(intent)
         } catch (_: ActivityNotFoundException) {
             fileCallback?.onReceiveValue(null)
             fileCallback = null
+        }
+    }
+
+    /**
+     * The document picker (the same intent Chrome uses). WebChromeClient's own createIntent() sends GET_CONTENT,
+     * which on recent Android offers only the photo picker for "any file" inputs, so PDFs and archives cannot be chosen.
+     */
+    private fun documentPickerIntent(params: WebChromeClient.FileChooserParams): Intent {
+        val types = params.acceptTypes.flatMap { it.split(',') }.map { it.trim().lowercase() }.mapNotNull { t ->
+            when {
+                t.isEmpty() -> null
+                t.contains('/') -> t
+                t.startsWith('.') -> MimeTypeMap.getSingleton().getMimeTypeFromExtension(t.removePrefix("."))
+                else -> null
+            }
+        }.distinct()
+        return Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).apply {
+            type = types.singleOrNull() ?: "*/*"
+            if (types.size > 1) putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE)
         }
     }
 

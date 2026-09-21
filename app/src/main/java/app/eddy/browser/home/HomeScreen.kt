@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -164,7 +165,8 @@ private fun HomeSearchBar(engineName: String, incognito: Boolean, onClick: () ->
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(engineName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+            // With big system fonts the placeholder needs the room more than the engine name does.
+            if (LocalDensity.current.fontScale <= 1.3f) Text(engineName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
         }
     }
 }

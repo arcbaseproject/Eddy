@@ -97,7 +97,8 @@ fun ShortcutGrid(
         cells.chunked(columns).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 row.forEach { item ->
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+                    // With no shortcuts the lone add tile takes the full row so it sits in the centre.
+                    Box(if (order.isEmpty()) Modifier.fillMaxWidth() else Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                         if (item == null) {
                             AddTile(tileSize, onAdd)
                         } else {

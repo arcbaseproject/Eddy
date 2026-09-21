@@ -8,6 +8,7 @@ import android.webkit.HttpAuthHandler
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import androidx.webkit.JavaScriptReplyProxy
 import android.net.Uri
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.privacy.ContentBlocker
@@ -41,4 +42,8 @@ interface BrowserHost {
     fun onRenderGone(tab: BrowserTab)
     fun onFindResult(tab: BrowserTab, active: Int, total: Int)
     fun onScrolled(tab: BrowserTab, dy: Int, scrollY: Int)
+    /** Message from the in-page autofill script; [origin] comes from the WebView, never from the message body. */
+    /** Chunk or status message from a blob download the browser started in [tab]. */
+    fun onBlobMessage(tab: BrowserTab, origin: String, data: String)
+    fun onAutofillMessage(tab: BrowserTab, origin: String, data: String, reply: JavaScriptReplyProxy)
 }

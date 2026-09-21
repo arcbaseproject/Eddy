@@ -1,6 +1,7 @@
 package app.eddy.browser.data.database
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -13,8 +14,12 @@ class Converters {
 }
 
 @Database(
-    entities = [HistoryEntry::class, Bookmark::class, BookmarkFolder::class, DownloadEntity::class, SiteSettings::class],
-    version = 1,
+    entities = [
+        HistoryEntry::class, Bookmark::class, BookmarkFolder::class, DownloadEntity::class, SiteSettings::class,
+        LoginEntity::class, LoginBlock::class,
+    ],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -23,6 +28,7 @@ abstract class EddyDatabase : RoomDatabase() {
     abstract fun bookmarks(): BookmarkDao
     abstract fun downloads(): DownloadDao
     abstract fun sites(): SiteSettingsDao
+    abstract fun logins(): LoginDao
 
     companion object {
         fun create(context: Context): EddyDatabase =

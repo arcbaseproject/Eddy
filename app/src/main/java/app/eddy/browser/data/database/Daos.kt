@@ -140,3 +140,39 @@ interface SiteSettingsDao {
     @Query("DELETE FROM site_settings")
     suspend fun clear()
 }
+
+@Dao
+interface LoginDao {
+    @Query("SELECT * FROM logins ORDER BY origin, username")
+    fun all(): Flow<List<LoginEntity>>
+
+    @Query("SELECT * FROM logins ORDER BY origin, username")
+    suspend fun snapshot(): List<LoginEntity>
+
+    @Query("SELECT * FROM logins WHERE origin = :origin ORDER BY lastUsedAt DESC, username")
+    suspend fun forOrigin(origin: String): List<LoginEntity>
+
+    @Query("SELECT * FROM logins WHERE origin = :origin AND username = :username LIMIT 1")
+    suspend fun find(origin: String, username: String): LoginEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(login: LoginEntity): Long
+
+    @Query("UPDATE logins SET lastUsedAt = :time WHERE id = :id")
+    suspend fun touch(id: Long, time: Long)
+
+    @Query("DELETE FROM logins WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("DELETE FROM logins")
+    suspend fun clear()
+
+    @Query("SELECT COUNT(*) > 0 FROM login_blocklist WHERE origin = :origin")
+    suspend fun isBlocked(origin: String): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun block(entry: LoginBlock)
+
+    @Query("DELETE FROM login_blocklist")
+    suspend fun clearBlocklist()
+}

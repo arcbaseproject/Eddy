@@ -14,6 +14,7 @@ Eddy does not collect, sell or share your personal data. It has no accounts, adv
 - Open tabs and their page previews, so Eddy can restore them when you reopen the app. Eddy never saves incognito tabs.
 - Site icons, and the cookies, site data and cache that web pages create through the browser engine.
 - A list of your downloads. The files themselves go to your Downloads folder.
+- Saved logins. Eddy stores the site address and username, and encrypts each password with a key that stays in the Android Keystore.
 
 You can delete all of this at any time in Settings > Privacy and security > Clear browsing data, or by uninstalling the app.
 
@@ -37,6 +38,10 @@ Eddy shows web pages with Android System WebView, a Google component built on Ch
 - Notifications: show download progress.
 - Clipboard: when you open the address bar, Eddy reads the clipboard once to offer a “paste link” suggestion. Eddy does not store or send it. Android may show a notice when this happens.
 - Network state: lets Eddy show offline pages and retry when you reconnect.
+
+## Passwords
+
+When you sign in or sign up on a site, Eddy asks whether to save or update the login. It asks only after the sign-in works, and never in incognito tabs. Passwords stay on your device: Eddy does not sync, upload or share them. Eddy fills a saved login only after you tap its suggestion, and only on the exact site address where you saved it. If your device has a screen lock, Eddy asks for it before showing the password list, and hides that screen from screenshots and the recent-apps view. Passwords you copy leave the clipboard after a minute. If you export passwords, Eddy writes a plain-text CSV file to the place you choose and cannot protect it afterwards. You can turn saving and autofill off in Settings > Privacy and security, and delete saved logins at any time.
 
 ## Do Not Track and blocking
 

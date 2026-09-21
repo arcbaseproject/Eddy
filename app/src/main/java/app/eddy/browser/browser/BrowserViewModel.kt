@@ -2,7 +2,9 @@ package app.eddy.browser.browser
 
 import android.Manifest
 import android.app.Application
+import android.content.ClipData
 import android.content.ClipboardManager
+import android.os.PersistableBundle
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
@@ -28,12 +30,16 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.eddy.browser.EddyApp
+import app.eddy.browser.data.database.LoginEntity
 import app.eddy.browser.data.database.SiteSettings
+import androidx.webkit.JavaScriptReplyProxy
+import org.json.JSONObject
 import app.eddy.browser.data.models.ExternalLinks
 import app.eddy.browser.data.models.HomepageMode
 import app.eddy.browser.data.models.SearchEngine
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.Shortcut
+import app.eddy.browser.downloads.BlobDownloader
 import app.eddy.browser.downloads.DownloadRequest
 import app.eddy.browser.privacy.SiteFeature
 import app.eddy.browser.settings.SettingsPage
@@ -53,9 +59,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, SETTINGS }
+enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS }
 
-enum class DataType { HISTORY, COOKIES, CACHE, DOWNLOADS, SITE_SETTINGS }
+enum class DataType { HISTORY, COOKIES, CACHE, DOWNLOADS, SITE_SETTINGS, PASSWORDS }
+
+/** A submitted login waiting to see whether the sign-in worked before the user is asked to save it. */
+private class PendingLogin(val tabId: String, val origin: String, val username: String, val password: String, val at: Long)
+
+/** "Save password?" / "Update password?" card. [existingId] is set when the login already exists with another password. */
+class SaveLoginPrompt(val tabId: String, val origin: String, val username: String, val password: String, val existingId: Long?)
+
+/** Saved logins for the focused field's site. Filling needs a tap, then goes through [reply] to that frame only. */
+class AutofillOffer(val tabId: String, val origin: String, val logins: List<LoginEntity>, val reply: JavaScriptReplyProxy)
 
 class FindState {
     var query by mutableStateOf("")
@@ -79,6 +94,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         private set
 
     val history = container.history
+    val passwords = container.passwords
     val downloadItems = container.database.downloads().all()
     val bookmarks = container.bookmarks
     val downloads = container.downloads
@@ -90,6 +106,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     private val factory = WebViewFactory(app, this)
     val tabs = TabManager(app, viewModelScope, thumbnails, { factory }, { settings })
     val incognitoIsolated: Boolean get() = factory.incognitoIsolated
+    val pageBridgeSupported: Boolean get() = factory.pageBridgeSupported
 
     // ---- UI state -------------------------------------------------------------------------
     var screen by mutableStateOf(Screen.BROWSER)
@@ -108,6 +125,16 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     var customViewActive by mutableStateOf(false)
         private set
     val prompts = mutableStateListOf<Prompt>()
+    var savePrompt by mutableStateOf<SaveLoginPrompt?>(null)
+        private set
+    var autofillOffer by mutableStateOf<AutofillOffer?>(null)
+        private set
+    /** True after the user passed the screen lock for this visit to the password manager. */
+    var passwordsUnlocked by mutableStateOf(false)
+    private var pendingLogin: PendingLogin? = null
+    /** Set when the app was opened from a link, so the welcome tour never sits in front of the page the user asked for. */
+    var onboardingSuppressed by mutableStateOf(false)
+        private set
     val settingsStack = mutableStateListOf<SettingsPage>()
 
     val suggestions = MutableStateFlow<List<Suggestion>>(emptyList())
@@ -135,6 +162,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     init {
         viewModelScope.launch {
             if (!(settings.restoreTabs && tabs.restore())) openHomeTab()
+            // Leftovers from a session that could not be deleted while the app was running.
+            tabs.sweepIncognitoProfiles()
             ready.complete(Unit)
         }
         viewModelScope.launch {
@@ -146,8 +175,15 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             settingsState.map { it.filterLists }.distinctUntilChanged().collect { blocker.reload(it) }
         }
         viewModelScope.launch {
-            snapshotFlow { tabs.selected?.url }.distinctUntilChanged().collect { chromeVisible = true }
+            snapshotFlow { tabs.selected?.url }.distinctUntilChanged().collect { chromeVisible = true; autofillOffer = null }
         }
+    }
+
+    /** Shows the welcome tour again, even in a session that started from a link. */
+    fun replayOnboarding() {
+        onboardingSuppressed = false
+        screen = Screen.BROWSER
+        launchSettings { it.copy(onboardingCompleted = false) }
     }
 
     fun launchSettings(block: (Settings) -> Settings) { viewModelScope.launch { store.update(block) } }
@@ -165,11 +201,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         app.getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(networkCallback)
     }
 
-    fun setPageBackground(color: Int) {
-        if (color == pageBackground) return
-        pageBackground = color
-        tabs.tabs.forEach { it.webView?.setBackgroundColor(color) }
-    }
+    fun setPageBackground(color: Int) { pageBackground = color }
 
     // ---- navigation -----------------------------------------------------------------------
 
@@ -209,6 +241,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     fun handleIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_WEB_SEARCH) onboardingSuppressed = true
         viewModelScope.launch {
             ready.await()
             val text = when (intent.action) {
@@ -502,6 +535,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             }
             if (DataType.DOWNLOADS in types) downloads.clearFinished()
             if (DataType.SITE_SETTINGS in types) sites.resetAll()
+            if (DataType.PASSWORDS in types) passwords.deleteAll()
             snackbar("Browsing data cleared")
         }
     }
@@ -510,6 +544,98 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     fun snackbar(text: String, action: String? = null, block: (() -> Unit)? = null) {
         snackbarChannel.trySend(SnackbarMessage(text, action, block))
+    }
+
+    // ---- passwords ------------------------------------------------------------------------
+
+    override fun onAutofillMessage(tab: BrowserTab, origin: String, data: String, reply: JavaScriptReplyProxy) {
+        if (!origin.startsWith("http://") && !origin.startsWith("https://")) return
+        val json = runCatching { JSONObject(data) }.getOrNull() ?: return
+        when (json.optString("t")) {
+            "submit" -> {
+                val password = json.optString("p")
+                if (!settings.savePasswords || tab.incognito || password.isEmpty() || password.length > MAX_PASSWORD_LENGTH) return
+                pendingLogin = PendingLogin(tab.id, origin, json.optString("u").take(MAX_USERNAME_LENGTH), password, System.currentTimeMillis())
+                viewModelScope.launch {
+                    // Single-page apps never reload, so check once the request has had time to finish.
+                    delay(PENDING_CHECK_MS)
+                    resolvePendingLogin(tab, fromTimer = true)
+                }
+            }
+            "focus" -> if (settings.autofillPasswords) viewModelScope.launch {
+                val logins = passwords.forOrigin(origin)
+                autofillOffer = if (logins.isEmpty()) null else AutofillOffer(tab.id, origin, logins, reply)
+            }
+        }
+    }
+
+    /**
+     * A sign-in worked when the page that follows it no longer shows a password field. Only then is the user asked,
+     * so a mistyped password is never offered for saving.
+     */
+    private fun resolvePendingLogin(tab: BrowserTab, fromTimer: Boolean) {
+        val pending = pendingLogin ?: return
+        if (pending.tabId != tab.id) return
+        if (System.currentTimeMillis() - pending.at > PENDING_EXPIRY_MS) { pendingLogin = null; return }
+        // A navigation is in flight; onPageFinished resolves it.
+        if (fromTimer && tab.isLoading) return
+        val view = tab.webView ?: return
+        pendingLogin = null
+        view.evaluateJavascript(AutofillScript.PASSWORD_FIELD_VISIBLE) { result ->
+            if (result == "false") viewModelScope.launch { offerToSave(pending) }
+        }
+    }
+
+    private suspend fun offerToSave(p: PendingLogin) {
+        if (passwords.isBlocked(p.origin)) return
+        val existing = passwords.find(p.origin, p.username)
+        if (existing != null && passwords.decrypt(existing) == p.password) {
+            passwords.touch(existing.id)
+            return
+        }
+        savePrompt = SaveLoginPrompt(p.tabId, p.origin, p.username, p.password, existing?.id)
+    }
+
+    fun confirmSaveLogin() {
+        val p = savePrompt ?: return
+        savePrompt = null
+        viewModelScope.launch {
+            passwords.save(p.origin, p.username, p.password)
+            snackbar(if (p.existingId != null) "Password updated" else "Password saved", "View") { screen = Screen.PASSWORDS }
+        }
+    }
+
+    fun neverSaveLogin() {
+        val p = savePrompt ?: return
+        savePrompt = null
+        passwords.neverSave(p.origin)
+        snackbar("Eddy will not offer to save passwords for ${UrlUtils.displayHost(p.origin)}")
+    }
+
+    fun dismissSaveLogin() { savePrompt = null }
+
+    fun fillLogin(offer: AutofillOffer, login: LoginEntity) {
+        autofillOffer = null
+        viewModelScope.launch {
+            val password = passwords.decrypt(login) ?: return@launch snackbar("Eddy could not decrypt this password")
+            offer.reply.postMessage(JSONObject().put("u", login.username).put("p", password).toString())
+            passwords.touch(login.id)
+        }
+    }
+
+    /** Copies a secret and clears it from the clipboard after a minute if nothing else replaced it. */
+    fun copySecret(label: String, secret: String) {
+        val clipboard = app.getSystemService(ClipboardManager::class.java)
+        val clip = ClipData.newPlainText(label, secret).apply {
+            description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+        }
+        clipboard.setPrimaryClip(clip)
+        snackbar("$label copied")
+        viewModelScope.launch {
+            delay(CLIPBOARD_CLEAR_MS)
+            val current = runCatching { clipboard.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull()
+            if (current == secret) clipboard.clearPrimaryClip()
+        }
     }
 
     // ---- prompts --------------------------------------------------------------------------
@@ -547,6 +673,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             tab.lastHistoryAt = now
             viewModelScope.launch { tab.lastHistoryId = history.record(url, tab.title) }
         }
+        resolvePendingLogin(tab, fromTimer = false)
         viewModelScope.launch {
             delay(700) // let the page paint before taking the preview
             if (tab.id == tabs.selectedId && screen == Screen.BROWSER) thumbnails.capture(tab)
@@ -610,8 +737,25 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         tabs.tabFor(view)?.let { tabs.close(it, remember = false) }
     }
 
+    private val blobDownloader = BlobDownloader(app, viewModelScope, downloads) { message, id ->
+        snackbar(message, if (id != null) "View" else null) { screen = Screen.DOWNLOADS }
+    }
+
+    override fun onBlobMessage(tab: BrowserTab, origin: String, data: String) = blobDownloader.onMessage(tab, origin, data)
+
     override fun startDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
-        if (url.startsWith("blob:")) return snackbar("This kind of download is not supported")
+        if (url.startsWith("blob:")) {
+            if (!pageBridgeSupported) return snackbar("This WebView is too old to save this download. Update Android System WebView.")
+            return blobDownloader.start(tab, url, contentDisposition, mime)
+        }
+        if (url.startsWith("data:") && contentDisposition.isBlank() && tab.webView != null) {
+            // Ask the page which name the link requested; WebView drops it for data: URLs.
+            tab.webView?.evaluateJavascript("(window.__eddyDownloadName||'')") { raw ->
+                val name = raw?.trim('"').orEmpty()
+                startDownload(tab, url, userAgent, if (name.isNotEmpty()) "attachment; filename=\"$name\"" else "attachment", mime, length)
+            }
+            return
+        }
         viewModelScope.launch {
             if (Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -632,7 +776,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     // ---- lifecycle ------------------------------------------------------------------------
 
-    fun onStop() = tabs.persistNow()
+    fun onStop() {
+        passwordsUnlocked = false
+        tabs.persistNow()
+    }
 
     override fun onCleared() {
         runCatching { app.getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback) }
@@ -645,5 +792,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     companion object {
         const val MAIN_OPEN_DOWNLOADS = "app.eddy.browser.OPEN_DOWNLOADS"
         private const val SCROLL_THRESHOLD = 36
+        private const val PENDING_CHECK_MS = 2500L
+        private const val PENDING_EXPIRY_MS = 30_000L
+        private const val CLIPBOARD_CLEAR_MS = 60_000L
+        private const val MAX_PASSWORD_LENGTH = 256
+        private const val MAX_USERNAME_LENGTH = 256
     }
 }

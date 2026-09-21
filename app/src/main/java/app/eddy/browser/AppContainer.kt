@@ -13,6 +13,7 @@ import app.eddy.browser.data.preferences.SettingsStore
 import app.eddy.browser.downloads.DownloadEngine
 import app.eddy.browser.downloads.DownloadService
 import app.eddy.browser.history.HistoryManager
+import app.eddy.browser.passwords.PasswordManager
 import app.eddy.browser.privacy.ContentBlocker
 import app.eddy.browser.privacy.FilterUpdateService
 import app.eddy.browser.privacy.SitePermissions
@@ -39,7 +40,10 @@ class AppContainer(private val app: Application) {
      * everything after that is observed asynchronously.
      */
     val settings: StateFlow<Settings> by lazy {
-        val initial = runBlocking { settingsStore.settings.first() }
+        val initial = runBlocking {
+            settingsStore.migrateOnboardingFlag(isUpdatedInstall())
+            settingsStore.settings.first()
+        }
         settingsStore.settings.stateIn(scope, SharingStarted.Eagerly, initial)
     }
 
@@ -47,10 +51,17 @@ class AppContainer(private val app: Application) {
     val history by lazy { HistoryManager(database.history(), scope) }
     val bookmarks by lazy { BookmarkManager(database.bookmarks(), scope) }
     val sites by lazy { SitePermissions(database.sites(), scope) }
+    val passwords by lazy { PasswordManager(database.logins(), scope) }
     val favicons by lazy { FaviconCache(app, scope) }
     val thumbnails by lazy { TabThumbnailManager(app, scope) }
     val blocker by lazy { ContentBlocker(app, scope) }
     val downloads by lazy { DownloadEngine(app, scope, database.downloads()) { settings.value } }
+
+    /** True when the app was installed earlier and has since been updated (first install time and last update differ). */
+    private fun isUpdatedInstall(): Boolean = runCatching {
+        val info = app.packageManager.getPackageInfo(app.packageName, 0)
+        info.lastUpdateTime - info.firstInstallTime > 60_000
+    }.getOrDefault(false)
 
     fun start() {
         DownloadService.createChannels(app)

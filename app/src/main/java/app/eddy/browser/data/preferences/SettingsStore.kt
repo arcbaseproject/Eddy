@@ -23,6 +23,15 @@ class SettingsStore(private val context: Context) {
 
     val settings: Flow<Settings> = context.dataStore.data.map { it.toSettings() }.distinctUntilChanged()
 
+    /**
+     * The welcome tour is for people who just installed Eddy. Someone who updates from a version that predates
+     * the tour already knows the app, so they are marked as done instead of being shown it once.
+     */
+    suspend fun migrateOnboardingFlag(updatedInstall: Boolean) {
+        if (!updatedInstall) return
+        context.dataStore.edit { prefs -> if (prefs[K.onboardingDone] == null) prefs[K.onboardingDone] = true }
+    }
+
     suspend fun update(block: (Settings) -> Settings) {
         context.dataStore.edit { prefs -> prefs.write(block(prefs.toSettings())) }
     }
@@ -52,6 +61,9 @@ class SettingsStore(private val context: Context) {
         val cookies = stringPreferencesKey("cookies")
         val js = booleanPreferencesKey("javascript")
         val dnt = booleanPreferencesKey("dnt")
+        val onboardingDone = booleanPreferencesKey("onboarding_done")
+        val savePasswords = booleanPreferencesKey("save_passwords")
+        val autofillPasswords = booleanPreferencesKey("autofill_passwords")
         val restore = booleanPreferencesKey("restore_tabs")
         val tabLayout = stringPreferencesKey("tab_layout")
         val closeBehavior = stringPreferencesKey("close_behavior")
@@ -92,6 +104,9 @@ class SettingsStore(private val context: Context) {
             cookieMode = this[K.cookies].toEnum(d.cookieMode),
             javascript = this[K.js] ?: d.javascript,
             doNotTrack = this[K.dnt] ?: d.doNotTrack,
+            onboardingCompleted = this[K.onboardingDone] ?: d.onboardingCompleted,
+            savePasswords = this[K.savePasswords] ?: d.savePasswords,
+            autofillPasswords = this[K.autofillPasswords] ?: d.autofillPasswords,
             restoreTabs = this[K.restore] ?: d.restoreTabs,
             tabLayout = this[K.tabLayout].toEnum(d.tabLayout),
             closeTabBehavior = this[K.closeBehavior].toEnum(d.closeTabBehavior),
@@ -128,6 +143,9 @@ class SettingsStore(private val context: Context) {
         this[K.cookies] = s.cookieMode.name
         this[K.js] = s.javascript
         this[K.dnt] = s.doNotTrack
+        this[K.onboardingDone] = s.onboardingCompleted
+        this[K.savePasswords] = s.savePasswords
+        this[K.autofillPasswords] = s.autofillPasswords
         this[K.restore] = s.restoreTabs
         this[K.tabLayout] = s.tabLayout.name
         this[K.closeBehavior] = s.closeTabBehavior.name
@@ -139,14 +157,7 @@ class SettingsStore(private val context: Context) {
     }
 
     companion object {
-        val DefaultShortcuts = listOf(
-            Shortcut("d-wiki", "Wikipedia", "https://www.wikipedia.org", 0, 0),
-            Shortcut("d-news", "Hacker News", "https://news.ycombinator.com", 1, 1),
-            Shortcut("d-maps", "OpenStreetMap", "https://www.openstreetmap.org", 2, 2),
-            Shortcut("d-gh", "GitHub", "https://github.com", 3, 3),
-            Shortcut("d-yt", "YouTube", "https://m.youtube.com", 4, 4),
-            Shortcut("d-reddit", "Reddit", "https://www.reddit.com", 5, 5),
-        )
+        val DefaultShortcuts = emptyList<Shortcut>()
 
         val DefaultFilterLists = listOf(
             FilterList(

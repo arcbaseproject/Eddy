@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Cookie
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Refresh
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.browser.DataType
+import app.eddy.browser.browser.Screen
 import app.eddy.browser.data.database.SiteSettings
 import app.eddy.browser.data.models.CookieMode
 import app.eddy.browser.data.models.FilterList
@@ -69,6 +71,13 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
         NavRow("Filter lists", { vm.settingsStack.add(SettingsPage.FILTER_LISTS) }, "Enable, add and update lists", Icons.Rounded.Tune)
         GroupDivider()
         SwitchRow("Do Not Track and Global Privacy Control", s.doNotTrack, { v -> vm.launchSettings { it.copy(doNotTrack = v) } }, "Asks sites not to sell or share your data", Icons.Rounded.Lock)
+    }
+    SettingsGroup("Passwords") {
+        SwitchRow("Offer to save passwords", s.savePasswords, { v -> vm.launchSettings { it.copy(savePasswords = v) } }, if (vm.pageBridgeSupported) "Asks after you sign in or sign up" else "Needs a newer Android System WebView", Icons.Rounded.Key, enabled = vm.pageBridgeSupported)
+        GroupDivider()
+        SwitchRow("Autofill passwords", s.autofillPasswords, { v -> vm.launchSettings { it.copy(autofillPasswords = v) } }, if (vm.pageBridgeSupported) "Suggests a saved login when you tap a sign-in field" else "Needs a newer Android System WebView", Icons.Rounded.Lock, enabled = vm.pageBridgeSupported)
+        GroupDivider()
+        ActionRow("Saved passwords", { vm.screen = Screen.PASSWORDS }, "Needs your screen lock", Icons.Rounded.Key)
     }
     SettingsGroup("Site data") {
         ChoiceRow(
@@ -110,6 +119,7 @@ private fun ClearDataDialog(vm: BrowserViewModel, onDismiss: () -> Unit) {
                 CheckRow("Cached images and files", DataType.CACHE in types) { toggle(DataType.CACHE, it) }
                 CheckRow("Download list", DataType.DOWNLOADS in types) { toggle(DataType.DOWNLOADS, it) }
                 CheckRow("Site permissions", DataType.SITE_SETTINGS in types) { toggle(DataType.SITE_SETTINGS, it) }
+                CheckRow("Saved passwords", DataType.PASSWORDS in types) { toggle(DataType.PASSWORDS, it) }
             }
         },
         confirmButton = { TextButton(enabled = types.isNotEmpty(), onClick = { vm.clearBrowsingData(types, range); onDismiss() }) { Text("Clear") } },
