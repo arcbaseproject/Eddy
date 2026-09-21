@@ -5,6 +5,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import android.app.role.RoleManager
 import android.provider.Settings as AndroidSettings
@@ -24,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PrivacyTip
@@ -64,7 +66,9 @@ import app.eddy.browser.data.models.TabLayout
 import app.eddy.browser.data.models.UserAgentMode
 import app.eddy.browser.ui.animation.spatialSpring
 import app.eddy.browser.ui.components.ConfirmDialog
+import app.eddy.browser.ui.components.EddyIconButton
 import app.eddy.browser.ui.components.ScreenScaffold
+import app.eddy.browser.ui.components.SearchField
 import app.eddy.browser.ui.components.TextInputDialog
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,9 +77,19 @@ import androidx.compose.ui.text.input.KeyboardType
 fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
     val page = vm.settingsStack.lastOrNull()
     val slide = spatialSpring<IntOffset>()
+    var searching by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    fun closeSearch() { searching = false; query = "" }
+    BackHandler(enabled = searching && page == null) { closeSearch() }
     ScreenScaffold(
         title = page?.title ?: "Settings",
-        onBack = { if (!vm.onBack()) vm.screen = Screen.BROWSER },
+        onBack = { if (searching && page == null) closeSearch() else if (!vm.onBack()) vm.screen = Screen.BROWSER },
+        actions = {
+            if (page == null) {
+                if (searching) EddyIconButton(Icons.Rounded.Close, "Close search", ::closeSearch)
+                else EddyIconButton(Icons.Rounded.Search, "Search settings", { searching = true })
+            }
+        },
     ) { padding ->
         AnimatedContent(
             targetState = page,
@@ -90,7 +104,7 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
         ) { p ->
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
                 when (p) {
-                    null -> RootPage(vm)
+                    null -> RootPage(vm, searching, query) { query = it }
                     SettingsPage.GENERAL -> GeneralSettings(vm, settings)
                     SettingsPage.APPEARANCE -> AppearanceSettings(vm, settings)
                     SettingsPage.PRIVACY -> PrivacySettings(vm, settings)
@@ -109,9 +123,24 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
 }
 
 @Composable
-private fun RootPage(vm: BrowserViewModel) {
+private fun RootPage(vm: BrowserViewModel, searching: Boolean, query: String, onQuery: (String) -> Unit) {
     fun open(p: SettingsPage) = vm.settingsStack.add(p)
     BetaBanner()
+    if (searching) SearchField(query, onQuery, "Search settings", Modifier.padding(top = 6.dp), autoFocus = true)
+    if (searching && query.isNotBlank()) {
+        val results = searchSettings(query)
+        if (results.isEmpty()) {
+            SettingsFootnote("No settings match \"${query.trim()}\".")
+        } else {
+            SettingsGroup {
+                results.forEachIndexed { i, entry ->
+                    if (i > 0) GroupDivider()
+                    NavRow(entry.title, { vm.settingsStack.addAll(entry.path) }, entry.where)
+                }
+            }
+        }
+        return
+    }
     SettingsGroup {
         NavRow("General", { open(SettingsPage.GENERAL) }, "Search, homepage, links, downloads", Icons.Rounded.Settings)
         GroupDivider()

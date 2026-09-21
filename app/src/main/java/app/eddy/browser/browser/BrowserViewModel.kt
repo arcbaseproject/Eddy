@@ -350,13 +350,16 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         omniboxText = text
         suggestJob?.cancel()
         suggestJob = viewModelScope.launch {
-            val clip = suggestions.value.filter { it.kind == SuggestionKind.CLIPBOARD }
-            val local = if (text.isBlank()) clip else suggestionSource.local(text)
-            suggestions.value = local
-            if (text.isNotBlank() && settings.searchSuggestions && !UrlUtils.isUrl(text)) {
-                delay(120)
-                suggestions.value = local + suggestionSource.remote(text)
+            if (text.isBlank()) {
+                suggestions.value = suggestions.value.filter { it.kind == SuggestionKind.CLIPBOARD }
+                return@launch
             }
+            // Wait for a typing pause and swap the list once. The old list stays until the new one is ready, because
+            // redrawing it on every keystroke made the field jump under the user's fingers.
+            delay(SUGGEST_DEBOUNCE_MS)
+            val local = suggestionSource.local(text)
+            val remote = if (settings.searchSuggestions && !UrlUtils.isUrl(text)) suggestionSource.remote(text) else emptyList()
+            suggestions.value = local + remote
         }
     }
 
@@ -790,6 +793,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     val engine: SearchEngine get() = settings.searchEngine
 
     companion object {
+        private const val SUGGEST_DEBOUNCE_MS = 200L
         const val MAIN_OPEN_DOWNLOADS = "app.eddy.browser.OPEN_DOWNLOADS"
         private const val SCROLL_THRESHOLD = 36
         private const val PENDING_CHECK_MS = 2500L

@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -299,7 +300,7 @@ fun OmniboxEditor(
     }
 
     Surface(
-        modifier.fillMaxWidth().animateContentSize(spatialSpring()),
+        modifier.fillMaxWidth().animateContentSize(tween(150)), // a spring here overshoots and makes the field bounce
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shadowElevation = 6.dp,
