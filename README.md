@@ -24,6 +24,14 @@ icons or assets with any other browser.
   <img src="docs/screenshots/settings.png" width="180" alt="Settings">
 </p>
 
+The welcome tour on first launch:
+
+<p align="center">
+  <img src="docs/screenshots/tour-welcome.png" width="180" alt="Welcome tour, first slide">
+  <img src="docs/screenshots/tour-private.png" width="180" alt="Welcome tour, privacy slide">
+  <img src="docs/screenshots/tour-customize.png" width="180" alt="Welcome tour, theme and search engine picker">
+</p>
+
 ## Build
 
 Requirements: JDK 21+ (tested on 26), Android SDK with platform 37 and build-tools 37.
@@ -77,13 +85,15 @@ runtime permissions, external apps, fullscreen video) leaves the ViewModel as a 
   `||domain^` rules.
 - **Downloads.** Own resumable HTTP engine (Range/ETag) with a foreground service; finished files are
   published to `Downloads` through MediaStore. Pause/resume, retry, speed, notifications.
+- **Welcome tour.** First launch shows a five-step tour with a hero shape that morphs as you swipe. Theme, colours, search engine and toolbar position apply to the real settings live. It is skipped when the app opens from a link, and Settings > About can replay it.
+- **Passwords.** Sign-in and sign-up forms are detected by a script injected through `addWebMessageListener`; Eddy asks to save or update only after the sign-in succeeds. Passwords are AES-256-GCM encrypted with an Android Keystore key, autofill needs a tap and matches the exact origin, and the manager sits behind the device screen lock with `FLAG_SECURE`. Passwords import and export as Chrome-style CSV (`name,url,username,password,note`); export warns that the file is plain text.
 - **Safety.** Certificate errors show a native page; proceeding requires an explicit confirmation and
   sub-resource errors are always cancelled. Background-triggered external-app launches are ignored.
 
 ## Known limitations
 
 - WebView does not implement the Web Notifications API, so there is no per-site notification switch.
-- `blob:` downloads are not supported (the WebView hands over an unreadable URL).
+- `blob:` downloads and password autofill need a recent Android System WebView. On older ones Eddy says so and turns the password switches off.
 - Blocking is domain-based only; there is no cosmetic (element-hiding) filtering.
 - User-facing strings are inline English, not yet extracted to resources.
 
