@@ -34,10 +34,23 @@ class PasswordManager(private val dao: LoginDao, private val scope: CoroutineSco
         )
     }
 
-    /** Edit from the manager: the site or username may change, so the old row goes first. */
+    /**
+     * Edit from the manager. The row is written before the old one goes, so a failure part-way through
+     * can never leave the user with no password at all.
+     */
     suspend fun replace(oldId: Long, origin: String, username: String, password: String) {
-        dao.delete(oldId)
-        save(origin, username, password)
+        val encrypted = withContext(Dispatchers.Default) { PasswordVault.encrypt(password) }
+        val now = System.currentTimeMillis()
+        val old = dao.get(oldId)
+        // Writing under the row that already holds this origin+username keeps the unique index happy.
+        val target = dao.find(origin, username) ?: old
+        dao.upsert(
+            LoginEntity(
+                id = target?.id ?: 0, origin = origin, username = username, password = encrypted,
+                createdAt = target?.createdAt ?: now, updatedAt = now, lastUsedAt = now,
+            ),
+        )
+        if (target?.id != oldId) dao.delete(oldId)
     }
 
     /** Chrome-style CSV (name,url,username,password,note). Passwords are written in plain text, so the caller must warn the user. */
@@ -64,7 +77,9 @@ class PasswordManager(private val dao: LoginDao, private val scope: CoroutineSco
         if (url < 0 || pass < 0) return@withContext ImportResult(0, 0, 0, rows.size - 1, recognised = false)
 
         var added = 0; var updated = 0; var unchanged = 0; var skipped = 0
-        for (row in rows.drop(1).take(MAX_IMPORT_ROWS)) {
+        val body = rows.drop(1)
+        skipped += (body.size - MAX_IMPORT_ROWS).coerceAtLeast(0)
+        for (row in body.take(MAX_IMPORT_ROWS)) {
             val origin = row.getOrNull(url)?.let(::normalizeOrigin)
             val password = row.getOrNull(pass).orEmpty()
             val username = row.getOrNull(user).orEmpty().trim()

@@ -114,6 +114,14 @@ fun AutofillLayer(vm: BrowserViewModel, tab: BrowserTab?, keyboardVisible: Boole
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    item {
+                        Text(
+                            "Fill for ${UrlUtils.displayHost(offer.origin)}",
+                            Modifier.padding(end = 4.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     items(offer.logins, key = { it.id }) { login ->
                         Surface(
                             onClick = { vm.fillLogin(offer, login) },

@@ -19,7 +19,9 @@ object Csv {
             val c = text[i]
             when {
                 quoted && c == '"' && text.getOrNull(i + 1) == '"' -> { cell.append('"'); i++ }
-                c == '"' -> quoted = !quoted
+                quoted && c == '"' -> quoted = false
+                // A quote anywhere else is literal text, so one stray quote cannot swallow the rest of the file.
+                c == '"' && cell.isEmpty() -> quoted = true
                 quoted -> cell.append(c)
                 c == ',' -> endCell()
                 c == '\r' -> if (text.getOrNull(i + 1) == '\n') i++.also { endRow() } else endRow()

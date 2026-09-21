@@ -29,7 +29,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-class ClosedTab(val url: String, val title: String, val state: Bundle?)
+class ClosedTab(val url: String, val title: String, var state: Bundle?)
 
 /**
  * Owns every tab and decides which ones keep a live WebView. Only a few WebViews stay alive; the
@@ -55,6 +55,9 @@ class TabManager(
     private val stateDir = File(context.filesDir, "tabstate").apply { mkdirs() }
     private val indexFile = File(context.filesDir, "tabs.json")
     private var persistJob: Job? = null
+
+    /** Tab ids whose WebView is being built. Main-thread only, so a plain set is enough. */
+    private val building = mutableSetOf<String>()
 
     /** One thread for all tab-state files so a write always lands before the read that follows it. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -90,12 +93,16 @@ class TabManager(
 
     /** Builds the WebView for a restored/evicted tab, reading its serialised history off the main thread. */
     suspend fun ensureWebView(tab: BrowserTab) {
-        if (tab.webView != null || tab.isHome) return
-        val state = tab.savedState ?: if (tab.hasPersistedState) withContext(stateIo) { readState(tab.id) } else null
-        if (tab.webView != null) return
-        tab.webView = createView(tab, state)
-        tab.savedState = null
-        if (tab.id == selectedId) tab.webView?.onResume()
+        // building guards the await below: without it two callers both pass the null check and one view is orphaned.
+        if (tab.webView != null || tab.isHome || !building.add(tab.id)) return
+        try {
+            val state = tab.savedState ?: if (tab.hasPersistedState) withContext(stateIo) { readState(tab.id) } else null
+            tab.webView = createView(tab, state)
+            tab.savedState = null
+            if (tab.id == selectedId) tab.webView?.onResume()
+        } finally {
+            building.remove(tab.id)
+        }
     }
 
     private fun createView(tab: BrowserTab, state: Bundle?, loadUrl: Boolean = true): EddyWebView {
@@ -168,7 +175,9 @@ class TabManager(
         destroyView(tab)
         tab.error?.sslHandler?.cancel()
         thumbnails.remove(tab.id)
-        File(stateDir, "${tab.id}.bin").delete()
+        // Queued behind the read rememberClosed may have started: stateIo runs one file operation at a time.
+        val stateFile = File(stateDir, "${tab.id}.bin")
+        scope.launch(stateIo) { stateFile.delete() }
         if (wasSelected) selectAfterClose(index, tab)
         if (tab.incognito && tabs.none { it.incognito }) sweepIncognitoProfiles()
         // There is always at least one normal tab; when the last one goes, a fresh new-tab page takes its place.
@@ -192,11 +201,16 @@ class TabManager(
     }
 
     private fun rememberClosed(tab: BrowserTab) {
-        val state = tab.webView?.let { v -> Bundle().also { v.saveState(it) } } ?: tab.savedState
-            ?: if (tab.hasPersistedState) readState(tab.id) else null
-        closed.addFirst(ClosedTab(tab.url, tab.title, state))
+        // saveState must run on the main thread; the persisted copy is read off it and filled in after.
+        val live = tab.webView?.let { v -> Bundle().also { v.saveState(it) } } ?: tab.savedState
+        val entry = ClosedTab(tab.url, tab.title, live)
+        closed.addFirst(entry)
         while (closed.size > MAX_CLOSED) closed.removeLast()
         closedCount = closed.size
+        if (live == null && tab.hasPersistedState) {
+            val id = tab.id
+            scope.launch { entry.state = withContext(stateIo) { readState(id) } }
+        }
     }
 
     private fun selectAfterClose(index: Int, closedTab: BrowserTab) {

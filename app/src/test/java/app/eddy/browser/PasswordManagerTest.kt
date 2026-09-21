@@ -32,6 +32,11 @@ class CsvTest {
         assertEquals(3, rows.size)
     }
 
+    @Test fun aStrayQuoteStaysInsideItsOwnField() {
+        val rows = app.eddy.browser.passwords.Csv.parse("url,password\nhttps://ex.com,my\"pass\nhttps://two.com,ok\n")
+        assertEquals(listOf(listOf("url", "password"), listOf("https://ex.com", "my\"pass"), listOf("https://two.com", "ok")), rows)
+    }
+
     @Test fun writesWhatItReads() {
         val cells = listOf("a", "b,c", "d\"e", "line\nbreak")
         val line = app.eddy.browser.passwords.Csv.row(cells)

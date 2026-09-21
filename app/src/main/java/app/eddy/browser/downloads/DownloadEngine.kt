@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
-import android.webkit.CookieManager
 import android.webkit.URLUtil
 import app.eddy.browser.data.database.DownloadDao
 import app.eddy.browser.data.database.DownloadEntity
@@ -40,6 +39,9 @@ class DownloadRequest(
     val contentDisposition: String,
     val mimeType: String,
     val contentLength: Long,
+    val incognito: Boolean = false,
+    /** Cookie header for [url], taken from the tab's own jar. Incognito has a separate one. */
+    val cookie: String = "",
 )
 
 /** Momentary progress that is too chatty to write to the database. */
@@ -58,7 +60,8 @@ class DownloadEngine(
     private val partDir = File(context.filesDir, "downloads").apply { mkdirs() }
     private val jobs = ConcurrentHashMap<Long, Job>()
     private val intents = ConcurrentHashMap<Long, DownloadStatus>()
-    private val cookies = ConcurrentHashMap<Long, String>()
+    /** id -> (host the cookie was read for, Cookie header). Never sent to a different host. */
+    private val cookies = ConcurrentHashMap<Long, Pair<String, String>>()
     private val slots = Semaphore(MAX_PARALLEL)
 
     private val _live = MutableStateFlow<Map<Long, LiveProgress>>(emptyMap())
@@ -82,9 +85,10 @@ class DownloadEngine(
             DownloadEntity(
                 url = request.url, fileName = name, mimeType = request.mimeType,
                 totalBytes = request.contentLength, userAgent = request.userAgent, referer = request.referer,
+                incognito = request.incognito,
             ),
         )
-        CookieManager.getInstance().getCookie(request.url)?.let { cookies[id] = it }
+        if (request.cookie.isNotEmpty()) cookies[id] = hostOf(request.url) to request.cookie
         start(id)
         return id
     }
@@ -107,16 +111,19 @@ class DownloadEngine(
         if (job != null) job.cancel(CancellationException("canceled")) else scope.launch { finishCanceled(id) }
     }
 
-    fun delete(id: Long, deleteFile: Boolean) {
-        scope.launch {
-            jobs[id]?.let { intents[id] = DownloadStatus.CANCELED; it.cancelAndJoin() }
-            val d = dao.get(id)
-            if (d != null && deleteFile && d.contentUri.isNotEmpty()) {
-                runCatching { context.contentResolver.delete(Uri.parse(d.contentUri), null, null) }
-            }
-            File(partDir, "$id.part").delete()
-            dao.delete(id)
+    fun delete(id: Long, deleteFile: Boolean) { scope.launch { deleteNow(id, deleteFile) } }
+
+    /** An incognito session that ends takes its downloads with it; the saved files themselves stay. */
+    suspend fun clearIncognito() { dao.incognitoIds().forEach { deleteNow(it, deleteFile = false) } }
+
+    private suspend fun deleteNow(id: Long, deleteFile: Boolean) {
+        jobs[id]?.let { intents[id] = DownloadStatus.CANCELED; it.cancelAndJoin() }
+        val d = dao.get(id)
+        if (d != null && deleteFile && d.contentUri.isNotEmpty()) {
+            runCatching { context.contentResolver.delete(Uri.parse(d.contentUri), null, null) }
         }
+        File(partDir, "$id.part").delete()
+        dao.delete(id)
     }
 
     fun clearFinished() { scope.launch { dao.clearFinished() } }
@@ -132,6 +139,7 @@ class DownloadEngine(
             } finally {
                 jobs.remove(id)
                 intents.remove(id)
+                cookies.remove(id)
                 _live.update { it - id }
                 _active.update { it - 1 }
             }
@@ -168,9 +176,12 @@ class DownloadEngine(
         var conn = open(d, offset)
         var redirects = 0
         while (conn.responseCode in 300..399 && redirects++ < MAX_REDIRECTS) {
-            val next = URL(URL(conn.url.toString()), conn.getHeaderField("Location") ?: throw IOException("Bad redirect")).toString()
+            val from = URL(conn.url.toString())
+            val next = URL(from, conn.getHeaderField("Location") ?: throw IOException("Bad redirect"))
+            if (next.protocol != "http" && next.protocol != "https") throw IOException("Unsupported redirect")
+            if (from.protocol == "https" && next.protocol == "http") throw IOException("Insecure redirect")
             conn.disconnect()
-            d = d.copy(url = next)
+            d = d.copy(url = next.toString())
             conn = open(d, offset)
         }
         try {
@@ -245,7 +256,7 @@ class DownloadEngine(
         conn.setRequestProperty("Accept-Encoding", "identity")
         if (d.userAgent.isNotBlank()) conn.setRequestProperty("User-Agent", d.userAgent)
         if (d.referer.isNotBlank()) conn.setRequestProperty("Referer", d.referer)
-        (cookies[d.id] ?: CookieManager.getInstance().getCookie(d.url))?.let { conn.setRequestProperty("Cookie", it) }
+        cookies[d.id]?.takeIf { it.first == hostOf(d.url) }?.second?.let { conn.setRequestProperty("Cookie", it) }
         if (offset > 0) {
             conn.setRequestProperty("Range", "bytes=$offset-")
             if (d.etag.isNotEmpty() && !d.etag.startsWith("W/")) conn.setRequestProperty("If-Range", d.etag)
@@ -314,6 +325,8 @@ class DownloadEngine(
         File(partDir, "$id.part").delete()
         dao.get(id)?.let { dao.update(it.copy(status = DownloadStatus.CANCELED, downloadedBytes = 0)) }
     }
+
+    private fun hostOf(url: String) = runCatching { URL(url).host.lowercase() }.getOrDefault("")
 
     private fun sanitize(name: String) = name.replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001f]"), "_").trim().ifEmpty { "download" }
 

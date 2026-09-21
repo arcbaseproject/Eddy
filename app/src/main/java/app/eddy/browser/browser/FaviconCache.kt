@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 /** Memory + disk favicon store keyed by host. Incognito icons stay in memory only. */
@@ -64,7 +65,11 @@ class FaviconCache(context: Context, private val scope: CoroutineScope) {
         dir.listFiles()?.forEach { it.delete() }
     }
 
-    private fun fileFor(host: String) = File(dir, host.hashCode().toUInt().toString(16) + ".png")
+    // A 32-bit hashCode collides often enough to show one site's icon next to another's name.
+    private fun fileFor(host: String) = File(dir, digest(host) + ".png")
+
+    private fun digest(host: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(host.toByteArray()).take(16).joinToString("") { "%02x".format(it) }
 
     private companion object {
         const val MAX_SIZE = 96

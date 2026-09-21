@@ -177,6 +177,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         viewModelScope.launch {
             snapshotFlow { tabs.selected?.url }.distinctUntilChanged().collect { chromeVisible = true; autofillOffer = null }
         }
+        viewModelScope.launch {
+            snapshotFlow { tabs.tabs.any { it.incognito } }.distinctUntilChanged()
+                .collect { any -> if (!any) downloads.clearIncognito() }
+        }
     }
 
     /** Shows the welcome tour again, even in a session that started from a link. */
@@ -358,7 +362,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             // redrawing it on every keystroke made the field jump under the user's fingers.
             delay(SUGGEST_DEBOUNCE_MS)
             val local = suggestionSource.local(text)
-            val remote = if (settings.searchSuggestions && !UrlUtils.isUrl(text)) suggestionSource.remote(text) else emptyList()
+            val private = tabs.selected?.incognito == true
+            val remote = if (settings.searchSuggestions && !private && !UrlUtils.isUrl(text)) suggestionSource.remote(text) else emptyList()
             suggestions.value = local + remote
         }
     }
@@ -763,7 +768,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             if (Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
             ) requestRuntimePermissions(listOf(Manifest.permission.POST_NOTIFICATIONS))
-            runCatching { downloads.enqueue(DownloadRequest(url, userAgent, tab.url, contentDisposition, mime, length)) }
+            val cookie = runCatching { factory.cookieManager(tab.incognito).getCookie(url) }.getOrNull().orEmpty()
+            runCatching {
+                downloads.enqueue(DownloadRequest(url, userAgent, tab.url, contentDisposition, mime, length, tab.incognito, cookie))
+            }
                 .onSuccess {
                     // A tab that only existed to fetch this file (nothing rendered, no history) is not worth keeping.
                     if (!tab.canGoBack && tab.title.isEmpty() && tab.error == null && tabs.tabs.size > 1) tabs.close(tab, remember = false)

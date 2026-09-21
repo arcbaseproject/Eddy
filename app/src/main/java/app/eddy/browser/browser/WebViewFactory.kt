@@ -105,8 +105,9 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
      */
     private fun registerAutofill(tab: BrowserTab, view: EddyWebView) {
         if (!pageBridgeSupported) return
-        WebViewCompat.addWebMessageListener(view, AutofillScript.NAME, setOf("*")) { _, message, sourceOrigin, _, reply ->
-            message.data?.let { host.onAutofillMessage(tab, sourceOrigin.toString(), it, reply) }
+        WebViewCompat.addWebMessageListener(view, AutofillScript.NAME, setOf("*")) { _, message, sourceOrigin, isMainFrame, reply ->
+            // Subframes are ignored: a third-party iframe must not be able to raise a save prompt or an autofill offer.
+            if (isMainFrame) message.data?.let { host.onAutofillMessage(tab, sourceOrigin.toString(), it, reply) }
         }
         WebViewCompat.addDocumentStartJavaScript(view, AutofillScript.SOURCE, setOf("*"))
         WebViewCompat.addWebMessageListener(view, BlobDownloader.NAME, setOf("*")) { _, message, sourceOrigin, isMainFrame, _ ->

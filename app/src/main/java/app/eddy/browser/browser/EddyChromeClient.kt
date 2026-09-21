@@ -34,7 +34,11 @@ class EddyChromeClient(private val tab: BrowserTab, private val host: BrowserHos
     override fun onHideCustomView() = host.hideCustomView()
 
     /** Avoids the grey placeholder box some sites show before a video starts. */
-    override fun getDefaultVideoPoster(): Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+    override fun getDefaultVideoPoster(): Bitmap = poster
+
+    private companion object {
+        val poster: Bitmap by lazy { Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888) }
+    }
 
     override fun onPermissionRequest(request: PermissionRequest) = host.requestWebPermission(tab, request)
 

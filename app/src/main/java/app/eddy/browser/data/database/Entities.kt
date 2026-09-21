@@ -1,5 +1,6 @@
 package app.eddy.browser.data.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -51,6 +52,8 @@ data class DownloadEntity(
     val resumable: Boolean = true,
     val contentUri: String = "",
     val error: String = "",
+    /** Incognito downloads are wiped when the last incognito tab closes. */
+    @ColumnInfo(defaultValue = "0") val incognito: Boolean = false,
 )
 
 /** Per-host overrides. A null column means "use the global default" (or "ask" for prompts). */

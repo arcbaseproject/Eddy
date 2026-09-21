@@ -115,6 +115,9 @@ interface DownloadDao {
     @Query("DELETE FROM downloads WHERE id = :id")
     suspend fun delete(id: Long)
 
+    @Query("SELECT id FROM downloads WHERE incognito = 1")
+    suspend fun incognitoIds(): List<Long>
+
     @Query("DELETE FROM downloads WHERE status IN ('COMPLETED','FAILED','CANCELED')")
     suspend fun clearFinished()
 
@@ -160,6 +163,9 @@ interface LoginDao {
 
     @Query("UPDATE logins SET lastUsedAt = :time WHERE id = :id")
     suspend fun touch(id: Long, time: Long)
+
+    @Query("SELECT * FROM logins WHERE id = :id")
+    suspend fun get(id: Long): LoginEntity?
 
     @Query("DELETE FROM logins WHERE id = :id")
     suspend fun delete(id: Long)
