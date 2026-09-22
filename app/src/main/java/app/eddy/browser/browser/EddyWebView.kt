@@ -19,6 +19,7 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
     var onPull: ((Int) -> Unit)? = null
     var onPullRelease: ((triggered: Boolean) -> Unit)? = null
     var dntScript: ScriptHandler? = null
+    var desktopScript: ScriptHandler? = null
     var incognito = false
 
     private val touchSlop = ViewConfiguration.get(ctx).scaledTouchSlop

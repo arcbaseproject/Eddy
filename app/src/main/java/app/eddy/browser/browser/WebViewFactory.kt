@@ -13,6 +13,8 @@ import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.webkit.ProfileStore
+import androidx.webkit.UserAgentMetadata
+import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import app.eddy.browser.data.database.SiteSettings
@@ -28,6 +30,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     private val defaultUa: String by lazy { WebSettings.getDefaultUserAgent(appContext) }
     private val mobileUa by lazy { UserAgents.mobile(defaultUa) }
     private val desktopUa by lazy { UserAgents.desktop(defaultUa) }
+    /** Client hints (Sec-CH-UA-*, navigator.userAgentData) the system WebView reports; captured from the first view. */
+    private var mobileMeta: UserAgentMetadata? = null
+    private val desktopMeta by lazy {
+        mobileMeta?.let { UserAgentMetadata.Builder(it).setMobile(false).setPlatform("Linux").setModel("").setFormFactors(listOf("Desktop")).build() }
+    }
     private val connectivity = appContext.getSystemService(ConnectivityManager::class.java)
 
     /** Each incognito session gets its own storage profile, so a new session can never see an old one. */
@@ -147,6 +154,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         }
         if (view.settings.userAgentString != ua) view.settings.userAgentString = ua
         view.settings.loadWithOverviewMode = desktop
+        applyDesktopExtras(view, desktop)
         tab.desktopActive = desktop
         val thirdParty = site?.thirdPartyCookies?.let { it == SiteSettings.ALLOW } ?: (s.cookieMode == CookieMode.ALLOW_ALL)
         cookieManager(tab.incognito).setAcceptThirdPartyCookies(view, thirdParty && s.cookieMode != CookieMode.BLOCK_ALL)
@@ -158,6 +166,25 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             tab.incognito -> WebSettings.LOAD_NO_CACHE
             !isOnline() -> WebSettings.LOAD_CACHE_ELSE_NETWORK
             else -> WebSettings.LOAD_DEFAULT
+        }
+    }
+
+    /**
+     * The UA string alone is not enough: sites also read client hints, and responsive pages lay out at
+     * device width through their viewport meta tag. Desktop mode overrides both, like Chrome's does.
+     */
+    @SuppressLint("RequiresFeature")
+    private fun applyDesktopExtras(view: EddyWebView, desktop: Boolean) {
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) {
+            if (mobileMeta == null) mobileMeta = WebSettingsCompat.getUserAgentMetadata(view.settings)
+            (if (desktop) desktopMeta else mobileMeta)?.let { WebSettingsCompat.setUserAgentMetadata(view.settings, it) }
+        }
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        if (desktop && view.desktopScript == null) {
+            view.desktopScript = WebViewCompat.addDocumentStartJavaScript(view, DESKTOP_VIEWPORT_SCRIPT, setOf("*"))
+        } else if (!desktop) {
+            view.desktopScript?.remove()
+            view.desktopScript = null
         }
     }
 
@@ -197,6 +224,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     companion object {
         const val PROFILE_PREFIX = "eddy_incognito"
         private fun newProfileName() = PROFILE_PREFIX + "_" + java.util.UUID.randomUUID().toString().take(8)
+        /** Rewrites viewport meta tags while the document parses, then stops watching. */
+        private const val DESKTOP_VIEWPORT_SCRIPT =
+            "(function(){if(window!==top)return;var W='width=1024';function f(){document.querySelectorAll('meta[name=viewport]')" +
+                ".forEach(function(m){if(m.content!==W)m.content=W})}var o=new MutationObserver(f);" +
+                "o.observe(document,{childList:true,subtree:true});document.addEventListener('DOMContentLoaded',function(){f();o.disconnect()})})()"
         private const val DNT_SCRIPT =
             "try{Object.defineProperty(navigator,'doNotTrack',{get:function(){return '1'}});" +
                 "Object.defineProperty(navigator,'globalPrivacyControl',{get:function(){return true}})}catch(e){}"

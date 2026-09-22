@@ -476,8 +476,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val tab = tabs.selected ?: return
         val view = tab.webView ?: return
         tab.desktopOverride = !tab.desktopActive
-        factory.prepare(tab, view, tab.url)
-        view.reload()
+        // A fresh load, not reload(): reload restores the old page scale, so desktop layout would not zoom out to fit.
+        factory.load(tab, view, tab.url)
     }
 
     fun toggleDesktopForSite() {
@@ -486,7 +486,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val on = sites.peek(host)?.desktop == SiteSettings.ALLOW
         sites.set(host, SiteFeature.DESKTOP, if (on) null else SiteSettings.ALLOW)
         tab.desktopOverride = null
-        tab.webView?.let { factory.prepare(tab, it, tab.url); it.reload() }
+        tab.webView?.let { factory.load(tab, it, tab.url) }
     }
 
     fun addShortcut(tab: BrowserTab) {
