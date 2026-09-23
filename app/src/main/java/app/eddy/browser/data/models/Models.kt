@@ -51,8 +51,7 @@ data class Settings(
     val homeDensity: HomeDensity = HomeDensity.COMFORTABLE,
     val motion: MotionPref = MotionPref.FULL,
     val shortcutStyle: ShortcutStyle = ShortcutStyle.MIXED,
-    /** Start-page composition. Blank [homeTitle] falls back to the app name. */
-    val homeTitle: String = "",
+    /** Start-page composition. */
     val homeShowTitle: Boolean = true,
     val homeShowSearch: Boolean = true,
     val homeShowShortcuts: Boolean = true,

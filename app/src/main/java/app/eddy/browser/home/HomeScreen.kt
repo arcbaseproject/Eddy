@@ -90,7 +90,7 @@ fun HomeScreen(
             ) {
                 Spacer(Modifier.height(if (compact) 40.dp else 72.dp))
                 if (settings.homeShowTitle || incognito) {
-                    Wordmark(incognito, settings.homeTitle, Modifier.entrance(0))
+                    Wordmark(incognito, Modifier.entrance(0))
                     Spacer(Modifier.height(if (compact) 20.dp else 32.dp))
                 }
                 if (settings.homeShowSearch) {
@@ -139,10 +139,10 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Wordmark(incognito: Boolean, title: String, modifier: Modifier = Modifier) {
+private fun Wordmark(incognito: Boolean, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            if (incognito) "Incognito" else title.ifBlank { "Eddy" },
+            if (incognito) "Incognito" else "Eddy",
             style = MaterialTheme.typography.displayMedium,
             textAlign = TextAlign.Center,
             color = if (incognito) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,

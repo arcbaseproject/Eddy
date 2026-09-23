@@ -33,7 +33,6 @@ import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.ShortcutStyle
 import app.eddy.browser.data.models.ThemeMode
 import app.eddy.browser.data.models.ToolbarPosition
-import app.eddy.browser.ui.components.TextInputDialog
 import app.eddy.browser.ui.theme.Dimens
 import app.eddy.browser.ui.theme.Palette
 
@@ -83,13 +82,9 @@ fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
 /** Everything on the new-tab page can be switched off or renamed here. */
 @Composable
 fun StartPageSettings(vm: BrowserViewModel, s: Settings) {
-    var editTitle by remember { mutableStateOf(false) }
-    SettingsGroup("Title") {
+    SettingsGroup("Sections") {
         SwitchRow("Show title", s.homeShowTitle, { v -> vm.launchSettings { it.copy(homeShowTitle = v) } })
         GroupDivider()
-        ActionRow("Title text", { editTitle = true }, s.homeTitle.ifBlank { "Eddy" })
-    }
-    SettingsGroup("Sections") {
         SwitchRow("Search box", s.homeShowSearch, { v -> vm.launchSettings { it.copy(homeShowSearch = v) } })
         GroupDivider()
         SwitchRow("Shortcuts", s.homeShowShortcuts, { v -> vm.launchSettings { it.copy(homeShowShortcuts = v) } })
@@ -118,12 +113,6 @@ fun StartPageSettings(vm: BrowserViewModel, s: Settings) {
         ChoiceRow("Homepage layout", HomeDensity.entries, s.homeDensity, { if (it == HomeDensity.COMFORTABLE) "Comfortable" else "Compact" }, { v -> vm.launchSettings { it.copy(homeDensity = v) } })
     }
     SettingsFootnote("Shortcuts themselves are added and reordered on the start page.")
-    if (editTitle) {
-        TextInputDialog("Title text", s.homeTitle, "Title", onDismiss = { editTitle = false }) { v ->
-            vm.launchSettings { it.copy(homeTitle = v.trim()) }
-            editTitle = false
-        }
-    }
 }
 
 @Composable

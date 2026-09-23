@@ -45,7 +45,6 @@ class SettingsStore(private val context: Context) {
         val density = stringPreferencesKey("density")
         val motion = stringPreferencesKey("motion")
         val shortcutStyle = stringPreferencesKey("shortcut_style")
-        val homeTitle = stringPreferencesKey("home_title")
         val homeShowTitle = booleanPreferencesKey("home_show_title")
         val homeShowSearch = booleanPreferencesKey("home_show_search")
         val homeShowShortcuts = booleanPreferencesKey("home_show_shortcuts")
@@ -96,7 +95,6 @@ class SettingsStore(private val context: Context) {
             homeDensity = this[K.density].toEnum(d.homeDensity),
             motion = this[K.motion].toEnum(d.motion),
             shortcutStyle = this[K.shortcutStyle].toEnum(d.shortcutStyle),
-            homeTitle = this[K.homeTitle] ?: d.homeTitle,
             homeShowTitle = this[K.homeShowTitle] ?: d.homeShowTitle,
             homeShowSearch = this[K.homeShowSearch] ?: d.homeShowSearch,
             homeShowShortcuts = this[K.homeShowShortcuts] ?: d.homeShowShortcuts,
@@ -143,7 +141,6 @@ class SettingsStore(private val context: Context) {
         this[K.density] = s.homeDensity.name
         this[K.motion] = s.motion.name
         this[K.shortcutStyle] = s.shortcutStyle.name
-        this[K.homeTitle] = s.homeTitle
         this[K.homeShowTitle] = s.homeShowTitle
         this[K.homeShowSearch] = s.homeShowSearch
         this[K.homeShowShortcuts] = s.homeShowShortcuts
