@@ -17,6 +17,7 @@ class EddyChromeClient(private val tab: BrowserTab, private val host: BrowserHos
         if (tab.error != null) return
         tab.progress = newProgress
         tab.isLoading = newProgress < 100
+        tab.publishBlocked()
     }
 
     override fun onReceivedTitle(view: WebView, title: String?) {

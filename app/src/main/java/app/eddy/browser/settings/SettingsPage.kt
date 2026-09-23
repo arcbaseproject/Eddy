@@ -7,6 +7,7 @@ enum class SettingsPage(val title: String) {
     PRIVACY("Privacy"),
     TABS("Tabs"),
     ADVANCED("Advanced"),
+    START_PAGE("Start page"),
     SITE_PERMISSIONS("Site permissions"),
     FILTER_LISTS("Filter lists"),
     SEARCH_ENGINES("Search engines"),

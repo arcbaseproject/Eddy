@@ -15,7 +15,8 @@ object AutofillScript {
 
     val SOURCE = """
 (function () {
-  if (window.__eddyAF || !window.EddyAutofill) return;
+  // Subframe messages are dropped natively, so running this in every iframe is pure cost on ad-heavy pages.
+  if (window !== window.top || window.__eddyAF || !window.EddyAutofill) return;
   window.__eddyAF = true;
   var bridge = window.EddyAutofill;
   var TEXT = ['text', 'email', 'tel', 'search', 'url', ''];
@@ -33,6 +34,14 @@ object AutofillScript {
   function all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function visible(el) { var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
   function isText(el) { return el.tagName === 'INPUT' && TEXT.indexOf((el.getAttribute('type') || '').toLowerCase()) >= 0; }
+  // Every listener below runs on pages that have nothing to do with logins, so the check that skips them
+  // must be near-free: one selector match per second, never a query per event.
+  var pwSeenAt = 0, pwSeen = false;
+  function hasPassword() {
+    var now = Date.now();
+    if (now - pwSeenAt > 1000) { pwSeen = !!document.querySelector('input[type=password]'); pwSeenAt = now; }
+    return pwSeen;
+  }
 
   function userField(pw, scope, needValue) {
     var inputs = all('input', scope), i = inputs.indexOf(pw), best = null;
@@ -67,6 +76,7 @@ object AutofillScript {
     if (e.key === 'Enter' && e.target && e.target.type === 'password') capture(e.target.form || document);
   }, true);
   document.addEventListener('click', function (e) {
+    if (!hasPassword()) return;
     var b = e.target && e.target.closest && e.target.closest('button,input[type=submit],[role=button]');
     if (!b) return;
     var f = b.form || b.closest('form');
@@ -75,7 +85,7 @@ object AutofillScript {
   }, true);
   document.addEventListener('focusin', function (e) {
     var t = e.target;
-    if (!t || t.tagName !== 'INPUT') return;
+    if (!t || t.tagName !== 'INPUT' || !hasPassword()) return;
     var isPw = (t.getAttribute('type') || '').toLowerCase() === 'password';
     if (isPw || (isText(t) && all('input[type=password]').some(visible))) post({ t: 'focus', pw: isPw });
   }, true);

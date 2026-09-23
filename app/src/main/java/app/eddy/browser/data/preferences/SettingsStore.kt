@@ -45,6 +45,14 @@ class SettingsStore(private val context: Context) {
         val density = stringPreferencesKey("density")
         val motion = stringPreferencesKey("motion")
         val shortcutStyle = stringPreferencesKey("shortcut_style")
+        val homeTitle = stringPreferencesKey("home_title")
+        val homeShowTitle = booleanPreferencesKey("home_show_title")
+        val homeShowSearch = booleanPreferencesKey("home_show_search")
+        val homeShowShortcuts = booleanPreferencesKey("home_show_shortcuts")
+        val homeShowFrequent = booleanPreferencesKey("home_show_frequent")
+        val homeShowRecent = booleanPreferencesKey("home_show_recent")
+        val homeShowBackground = booleanPreferencesKey("home_show_background")
+        val homeColumns = intPreferencesKey("home_columns")
         val haptics = booleanPreferencesKey("haptics")
         val engine = stringPreferencesKey("engine")
         val customEngines = stringPreferencesKey("custom_engines")
@@ -88,6 +96,14 @@ class SettingsStore(private val context: Context) {
             homeDensity = this[K.density].toEnum(d.homeDensity),
             motion = this[K.motion].toEnum(d.motion),
             shortcutStyle = this[K.shortcutStyle].toEnum(d.shortcutStyle),
+            homeTitle = this[K.homeTitle] ?: d.homeTitle,
+            homeShowTitle = this[K.homeShowTitle] ?: d.homeShowTitle,
+            homeShowSearch = this[K.homeShowSearch] ?: d.homeShowSearch,
+            homeShowShortcuts = this[K.homeShowShortcuts] ?: d.homeShowShortcuts,
+            homeShowFrequent = this[K.homeShowFrequent] ?: d.homeShowFrequent,
+            homeShowRecent = this[K.homeShowRecent] ?: d.homeShowRecent,
+            homeShowBackground = this[K.homeShowBackground] ?: d.homeShowBackground,
+            homeColumns = this[K.homeColumns] ?: d.homeColumns,
             hapticsEnabled = this[K.haptics] ?: d.hapticsEnabled,
             searchEngineId = this[K.engine] ?: d.searchEngineId,
             customEngines = this[K.customEngines]?.let(::decodeEngines) ?: emptyList(),
@@ -127,6 +143,14 @@ class SettingsStore(private val context: Context) {
         this[K.density] = s.homeDensity.name
         this[K.motion] = s.motion.name
         this[K.shortcutStyle] = s.shortcutStyle.name
+        this[K.homeTitle] = s.homeTitle
+        this[K.homeShowTitle] = s.homeShowTitle
+        this[K.homeShowSearch] = s.homeShowSearch
+        this[K.homeShowShortcuts] = s.homeShowShortcuts
+        this[K.homeShowFrequent] = s.homeShowFrequent
+        this[K.homeShowRecent] = s.homeShowRecent
+        this[K.homeShowBackground] = s.homeShowBackground
+        this[K.homeColumns] = s.homeColumns
         this[K.haptics] = s.hapticsEnabled
         this[K.engine] = s.searchEngineId
         this[K.customEngines] = encodeEngines(s.customEngines)
@@ -168,8 +192,13 @@ class SettingsStore(private val context: Context) {
                 enabled = true, builtIn = true, tracker = true,
             ),
             FilterList(
+                "adguard-dns", "AdGuard DNS filter",
+                "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt",
+            ),
+            FilterList(
                 "pgl", "Peter Lowe's ad & tracking servers",
                 "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext",
+                enabled = false,
             ),
             FilterList(
                 "stevenblack", "StevenBlack unified hosts",
@@ -216,10 +245,12 @@ class SettingsStore(private val context: Context) {
 
         private fun decodeFilterLists(json: String): List<FilterList> = runCatching {
             val arr = JSONArray(json)
-            List(arr.length()) {
+            val saved = List(arr.length()) {
                 val o = arr.getJSONObject(it)
                 FilterList(o.getString("id"), o.getString("n"), o.getString("u"), o.optBoolean("e", true), o.optBoolean("b"), o.optBoolean("t"))
             }
+            // Lists shipped after the user's settings were written are added, keeping their default state.
+            saved + DefaultFilterLists.filter { d -> saved.none { it.id == d.id } }
         }.getOrDefault(DefaultFilterLists)
     }
 }

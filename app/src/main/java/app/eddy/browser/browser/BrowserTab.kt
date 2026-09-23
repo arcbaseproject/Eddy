@@ -41,13 +41,19 @@ class BrowserTab(
     var canGoForward by mutableStateOf(false)
     var security by mutableStateOf(Security.NONE)
     var error by mutableStateOf<PageError?>(null)
+    /** UI-visible count; mirrors [blockedRaw] at safe points so the network thread never drives recomposition. */
     var blockedCount by mutableIntStateOf(0)
     var thumbVersion by mutableIntStateOf(0)
     /** Explicit desktop-mode choice for this tab; null follows the site/global default. */
     var desktopOverride by mutableStateOf<Boolean?>(null)
     var desktopActive by mutableStateOf(false)
+    /** Keeps the on-page developer tools open across navigations in this tab. */
+    var devToolsActive by mutableStateOf(false)
     var webView by mutableStateOf<EddyWebView?>(null)
     var pullDistance by mutableIntStateOf(0)
+
+    /** Incremented on WebView's request thread for every blocked subresource. */
+    @Volatile var blockedRaw: Int = 0
 
     @Volatile var pageHost: String = UrlUtils.host(initialUrl)
     @Volatile var blockingActive: Boolean = true
@@ -60,6 +66,9 @@ class BrowserTab(
     var lastHistoryUrl = ""
     var lastHistoryAt = 0L
     var openerId: String? = null
+
+    /** Main thread only. */
+    fun publishBlocked() { if (blockedCount != blockedRaw) blockedCount = blockedRaw }
 
     val isHome: Boolean get() = url.isEmpty()
     val host: String get() = UrlUtils.displayHost(url)

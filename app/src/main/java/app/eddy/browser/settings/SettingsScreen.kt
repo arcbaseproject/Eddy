@@ -110,6 +110,7 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
                     SettingsPage.PRIVACY -> PrivacySettings(vm, settings)
                     SettingsPage.TABS -> TabSettings(vm, settings)
                     SettingsPage.ADVANCED -> AdvancedSettings(vm, settings)
+                    SettingsPage.START_PAGE -> StartPageSettings(vm, settings)
                     SettingsPage.SITE_PERMISSIONS -> SitePermissionsSettings(vm)
                     SettingsPage.FILTER_LISTS -> FilterListsSettings(vm, settings)
                     SettingsPage.SEARCH_ENGINES -> SearchSettings(vm, settings)

@@ -80,22 +80,26 @@ fun HomeScreen(
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
       Box(Modifier.fillMaxSize()) {
-        AmbientShapes()
+        if (settings.homeShowBackground) AmbientShapes()
         BoxWithConstraints(Modifier.fillMaxSize().padding(contentPadding), contentAlignment = Alignment.TopCenter) {
-            val columns = if (maxWidth >= 600.dp) 6 else 4
+            val columns = settings.homeColumns.takeIf { it > 0 } ?: if (maxWidth >= 600.dp) 6 else 4
             Column(
                 Modifier.widthIn(max = Dimens.screenMaxWidth).fillMaxSize().verticalScroll(rememberScrollState())
                     .padding(horizontal = Dimens.gutterLarge),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(Modifier.height(if (compact) 40.dp else 72.dp))
-                Wordmark(incognito, Modifier.entrance(0))
-                Spacer(Modifier.height(if (compact) 20.dp else 32.dp))
-                HomeSearchBar(settings.searchEngine.name, incognito, vm::startEditing, Modifier.entrance(1))
-                Spacer(Modifier.height(if (compact) 24.dp else 40.dp))
+                if (settings.homeShowTitle || incognito) {
+                    Wordmark(incognito, settings.homeTitle, Modifier.entrance(0))
+                    Spacer(Modifier.height(if (compact) 20.dp else 32.dp))
+                }
+                if (settings.homeShowSearch) {
+                    HomeSearchBar(settings.searchEngine.name, incognito, vm::startEditing, Modifier.entrance(1))
+                    Spacer(Modifier.height(if (compact) 24.dp else 40.dp))
+                }
 
                 if (!incognito) {
-                    ShortcutGrid(
+                    if (settings.homeShowShortcuts) ShortcutGrid(
                         shortcuts = settings.shortcuts,
                         style = settings.shortcutStyle,
                         columns = columns,
@@ -108,7 +112,7 @@ fun HomeScreen(
                         modifier = Modifier.entrance(2),
                     )
                     Spacer(Modifier.height(32.dp))
-                    VisitedSections(vm)
+                    VisitedSections(vm, settings.homeShowFrequent, settings.homeShowRecent)
                 } else {
                     IncognitoNote(Modifier.entrance(2))
                 }
@@ -135,11 +139,12 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Wordmark(incognito: Boolean, modifier: Modifier = Modifier) {
+private fun Wordmark(incognito: Boolean, title: String, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            if (incognito) "Incognito" else "Eddy",
+            if (incognito) "Incognito" else title.ifBlank { "Eddy" },
             style = MaterialTheme.typography.displayMedium,
+            textAlign = TextAlign.Center,
             color = if (incognito) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
         )
@@ -172,9 +177,12 @@ private fun HomeSearchBar(engineName: String, incognito: Boolean, onClick: () ->
 }
 
 @Composable
-private fun VisitedSections(vm: BrowserViewModel) {
-    val frequent by remember { vm.history.frequentSites(8) }.collectAsStateWithLifecycle(emptyList())
-    val recent by remember { vm.history.recentSites(5) }.collectAsStateWithLifecycle(emptyList())
+private fun VisitedSections(vm: BrowserViewModel, showFrequent: Boolean, showRecent: Boolean) {
+    // Nothing is queried for a section the user turned off.
+    val frequent by if (showFrequent) remember { vm.history.frequentSites(8) }.collectAsStateWithLifecycle(emptyList())
+        else remember { mutableStateOf(emptyList<SiteVisit>()) }
+    val recent by if (showRecent) remember { vm.history.recentSites(5) }.collectAsStateWithLifecycle(emptyList())
+        else remember { mutableStateOf(emptyList<SiteVisit>()) }
     if (frequent.isNotEmpty()) {
         SectionTitle("Frequently visited", Modifier.entrance(3))
         LazyRow(

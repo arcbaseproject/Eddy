@@ -4,7 +4,14 @@ import android.app.Application
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
+import androidx.webkit.Profile
+import androidx.webkit.ProfileStore
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
+import androidx.webkit.WebViewStartUpConfig
 import app.eddy.browser.bookmarks.BookmarkManager
 import app.eddy.browser.browser.FaviconCache
 import app.eddy.browser.data.database.EddyDatabase
@@ -28,6 +35,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.util.concurrent.Executors
 
 /** Manual dependency graph; everything heavy is lazy so cold start only pays for what the first frame needs. */
 class AppContainer(private val app: Application) {
@@ -64,6 +72,7 @@ class AppContainer(private val app: Application) {
     }.getOrDefault(false)
 
     fun start() {
+        startWebViewEarly()
         DownloadService.createChannels(app)
         FilterUpdateService.schedule(app)
         scope.launch {
@@ -92,6 +101,27 @@ class AppContainer(private val app: Application) {
                 runCatching { app.getSystemService(NotificationManager::class.java).notify(event.id.toInt() + 10_000, n) }
             }
         }
+    }
+
+    /**
+     * Loads the WebView implementation in the background instead of on the first navigation, and keeps a
+     * renderer process ready. Without this the first page load pays for Chromium start-up on the UI thread.
+     */
+    private fun startWebViewEarly() {
+        if (!WebViewFeature.isStartupFeatureSupported(app, WebViewFeature.STARTUP_FEATURE_SET_UI_THREAD_STARTUP_MODE)) return
+        val executor = Executors.newSingleThreadExecutor()
+        val config = WebViewStartUpConfig.Builder(executor).setShouldRunUiThreadStartUpTasks(false).build()
+        runCatching {
+            WebViewCompat.startUpWebView(app, config, WebViewCompat.WebViewStartUpCallback {
+                // Profile calls must run on the main thread.
+                Handler(Looper.getMainLooper()).post {
+                    if (WebViewFeature.isFeatureSupported(WebViewFeature.WARM_UP_RENDERER_PROCESS)) {
+                        runCatching { ProfileStore.getInstance().getOrCreateProfile(Profile.DEFAULT_PROFILE_NAME).warmUpRendererProcess() }
+                    }
+                }
+                executor.shutdown()
+            })
+        }.onFailure { executor.shutdown() }
     }
 
     private companion object {

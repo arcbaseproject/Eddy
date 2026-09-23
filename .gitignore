@@ -11,3 +11,4 @@ local.properties
 *.keystore
 keystore.properties
 .DS_Store
+website/

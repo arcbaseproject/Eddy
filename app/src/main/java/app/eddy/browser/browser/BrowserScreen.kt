@@ -41,7 +41,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
@@ -49,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -116,7 +121,9 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 // The page stays composed (so its WebView survives) but is hidden while an overlay covers it. On
                 // Android 10 with three-button navigation the bar otherwise showed through the overlay's bottom edge.
                 val covered = vm.screen != Screen.BROWSER || (!settings.onboardingCompleted && !vm.onboardingSuppressed)
-                Box(Modifier.fillMaxSize().alpha(if (covered) 0f else 1f)) { BrowserPage(vm, settings, selected) }
+                // alpha() only while hidden: an always-on alpha layer makes the compositor treat the WebView
+                // as a layer on every frame.
+                Box(if (covered) Modifier.fillMaxSize().alpha(0f) else Modifier.fillMaxSize()) { BrowserPage(vm, settings, selected) }
 
                 val overlayModifier = Modifier.graphicsLayer {
                     val s = 1f - 0.08f * backProgress
@@ -146,7 +153,13 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 SnackbarHost(
                     snackbar,
                     Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp + (lift * 76).dp),
-                )
+                ) { data ->
+                    // Swiping either way dismisses; without this the message has to time out on its own.
+                    val dismiss = key(data) {
+                        rememberSwipeToDismissBoxState(confirmValueChange = { it == SwipeToDismissBoxValue.Settled || run { data.dismiss(); true } })
+                    }
+                    SwipeToDismissBox(dismiss, backgroundContent = {}) { Snackbar(data) }
+                }
 
                 AnimatedVisibility(
                     visible = !settings.onboardingCompleted && !vm.onboardingSuppressed,

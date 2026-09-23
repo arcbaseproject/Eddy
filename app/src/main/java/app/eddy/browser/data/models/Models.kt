@@ -51,6 +51,16 @@ data class Settings(
     val homeDensity: HomeDensity = HomeDensity.COMFORTABLE,
     val motion: MotionPref = MotionPref.FULL,
     val shortcutStyle: ShortcutStyle = ShortcutStyle.MIXED,
+    /** Start-page composition. Blank [homeTitle] falls back to the app name. */
+    val homeTitle: String = "",
+    val homeShowTitle: Boolean = true,
+    val homeShowSearch: Boolean = true,
+    val homeShowShortcuts: Boolean = true,
+    val homeShowFrequent: Boolean = true,
+    val homeShowRecent: Boolean = true,
+    val homeShowBackground: Boolean = true,
+    /** 0 follows the screen width. */
+    val homeColumns: Int = 0,
     val hapticsEnabled: Boolean = true,
     val searchEngineId: String = "duckduckgo",
     val customEngines: List<SearchEngine> = emptyList(),

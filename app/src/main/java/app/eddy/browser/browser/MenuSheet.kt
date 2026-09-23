@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmarks
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DesktopWindows
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
@@ -93,6 +94,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
                     Row(Icons.Rounded.Search, "Find in page", { vm.openFind() }, enabled = tab?.webView != null && tab.error == null)
                     SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
                     Row(Icons.Rounded.Home, "Add to home screen", act { tab?.let(vm::addShortcut) })
+                    SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
                 }
             }
 

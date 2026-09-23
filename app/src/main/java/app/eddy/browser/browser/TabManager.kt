@@ -135,6 +135,7 @@ class TabManager(
         tab.progress = 0
         tab.canGoBack = false
         tab.canGoForward = false
+        tab.blockedRaw = 0
         tab.blockedCount = 0
         tab.hasPersistedState = false
         tab.savedState = null

@@ -22,9 +22,25 @@ class EddyWebViewClient(
     private val factory: WebViewFactory,
 ) : WebViewClient() {
 
-    private val blocked = WebResourceResponse(
-        "text/plain", "utf-8", 403, "Blocked by Eddy", emptyMap(), ByteArrayInputStream(ByteArray(0)),
-    )
+    /**
+     * A blocked request answers with empty content of the type the page asked for. Answering an image with
+     * an error made WebView draw its broken-image placeholder where the ad used to be; a transparent pixel
+     * leaves nothing behind.
+     */
+    private fun blocked(request: WebResourceRequest): WebResourceResponse {
+        val accept = request.requestHeaders["Accept"].orEmpty()
+        val url = request.url.toString().substringBefore('?').lowercase()
+        val image = accept.contains("image/") || IMAGE_SUFFIXES.any { url.endsWith(it) }
+        val mime = when {
+            image -> "image/gif"
+            accept.contains("text/css") || url.endsWith(".css") -> "text/css"
+            accept.contains("javascript") || url.endsWith(".js") -> "application/javascript"
+            accept.contains("text/html") -> "text/html"
+            else -> "text/plain"
+        }
+        val body = if (image) TRANSPARENT_GIF else ByteArray(0)
+        return WebResourceResponse(mime, null, 200, "OK", mapOf("Cache-Control" to "no-store"), ByteArrayInputStream(body))
+    }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
@@ -61,7 +77,7 @@ class EddyWebViewClient(
         tab.progress = 5
         tab.error?.sslHandler?.cancel()
         tab.error = null
-        if (newPage) tab.blockedCount = 0
+        if (newPage) { tab.blockedRaw = 0; tab.blockedCount = 0 }
         tab.security = securityFor(url)
         tab.favicon = host.favicons.peek(UrlUtils.displayHost(url))
         syncNav(view)
@@ -71,7 +87,10 @@ class EddyWebViewClient(
         if (url.startsWith(ERROR_SCHEME)) return
         tab.isLoading = false
         tab.progress = 100
+        tab.publishBlocked()
         syncNav(view)
+        // The panel lives in the page, so a navigation wipes it; put it back where the user left it on.
+        if (tab.devToolsActive) DevTools.show(view.context, view)
         if (tab.error == null) host.onPageFinished(tab)
     }
 
@@ -128,8 +147,8 @@ class EddyWebViewClient(
         val pageHost = tab.pageHost
         if (!ContentBlocker.isThirdParty(reqHost, pageHost)) return null
         if (!host.blocker.isBlocked(reqHost, tab.blockingActive, tab.trackerBlockingActive)) return null
-        tab.blockedCount++
-        return blocked
+        tab.blockedRaw++
+        return blocked(request)
     }
 
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
@@ -152,5 +171,10 @@ class EddyWebViewClient(
 
     private companion object {
         const val ERROR_SCHEME = "chrome-error://"
+        val IMAGE_SUFFIXES = listOf(".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".ico", ".bmp")
+        /** 1x1 fully transparent GIF. */
+        val TRANSPARENT_GIF: ByteArray = android.util.Base64.decode(
+            "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", android.util.Base64.DEFAULT,
+        )
     }
 }

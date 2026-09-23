@@ -361,6 +361,12 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             // Wait for a typing pause and swap the list once. The old list stays until the new one is ready, because
             // redrawing it on every keystroke made the field jump under the user's fingers.
             delay(SUGGEST_DEBOUNCE_MS)
+            if (UrlUtils.isUrl(text)) {
+                val target = UrlUtils.resolve(text, settings.searchEngine)
+                val tab = tabs.selected
+                factory.preconnect(target, tab?.incognito == true)
+                tab?.webView?.let { factory.prerender(it, target) }
+            }
             val local = suggestionSource.local(text)
             val private = tabs.selected?.incognito == true
             val remote = if (settings.searchSuggestions && !private && !UrlUtils.isUrl(text)) suggestionSource.remote(text) else emptyList()
@@ -462,7 +468,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (!UrlUtils.isWebUrl(tab.url)) return
         viewModelScope.launch {
             val added = bookmarks.toggle(tab.url, tab.title)
-            snackbar(if (added) "Bookmark saved" else "Bookmark removed")
+            if (added) snackbar("Bookmark saved", "View") { screen = Screen.BOOKMARKS } else snackbar("Bookmark removed")
         }
     }
 
@@ -478,6 +484,13 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         tab.desktopOverride = !tab.desktopActive
         // A fresh load, not reload(): reload restores the old page scale, so desktop layout would not zoom out to fit.
         factory.load(tab, view, tab.url)
+    }
+
+    fun toggleDevTools() {
+        val tab = tabs.selected ?: return
+        val view = tab.webView ?: return
+        tab.devToolsActive = !tab.devToolsActive
+        if (tab.devToolsActive) DevTools.show(app, view) else DevTools.hide(view)
     }
 
     fun toggleDesktopForSite() {

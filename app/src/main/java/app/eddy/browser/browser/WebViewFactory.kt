@@ -12,6 +12,8 @@ import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
+import androidx.webkit.Profile
+import androidx.webkit.PrerenderOperationCallback
 import androidx.webkit.ProfileStore
 import androidx.webkit.UserAgentMetadata
 import androidx.webkit.WebSettingsCompat
@@ -35,6 +37,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     private val desktopMeta by lazy {
         mobileMeta?.let { UserAgentMetadata.Builder(it).setMobile(false).setPlatform("Linux").setModel("").setFormFactors(listOf("Desktop")).build() }
     }
+    private val mainExecutor by lazy { java.util.concurrent.Executor { Handler(Looper.getMainLooper()).post(it) } }
     private val connectivity = appContext.getSystemService(ConnectivityManager::class.java)
 
     /** Each incognito session gets its own storage profile, so a new session can never see an old one. */
@@ -86,6 +89,13 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             @Suppress("DEPRECATION") allowUniversalAccessFromFileURLs = false
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             cacheMode = if (tab.incognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
+        }
+        // Instant back/forward (the page keeps running instead of reloading) and prerendering support.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.BACK_FORWARD_CACHE)) {
+            WebSettingsCompat.setBackForwardCacheEnabled(view.settings, true)
+        }
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.SPECULATIVE_LOADING)) {
+            WebSettingsCompat.setSpeculativeLoadingStatus(view.settings, WebSettingsCompat.SPECULATIVE_LOADING_PRERENDER_ENABLED)
         }
 
         val client = EddyWebViewClient(tab, host, this)
@@ -161,11 +171,24 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         val blockingAllowed = site?.contentBlocking != SiteSettings.BLOCK
         tab.blockingActive = s.adBlock && blockingAllowed
         tab.trackerBlockingActive = s.trackerProtection && blockingAllowed
+        applyCosmetic(view, tab.blockingActive)
         // Offline: prefer whatever the HTTP cache has instead of failing outright.
         view.settings.cacheMode = when {
             tab.incognito -> WebSettings.LOAD_NO_CACHE
             !isOnline() -> WebSettings.LOAD_CACHE_ELSE_NETWORK
             else -> WebSettings.LOAD_DEFAULT
+        }
+    }
+
+    /** Request blocking removes the ad but leaves its empty slot behind; this hides the slot too. */
+    @SuppressLint("RequiresFeature")
+    private fun applyCosmetic(view: EddyWebView, active: Boolean) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        if (active && view.cosmeticScript == null) {
+            view.cosmeticScript = WebViewCompat.addDocumentStartJavaScript(view, COSMETIC_SCRIPT, setOf("*"))
+        } else if (!active) {
+            view.cosmeticScript?.remove()
+            view.cosmeticScript = null
         }
     }
 
@@ -203,6 +226,44 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             CookieManager.getInstance()
         }
 
+    /** Opens DNS/TCP/TLS to [url] before the user commits, so the navigation starts on a live connection. */
+    fun preconnect(url: String, incognito: Boolean) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.PRECONNECT) || !UrlUtils.isWebUrl(url)) return
+        runCatching { profile(incognito).preconnect(url) }
+    }
+
+    /**
+     * Starts loading and rendering [url] in the background; if the user then navigates there, the page is
+     * already painted. Never used in incognito tabs, where a speculative fetch would leak intent.
+     */
+    fun prerender(view: EddyWebView, url: String) {
+        cancelPrerender(view)
+        if (view.incognito || !WebViewFeature.isFeatureSupported(WebViewFeature.PRERENDER_WITH_URL) || !UrlUtils.isWebUrl(url)) return
+        val signal = android.os.CancellationSignal()
+        view.prerender = signal
+        runCatching {
+            WebViewCompat.prerenderUrlAsync(view, url, signal, mainExecutor, object : PrerenderOperationCallback {
+                override fun onPrerenderActivated() {}
+                override fun onError(e: androidx.webkit.PrerenderException) {}
+            })
+        }.onFailure { view.prerender = null }
+    }
+
+    fun cancelPrerender(view: EddyWebView) {
+        view.prerender?.cancel()
+        view.prerender = null
+    }
+
+    /** Keeps a renderer process ready so the next page does not pay for process start-up. */
+    fun warmUp() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WARM_UP_RENDERER_PROCESS)) return
+        runCatching { profile(false).warmUpRendererProcess() }
+    }
+
+    private fun profile(incognito: Boolean): Profile = ProfileStore.getInstance().getOrCreateProfile(
+        if (incognito && incognitoIsolated) incognitoProfile else Profile.DEFAULT_PROFILE_NAME,
+    )
+
     private fun longPress(tab: BrowserTab, view: EddyWebView): Boolean {
         val hit = view.hitTestResult
         val extra = hit.extra ?: return false
@@ -229,6 +290,20 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             "(function(){if(window!==top)return;var W='width=1024';function f(){document.querySelectorAll('meta[name=viewport]')" +
                 ".forEach(function(m){if(m.content!==W)m.content=W})}var o=new MutationObserver(f);" +
                 "o.observe(document,{childList:true,subtree:true});document.addEventListener('DOMContentLoaded',function(){f();o.disconnect()})})()"
+        /**
+         * Generic ad-slot selectors, kept deliberately narrow: every one names advertising outright,
+         * so a false positive hides only a slot the request blocker has already emptied.
+         */
+        private const val COSMETIC_CSS =
+            ".adsbygoogle,ins.adsbygoogle,[id^=\"google_ads_iframe\"],[id^=\"div-gpt-ad\"],[id^=\"google_ads_\"]," +
+                "iframe[src*=\"doubleclick.net\"],iframe[src*=\"googlesyndication.com\"],iframe[src*=\"adnxs.com\"]," +
+                "iframe[src*=\"amazon-adsystem.com\"],.ad-slot,.ad-banner,.ad-container,.ad-wrapper,.ad-placeholder," +
+                ".adsbox,.advertisement,.advert-container,.sponsored-ad,.banner-ads,[data-ad-slot],[data-ad-client]," +
+                "[aria-label=\"advertisement\" i]{display:none!important}"
+        /** Injected before the document parses so slots never flash into view. */
+        private const val COSMETIC_SCRIPT =
+            "(function(){var s=document.createElement('style');s.textContent='" + COSMETIC_CSS + "';" +
+                "(document.head||document.documentElement).appendChild(s)})()"
         private const val DNT_SCRIPT =
             "try{Object.defineProperty(navigator,'doNotTrack',{get:function(){return '1'}});" +
                 "Object.defineProperty(navigator,'globalPrivacyControl',{get:function(){return true}})}catch(e){}"

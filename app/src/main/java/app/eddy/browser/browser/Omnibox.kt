@@ -259,13 +259,17 @@ fun OmniboxEditor(
     modifier: Modifier = Modifier,
 ) {
     var value by remember { mutableStateOf(TextFieldValue(initialText, TextRange(0, initialText.length))) }
+    val voice = rememberVoiceState()
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
 
+    // Dictation streams partial transcripts, and every one of them requeries the suggestions. Letting the
+    // list resize mid-hold would slide the field, and the finger would come off the mic button.
+    val shown = if (voice.listening) remember(voice.listening) { suggestions } else suggestions
     val list = @Composable {
-        if (suggestions.isNotEmpty()) {
+        if (shown.isNotEmpty()) {
             Column(Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState(), reverseScrolling = !atTop)) {
-                val ordered = if (atTop) suggestions else suggestions.reversed()
+                val ordered = if (atTop) shown else shown.reversed()
                 ordered.forEach { SuggestionRow(it, onPick = { onPick(it) }, onFill = { onFill(it); value = TextFieldValue(it.text, TextRange(it.text.length)) }) }
             }
         }
@@ -279,7 +283,7 @@ fun OmniboxEditor(
             BasicTextField(
                 value = value,
                 onValueChange = { value = it; onTextChange(it.text) },
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 12.dp).focusRequester(focus),
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 12.dp).voiceTrace(voice).focusRequester(focus),
                 singleLine = true,
                 textStyle = UrlTextStyle.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -287,12 +291,21 @@ fun OmniboxEditor(
                 keyboardActions = KeyboardActions(onGo = { onSubmit(value.text) }),
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        if (value.text.isEmpty()) Text("Search or type a URL", style = UrlTextStyle, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        if (value.text.isEmpty()) {
+                            Text(
+                                if (voice.listening) "Listening" else "Search or type a URL",
+                                style = UrlTextStyle,
+                                color = if (voice.listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                        }
                         inner()
                     }
                 },
             )
-            if (value.text.isNotEmpty()) {
+            VoiceInputButton({ spoken -> value = TextFieldValue(spoken, TextRange(spoken.length)); onTextChange(spoken) }, voice)
+            // The slot stays put while dictating: a button appearing beside the mic would shift it too.
+            if (value.text.isNotEmpty() || voice.listening) {
                 EddyIconButton(Icons.Rounded.Close, "Clear text", { value = TextFieldValue(""); onTextChange("") })
             }
             EddyIconButton(Icons.AutoMirrored.Rounded.ArrowForward, "Go", { onSubmit(value.text) }, tint = MaterialTheme.colorScheme.primary)
