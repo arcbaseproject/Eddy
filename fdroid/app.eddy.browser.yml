@@ -1,0 +1,32 @@
+# Recipe for the F-Droid metadata repository (gitlab.com/fdroid/fdroiddata).
+# Copy this file to metadata/app.eddy.browser.yml there and open a merge request.
+# It is kept in this repo so the build steps stay in sync with the app.
+
+Categories:
+  - Internet
+License: Apache-2.0
+AuthorName: Arcbase Project
+SourceCode: https://github.com/arcbaseproject/Eddy
+IssueTracker: https://github.com/arcbaseproject/Eddy/issues
+Changelog: https://github.com/arcbaseproject/Eddy/releases
+
+AutoName: Eddy
+
+RepoType: git
+Repo: https://github.com/arcbaseproject/Eddy.git
+
+Builds:
+  - versionName: 0.4.0-beta
+    versionCode: 6
+    commit: v0.4.0-beta
+    subdir: app
+    gradle:
+      - yes
+    # The developer-tools panel ships as a prebuilt, minified Eruda bundle. F-Droid builds only from
+    # source, so the bundle is removed; the app detects the missing asset and hides the feature.
+    prebuild: rm -f src/main/assets/eruda.min.js
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+(-beta)?$
+CurrentVersion: 0.4.0-beta
+CurrentVersionCode: 6

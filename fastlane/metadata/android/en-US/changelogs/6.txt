@@ -1,0 +1,8 @@
+* Reader mode, read aloud and print or save as PDF
+* Built-in PDF viewer for downloaded files
+* HTTPS-only mode with a warning page for sites that do not support it
+* Confirmation before downloading installers and other executable files
+* Per-site page text size
+* Incognito tabs hidden from screenshots and recents
+* Option to clear browsing data when you leave the app
+* Downloads now offer Open from the notification and when they finish

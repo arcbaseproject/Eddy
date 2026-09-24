@@ -1,0 +1,32 @@
+Eddy is a lightweight Android browser built on the system WebView, with a one-handed interface, built-in content blocking and no telemetry of any kind.
+
+<b>Private by default</b>
+* Ad and tracker blocking from bundled and user-added filter lists
+* HTTPS-only mode, with a clear warning before any plain http page
+* Third-party cookies blocked out of the box
+* Do Not Track and Global Privacy Control signals
+* Incognito tabs kept out of screenshots and the recents thumbnail
+* Optional wipe of history, cookies and cache when you leave the app
+* Per-site controls for JavaScript, pop-ups, cookies, permissions and text size
+* No accounts, no ads, no analytics, no telemetry
+
+<b>Built for one hand</b>
+* A single floating bar that stays within thumb reach
+* Tab switcher, start page and menus designed for reachability
+* Material 3 interface with dynamic colour and an AMOLED black theme
+
+<b>Reading and files</b>
+* Reader mode that strips a page down to the article
+* Read aloud through the system speech engine
+* Print or save any page as a PDF
+* Built-in PDF viewer, so downloads open in the app
+* Resumable downloads with pause and resume
+
+<b>Everyday browsing</b>
+* Bookmarks with folders, plus import and export in the standard HTML format
+* History with search
+* Saved passwords behind your device screen lock, with autofill
+* Search suggestions, voice input and a customisable start page
+* Desktop site mode that loads real desktop layouts
+
+Eddy is free software under the Apache 2.0 licence. Source code and issue tracker: https://github.com/arcbaseproject/Eddy

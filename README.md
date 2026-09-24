@@ -47,6 +47,15 @@ Requirements: JDK 21+ (tested on 26), Android SDK with platform 37 and build-too
 1.5 (Expressive), Room, DataStore, androidx.webkit, androidx.graphics-shapes.
 No image-loading library: favicons and thumbnails are handled by small dedicated caches.
 
+## Packaging
+
+Store listing text and screenshots live in `fastlane/metadata/android/en-US/`, the layout F-Droid
+and IzzyOnDroid read directly from the repository.
+
+The F-Droid build recipe and the steps for submitting it are in [`fdroid/`](fdroid/README.md). That
+build drops `app/src/main/assets/eruda.min.js`, a prebuilt bundle F-Droid does not accept; the app
+detects the missing asset and hides the developer-tools toggle. Everything else is unchanged.
+
 ## Architecture
 
 ```

@@ -1,0 +1,1 @@
+Fast, private browser with a one-handed interface and no telemetry.
