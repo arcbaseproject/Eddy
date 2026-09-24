@@ -37,4 +37,27 @@ class UrlUtilsTest {
         assertFalse(UrlUtils.sameSite("ads.other.co.uk", "www.bbc.co.uk"))
         assertTrue(UrlUtils.sameSite("static.bbc.co.uk", "www.bbc.co.uk"))
     }
+
+    @Test fun httpsUpgrade() {
+        assertEquals("https://example.com/a?b=1", UrlUtils.toHttps("http://example.com/a?b=1"))
+        assertEquals("https://example.com", UrlUtils.toHttps("https://example.com"))
+        // Only the scheme changes: a host that merely starts with "http" must survive intact.
+        assertEquals("https://httpbin.org/get", UrlUtils.toHttps("http://httpbin.org/get"))
+        assertEquals("ftp://example.com", UrlUtils.toHttps("ftp://example.com"))
+        assertEquals("http://example.com/a", UrlUtils.toHttp("https://example.com/a"))
+        assertTrue(UrlUtils.isHttp("HTTP://example.com"))
+        assertFalse(UrlUtils.isHttp("https://example.com"))
+    }
+
+    @Test fun httpsUpgradeEdgeCases() {
+        assertEquals("https://example.com:8080/a", UrlUtils.toHttps("http://example.com:8080/a"))
+        assertEquals("https://user:pw@example.com/a", UrlUtils.toHttps("http://user:pw@example.com/a"))
+        assertEquals("neverssl.com", UrlUtils.host("http://neverssl.com"))
+        // Local names have no certificate to upgrade to.
+        assertTrue(UrlUtils.isLocalHost("http://localhost:3000/app"))
+        assertTrue(UrlUtils.isLocalHost("http://192.168.1.10"))
+        assertTrue(UrlUtils.isLocalHost("http://printer.local"))
+        assertFalse(UrlUtils.isLocalHost("http://example.com"))
+        assertFalse(UrlUtils.isLocalHost("http://localhost.example.com"))
+    }
 }
