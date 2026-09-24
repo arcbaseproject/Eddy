@@ -3,6 +3,7 @@
     <string name="channel_downloads_active">Active downloads</string>
     <string name="channel_downloads_done">Finished downloads</string>
     <string name="download_complete">Download complete</string>
+    <string name="open">Open</string>
     <string name="download_failed">Download failed</string>
     <plurals name="downloading_count">
         <item quantity="one">Downloading %d file</item>

@@ -47,7 +47,18 @@ class EddyWebViewClient(
         val scheme = uri.scheme?.lowercase().orEmpty()
         when (scheme) {
             "http", "https" -> {
-                if (request.isForMainFrame) (view as? EddyWebView)?.let { factory.prepare(tab, it, uri.toString()) }
+                val url = uri.toString()
+                val upgraded = factory.upgrade(url)
+                if (request.isForMainFrame && upgraded != url) {
+                    tab.httpsUpgradedFrom = url
+                    view.loadUrl(upgraded)
+                    return true
+                }
+                if (request.isForMainFrame) {
+                    // Keep the marker for the upgraded URL itself; drop it once the tab moves somewhere else.
+                    if (tab.httpsUpgradedFrom?.let { UrlUtils.host(it) != UrlUtils.host(url) } == true) tab.httpsUpgradedFrom = null
+                    (view as? EddyWebView)?.let { factory.prepare(tab, it, url) }
+                }
                 return false
             }
             "about", "data", "blob", "file", "javascript", "view-source" -> return false
@@ -91,6 +102,8 @@ class EddyWebViewClient(
         syncNav(view)
         // The panel lives in the page, so a navigation wipes it; put it back where the user left it on.
         if (tab.devToolsActive) DevTools.show(view.context, view)
+        // Reader mode rewrites the document, so a navigation wipes it too.
+        if (tab.readerActive) ReaderMode.show(view.context, view) { ok -> if (!ok) tab.readerActive = false }
         if (tab.error == null) host.onPageFinished(tab)
     }
 
@@ -104,15 +117,22 @@ class EddyWebViewClient(
     override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
         if (!request.isForMainFrame) return
         val url = request.url.toString()
+        // Compare hosts, not whole URLs: WebView normalises the URL it reports (a trailing slash, for one).
+        val upgradedFrom = tab.httpsUpgradedFrom?.takeIf { UrlUtils.isHttps(url) && UrlUtils.host(it) == UrlUtils.host(url) }
         val kind = when {
             !factory.isOnline() -> ErrorKind.OFFLINE
+            // The page exists over http and only the upgrade failed, so say that instead of "not available".
+            upgradedFrom != null -> ErrorKind.INSECURE
             error.errorCode == ERROR_HOST_LOOKUP -> ErrorKind.DNS
             error.errorCode == ERROR_TIMEOUT -> ErrorKind.TIMEOUT
             error.errorCode == ERROR_FAILED_SSL_HANDSHAKE -> ErrorKind.SSL
             else -> ErrorKind.UNAVAILABLE
         }
         tab.error?.sslHandler?.cancel()
-        tab.error = PageError(kind, url, error.description?.toString().orEmpty())
+        tab.error = PageError(
+            kind, if (kind == ErrorKind.INSECURE) upgradedFrom!! else url,
+            error.description?.toString().orEmpty(),
+        )
         tab.url = url
         tab.isLoading = false
         tab.security = if (kind == ErrorKind.SSL) Security.ERROR else securityFor(url)

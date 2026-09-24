@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
-enum class SiteFeature { LOCATION, CAMERA, MICROPHONE, JAVASCRIPT, POPUPS, THIRD_PARTY_COOKIES, DESKTOP, CONTENT_BLOCKING }
+/** [TEXT_ZOOM] holds a percentage; every other feature holds [SiteSettings.ALLOW] or [SiteSettings.BLOCK]. */
+enum class SiteFeature { LOCATION, CAMERA, MICROPHONE, JAVASCRIPT, POPUPS, THIRD_PARTY_COOKIES, DESKTOP, CONTENT_BLOCKING, TEXT_ZOOM }
 
 fun SiteSettings.get(f: SiteFeature): Int? = when (f) {
     SiteFeature.LOCATION -> location
@@ -18,6 +19,7 @@ fun SiteSettings.get(f: SiteFeature): Int? = when (f) {
     SiteFeature.THIRD_PARTY_COOKIES -> thirdPartyCookies
     SiteFeature.DESKTOP -> desktop
     SiteFeature.CONTENT_BLOCKING -> contentBlocking
+    SiteFeature.TEXT_ZOOM -> textZoom
 }
 
 fun SiteSettings.with(f: SiteFeature, v: Int?): SiteSettings = when (f) {
@@ -29,6 +31,7 @@ fun SiteSettings.with(f: SiteFeature, v: Int?): SiteSettings = when (f) {
     SiteFeature.THIRD_PARTY_COOKIES -> copy(thirdPartyCookies = v)
     SiteFeature.DESKTOP -> copy(desktop = v)
     SiteFeature.CONTENT_BLOCKING -> copy(contentBlocking = v)
+    SiteFeature.TEXT_ZOOM -> copy(textZoom = v)
 }
 
 val SiteSettings.isEmpty: Boolean

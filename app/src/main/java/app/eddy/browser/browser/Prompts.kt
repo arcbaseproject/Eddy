@@ -3,6 +3,7 @@ package app.eddy.browser.browser
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.print.PrintDocumentAdapter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.view.View
@@ -34,6 +35,9 @@ sealed interface Prompt {
 
     class HttpAuth(val host: String, val realm: String, val handler: HttpAuthHandler) : Prompt
     class ExternalApp(val label: String?, val intent: Intent, val fallbackUrl: String?) : Prompt
+
+    /** A download of an executable or installer type, which the user confirms before it starts. */
+    class RiskyDownload(val fileName: String, val sourceHost: String, val insecure: Boolean, val start: () -> Unit) : Prompt
 }
 
 /** One-shot requests the ViewModel cannot fulfil itself because they need an Activity. */
@@ -44,6 +48,7 @@ sealed interface UiEffect {
     data object HideCustomView : UiEffect
     class Launch(val intent: Intent) : UiEffect
     class OpenFile(val uri: String, val mime: String) : UiEffect
+    class Print(val adapter: PrintDocumentAdapter, val jobName: String) : UiEffect
 }
 
 class SnackbarMessage(val text: String, val actionLabel: String? = null, val action: (() -> Unit)? = null)

@@ -68,6 +68,8 @@ data class SiteSettings(
     val thirdPartyCookies: Int? = null,
     val desktop: Int? = null,
     val contentBlocking: Int? = null,
+    /** Page text size for this host as a percentage; null follows the global setting. */
+    val textZoom: Int? = null,
 ) {
     companion object {
         const val ALLOW = 1

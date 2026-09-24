@@ -19,7 +19,11 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmarks
+import androidx.compose.material.icons.rounded.ChromeReaderMode
 import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.Print
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.DesktopWindows
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
@@ -44,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -77,6 +82,17 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
                         if (bookmarked) "Saved" else "Bookmark", true, bookmarked, act { vm.toggleBookmark() },
                     ),
                     Quick(Icons.Rounded.Share, "Share", true, false, act { vm.share() }),
+                    Quick(Icons.Rounded.Search, "Find", tab?.webView != null && tab.error == null, false, { vm.openFind() }),
+                    Quick(
+                        Icons.Rounded.ChromeReaderMode, "Reader", tab?.webView != null, tab?.readerActive == true,
+                        act { vm.toggleReader() },
+                    ),
+                    Quick(
+                        if (vm.readingAloud) Icons.Rounded.Stop else Icons.Rounded.VolumeUp,
+                        if (vm.readingAloud) "Stop" else "Read aloud",
+                        tab?.webView != null && tab.error == null, vm.readingAloud, act { vm.toggleReadAloud() },
+                    ),
+                    Quick(Icons.Rounded.Print, "Print", tab?.webView != null && tab.error == null, false, act { vm.printPage() }),
                 )
                 quick.chunked(perRow).forEach { row ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { QuickButton(it, Modifier.weight(1f)) } }
@@ -91,10 +107,11 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
 
             if (webPage) {
                 Group {
-                    Row(Icons.Rounded.Search, "Find in page", { vm.openFind() }, enabled = tab?.webView != null && tab.error == null)
                     SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
                     Row(Icons.Rounded.Home, "Add to home screen", act { tab?.let(vm::addShortcut) })
-                    SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
+                    if (DevTools.available(LocalContext.current)) {
+                        SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
+                    }
                 }
             }
 

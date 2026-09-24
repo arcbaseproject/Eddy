@@ -57,6 +57,8 @@ internal val settingsIndex = listOf(
     SettingEntry("Custom search engines", listOf(ADVANCED, SEARCH_ENGINES), "add engine"),
     SettingEntry("Custom filter lists", listOf(ADVANCED, FILTER_LISTS), "add list url"),
     SettingEntry("Web debugging", listOf(ADVANCED), "developer inspect devtools usb"),
+    SettingEntry("HTTPS-only mode", listOf(PRIVACY), "https secure encryption upgrade insecure http"),
+    SettingEntry("Clear when I leave", listOf(PRIVACY), "clear on exit quit delete data swipe recents"),
     SettingEntry("Reset all settings", listOf(ADVANCED), "defaults restore"),
 
     SettingEntry("Version", listOf(ABOUT), "build about"),

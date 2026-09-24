@@ -19,7 +19,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -71,8 +73,8 @@ class DownloadEngine(
     /** Number of downloads currently running or waiting for a slot. */
     val active: StateFlow<Int> = _active
 
-    private val _events = MutableStateFlow<DownloadEvent?>(null)
-    val events: StateFlow<DownloadEvent?> = _events
+    private val _events = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 8)
+    val events: SharedFlow<DownloadEvent> = _events
 
     init {
         scope.launch { dao.pauseInterrupted() }
@@ -164,7 +166,7 @@ class DownloadEngine(
         } catch (e: Exception) {
             withContext(NonCancellable) {
                 dao.get(id)?.let { dao.update(it.copy(status = DownloadStatus.FAILED, error = e.message ?: e.javaClass.simpleName)) }
-                _events.value = DownloadEvent(id, entity.fileName, success = false)
+                _events.tryEmit(DownloadEvent(id, entity.fileName, success = false))
             }
         }
     }
@@ -284,7 +286,7 @@ class DownloadEngine(
         }
         part.delete()
         dao.update(d.copy(status = DownloadStatus.COMPLETED, contentUri = uri.toString(), totalBytes = d.downloadedBytes))
-        _events.value = DownloadEvent(d.id, d.fileName, success = true)
+        _events.tryEmit(DownloadEvent(d.id, d.fileName, success = true, contentUri = uri.toString(), mimeType = d.mimeType))
     }
 
     /** Adds an already complete local file (a blob the page handed over) to Downloads and the list. */
@@ -339,4 +341,10 @@ class DownloadEngine(
     }
 }
 
-data class DownloadEvent(val id: Long, val fileName: String, val success: Boolean)
+data class DownloadEvent(
+    val id: Long,
+    val fileName: String,
+    val success: Boolean,
+    val contentUri: String = "",
+    val mimeType: String = "",
+)

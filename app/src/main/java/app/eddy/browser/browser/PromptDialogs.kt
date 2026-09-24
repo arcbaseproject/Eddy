@@ -32,6 +32,19 @@ fun PromptHost(vm: BrowserViewModel) {
             confirmButton = { TextButton(onClick = { vm.answerExternal(p, true) }) { Text("Open") } },
             dismissButton = { TextButton(onClick = { vm.answerExternal(p, false) }) { Text("Stay here") } },
         )
+        is Prompt.RiskyDownload -> AlertDialog(
+            onDismissRequest = { vm.answerRiskyDownload(p, false) },
+            title = { Text("Download this file?") },
+            text = {
+                Text(
+                    "${p.fileName} from ${p.sourceHost} can install or run code on your device." +
+                        (if (p.insecure) " It is also being sent over an unencrypted connection." else "") +
+                        " Download it only if you trust this site.",
+                )
+            },
+            confirmButton = { TextButton(onClick = { vm.answerRiskyDownload(p, true) }) { Text("Download") } },
+            dismissButton = { TextButton(onClick = { vm.answerRiskyDownload(p, false) }) { Text("Cancel") } },
+        )
         null -> Unit
     }
 }

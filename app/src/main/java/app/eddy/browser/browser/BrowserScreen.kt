@@ -2,6 +2,8 @@ package app.eddy.browser.browser
 
 import android.view.View
 import android.view.ViewGroup
+import android.app.Activity
+import android.view.WindowManager
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -63,6 +65,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -75,6 +78,7 @@ import app.eddy.browser.bookmarks.BookmarksScreen
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.ToolbarPosition
 import app.eddy.browser.downloads.DownloadsScreen
+import app.eddy.browser.downloads.PdfScreen
 import app.eddy.browser.history.HistoryScreen
 import app.eddy.browser.onboarding.OnboardingScreen
 import app.eddy.browser.passwords.PasswordsScreen
@@ -99,6 +103,15 @@ fun BrowserRoot(vm: BrowserViewModel) {
     val settings by vm.settingsState.collectAsStateWithLifecycle()
     val selected = vm.tabs.selected
     val incognito = if (vm.screen == Screen.TABS) vm.switcherIncognito else selected?.incognito == true
+
+    // Incognito content stays out of screenshots and the recents thumbnail while an incognito tab is on screen.
+    val context = LocalContext.current
+    // Keyed on the screen too: the passwords screen clears the same flag when it closes, so re-apply it there.
+    DisposableEffect(incognito, vm.screen) {
+        val window = (context as? Activity)?.window
+        if (incognito) window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { if (incognito) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+    }
 
     EddyTheme(settings, incognito) {
         val scheme = MaterialTheme.colorScheme
@@ -136,6 +149,7 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 Overlay(vm.screen == Screen.HISTORY, overlayModifier) { HistoryScreen(vm) }
                 Overlay(vm.screen == Screen.DOWNLOADS, overlayModifier) { DownloadsScreen(vm) }
                 Overlay(vm.screen == Screen.PASSWORDS, overlayModifier) { PasswordsScreen(vm) }
+                Overlay(vm.screen == Screen.PDF, overlayModifier) { PdfScreen(vm) }
                 Overlay(vm.screen == Screen.SETTINGS, overlayModifier) { SettingsScreen(vm, settings) }
 
                 val snackbar = remember { SnackbarHostState() }
@@ -212,6 +226,7 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                         ErrorPage(
                             err, onRetry = vm::retry, onBack = vm::cancelSslError.takeIf { err.kind == ErrorKind.SSL } ?: vm::goBack,
                             onProceedUnsafe = vm::proceedDespiteSslError,
+                            onContinueInsecure = vm::continueWithoutHttps,
                             modifier = if (atTop) Modifier else Modifier.statusBarsPadding(),
                         )
                     }

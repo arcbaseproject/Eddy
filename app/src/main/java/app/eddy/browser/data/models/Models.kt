@@ -76,6 +76,10 @@ data class Settings(
     val cookieMode: CookieMode = CookieMode.BLOCK_THIRD_PARTY,
     val javascript: Boolean = true,
     val doNotTrack: Boolean = true,
+    /** Upgrades http:// pages to https:// and shows a warning when the secure version does not load. */
+    val httpsOnly: Boolean = true,
+    /** Clears history, cookies, site data and cache when the app is swiped away. */
+    val clearOnExit: Boolean = false,
     val onboardingCompleted: Boolean = false,
     val savePasswords: Boolean = true,
     val autofillPasswords: Boolean = true,

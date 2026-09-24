@@ -68,6 +68,8 @@ class SettingsStore(private val context: Context) {
         val cookies = stringPreferencesKey("cookies")
         val js = booleanPreferencesKey("javascript")
         val dnt = booleanPreferencesKey("dnt")
+        val httpsOnly = booleanPreferencesKey("https_only")
+        val clearOnExit = booleanPreferencesKey("clear_on_exit")
         val onboardingDone = booleanPreferencesKey("onboarding_done")
         val savePasswords = booleanPreferencesKey("save_passwords")
         val autofillPasswords = booleanPreferencesKey("autofill_passwords")
@@ -118,6 +120,8 @@ class SettingsStore(private val context: Context) {
             cookieMode = this[K.cookies].toEnum(d.cookieMode),
             javascript = this[K.js] ?: d.javascript,
             doNotTrack = this[K.dnt] ?: d.doNotTrack,
+            httpsOnly = this[K.httpsOnly] ?: d.httpsOnly,
+            clearOnExit = this[K.clearOnExit] ?: d.clearOnExit,
             onboardingCompleted = this[K.onboardingDone] ?: d.onboardingCompleted,
             savePasswords = this[K.savePasswords] ?: d.savePasswords,
             autofillPasswords = this[K.autofillPasswords] ?: d.autofillPasswords,
@@ -164,6 +168,8 @@ class SettingsStore(private val context: Context) {
         this[K.cookies] = s.cookieMode.name
         this[K.js] = s.javascript
         this[K.dnt] = s.doNotTrack
+        this[K.httpsOnly] = s.httpsOnly
+        this[K.clearOnExit] = s.clearOnExit
         this[K.onboardingDone] = s.onboardingCompleted
         this[K.savePasswords] = s.savePasswords
         this[K.autofillPasswords] = s.autofillPasswords

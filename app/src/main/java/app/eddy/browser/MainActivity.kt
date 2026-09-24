@@ -29,6 +29,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import android.print.PrintAttributes
+import android.print.PrintManager
 import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -38,6 +40,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import app.eddy.browser.browser.BrowserRoot
+import app.eddy.browser.privacy.ExitCleanupService
 import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.browser.UiEffect
 import app.eddy.browser.data.models.ThemeMode
@@ -97,6 +100,12 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) { vm.effectFlow.collect(::handleEffect) }
         }
+        lifecycleScope.launch {
+            // The service only matters once the task is swiped away, so it is started, not bound.
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.settingsState.collect { if (it.clearOnExit) ExitCleanupService.arm(this@MainActivity) }
+            }
+        }
         if (savedInstanceState == null) vm.handleIntent(intent)
     }
 
@@ -155,6 +164,12 @@ class MainActivity : ComponentActivity() {
                 vm.snackbar("No app can open this")
             } catch (_: SecurityException) {
                 vm.snackbar("Could not open this")
+            }
+            is UiEffect.Print -> try {
+                getSystemService(PrintManager::class.java)
+                    .print(effect.jobName, effect.adapter, PrintAttributes.Builder().build())
+            } catch (_: Exception) {
+                vm.snackbar("Could not print this page")
             }
             is UiEffect.OpenFile -> try {
                 startActivity(

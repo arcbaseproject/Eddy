@@ -44,6 +44,17 @@ object UrlUtils {
 
     fun isHttps(url: String) = url.startsWith("https://", ignoreCase = true)
 
+    fun isHttp(url: String) = url.startsWith("http://", ignoreCase = true)
+
+    /** Loopback and LAN names have no certificates, so HTTPS-only leaves them alone. */
+    fun isLocalHost(url: String): Boolean = localHost.matches(url.substringAfter("://"))
+
+    /** The https:// form of an http:// URL; anything else is returned unchanged. */
+    fun toHttps(url: String): String = if (isHttp(url)) "https://" + url.substring(7) else url
+
+    /** The http:// form of an https:// URL, used when the user chooses to continue without HTTPS. */
+    fun toHttp(url: String): String = if (isHttps(url)) "http://" + url.substring(8) else url
+
     fun isWebUrl(url: String) = url.startsWith("http://", true) || url.startsWith("https://", true)
 
     /** Registrable-ish comparison used for third-party detection: last two labels. */

@@ -18,8 +18,8 @@ class Converters {
         HistoryEntry::class, Bookmark::class, BookmarkFolder::class, DownloadEntity::class, SiteSettings::class,
         LoginEntity::class, LoginBlock::class,
     ],
-    version = 3,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    version = 4,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

@@ -25,6 +25,7 @@ import app.eddy.browser.data.models.CookieMode
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.UserAgentMode
 import app.eddy.browser.util.UrlUtils
+import java.util.concurrent.ConcurrentHashMap
 
 /** Builds and configures WebViews. All per-tab and per-site policy is applied here in one place. */
 class WebViewFactory(private val appContext: Context, private val host: BrowserHost) {
@@ -134,7 +135,6 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
 
     /** Settings that do not depend on the current site; also re-run when the user changes a preference. */
     fun applyGlobal(view: EddyWebView, s: Settings) {
-        view.settings.textZoom = s.textZoom
         WebView.setWebContentsDebuggingEnabled(s.webDebugging)
         val cookies = cookieManager(view.incognito)
         cookies.setAcceptCookie(s.cookieMode != CookieMode.BLOCK_ALL)
@@ -153,6 +153,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     fun prepare(tab: BrowserTab, view: EddyWebView, url: String) {
         val s = host.settings
         val site = host.sites.peek(UrlUtils.displayHost(url))
+        view.settings.textZoom = site?.textZoom ?: s.textZoom
         view.settings.javaScriptEnabled = site?.javascript?.let { it == SiteSettings.ALLOW } ?: s.javascript
         val desktop = tab.desktopOverride
             ?: site?.desktop?.let { it == SiteSettings.ALLOW }
@@ -211,7 +212,29 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         }
     }
 
-    fun load(tab: BrowserTab, view: EddyWebView, url: String) {
+    /**
+     * Hosts the user chose to reach over plain http after an upgrade failed. Session-scoped on purpose:
+     * an exception to HTTPS-only should not outlive the app.
+     */
+    private val insecureHosts = ConcurrentHashMap.newKeySet<String>()
+
+    fun allowInsecure(host: String) { if (host.isNotEmpty()) insecureHosts.add(host) }
+
+    /** Also covers the site's other hosts: neverssl.com hands http traffic to a random subdomain. */
+    fun insecureAllowed(host: String): Boolean =
+        host in insecureHosts || insecureHosts.any { UrlUtils.sameSite(it, host) }
+
+    /** The URL to actually load: https:// when HTTPS-only is on and this host has no exception. */
+    fun upgrade(url: String): String =
+        if (host.settings.httpsOnly && UrlUtils.isHttp(url) && !UrlUtils.isLocalHost(url) && !insecureAllowed(UrlUtils.host(url))) {
+            UrlUtils.toHttps(url)
+        } else {
+            url
+        }
+
+    fun load(tab: BrowserTab, view: EddyWebView, requested: String) {
+        val url = upgrade(requested)
+        tab.httpsUpgradedFrom = if (url != requested) requested else null
         prepare(tab, view, url)
         view.settings.allowFileAccess = url.startsWith("file:", ignoreCase = true)
         val headers = if (host.settings.doNotTrack && UrlUtils.isWebUrl(url)) mapOf("DNT" to "1", "Sec-GPC" to "1") else emptyMap()

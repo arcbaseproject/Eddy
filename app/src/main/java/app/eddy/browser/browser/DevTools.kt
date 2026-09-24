@@ -13,12 +13,20 @@ object DevTools {
     private const val ASSET = "eruda.min.js"
     private var source: String? = null
 
-    private fun source(context: Context): String =
-        source ?: context.assets.open(ASSET).bufferedReader().use { it.readText() }.also { source = it }
+    /**
+     * Builds that cannot ship a prebuilt JavaScript bundle (F-Droid, for one) drop the asset, and the
+     * panel is then simply not offered.
+     */
+    fun available(context: Context): Boolean =
+        runCatching { context.assets.list("")?.contains(ASSET) == true }.getOrDefault(false)
+
+    private fun source(context: Context): String? =
+        source ?: runCatching { context.assets.open(ASSET).bufferedReader().use { it.readText() } }.getOrNull()?.also { source = it }
 
     /** Injects the panel, or brings it back after a navigation. Safe to call on a page that already has it. */
     fun show(context: Context, view: WebView) {
-        val js = "if(!window.eruda){" + source(context) + "\neruda.init({defaults:{displaySize:55,theme:'Monokai Pro'}});}eruda.show();"
+        val bundle = source(context) ?: return
+        val js = "if(!window.eruda){" + bundle + "\neruda.init({defaults:{displaySize:55,theme:'Monokai Pro'}});}eruda.show();"
         view.evaluateJavascript(js, null)
     }
 

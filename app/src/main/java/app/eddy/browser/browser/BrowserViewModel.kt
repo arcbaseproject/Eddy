@@ -18,6 +18,7 @@ import android.webkit.HttpAuthHandler
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.URLUtil
 import android.webkit.WebStorage
 import android.webkit.WebView
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import app.eddy.browser.data.models.SearchEngine
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.Shortcut
 import app.eddy.browser.downloads.BlobDownloader
+import app.eddy.browser.downloads.DownloadNames
 import app.eddy.browser.downloads.DownloadRequest
 import app.eddy.browser.privacy.SiteFeature
 import app.eddy.browser.settings.SettingsPage
@@ -59,7 +61,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS }
+enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS, PDF }
+
+/** A downloaded PDF opened in the built-in reader. */
+class OpenPdf(val uri: String, val name: String)
 
 enum class DataType { HISTORY, COOKIES, CACHE, DOWNLOADS, SITE_SETTINGS, PASSWORDS }
 
@@ -176,6 +181,12 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         }
         viewModelScope.launch {
             snapshotFlow { tabs.selected?.url }.distinctUntilChanged().collect { chromeVisible = true; autofillOffer = null }
+        }
+        viewModelScope.launch {
+            downloads.events.collect { e ->
+                if (e.success && e.contentUri.isNotEmpty()) snackbar("${e.fileName} downloaded", "Open") { openFile(e.contentUri, e.mimeType, e.fileName) }
+                else if (!e.success) snackbar("${e.fileName} failed to download", "View") { screen = Screen.DOWNLOADS }
+            }
         }
         viewModelScope.launch {
             snapshotFlow { tabs.tabs.any { it.incognito } }.distinctUntilChanged()
@@ -299,6 +310,21 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         handler.proceed()
     }
 
+    /** The user accepted plain http for this host; the exception lasts until the app is closed. */
+    fun continueWithoutHttps() {
+        val tab = tabs.selected ?: return
+        val url = tab.error?.url ?: tab.httpsUpgradedFrom ?: return
+        factory.allowInsecure(UrlUtils.host(url))
+        tab.httpsUpgradedFrom = null
+        tab.error = null
+        tabs.load(tab, UrlUtils.toHttp(url))
+    }
+
+    /** Per-site page text size; null follows the global setting. */
+    fun setSiteTextZoom(tab: BrowserTab, percent: Int?) {
+        setSiteSetting(tab, SiteFeature.TEXT_ZOOM, percent)
+    }
+
     fun cancelSslError() {
         val tab = tabs.selected ?: return
         tab.error?.sslHandler?.cancel()
@@ -318,6 +344,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             find != null -> { closeFind(); true }
             editing -> { stopEditing(); true }
             screen == Screen.SETTINGS && settingsStack.isNotEmpty() -> { settingsStack.removeAt(settingsStack.lastIndex); true }
+            screen == Screen.PDF -> { closePdf(); true }
             screen != Screen.BROWSER -> { screen = Screen.BROWSER; true }
             tab == null -> false
             tab.canGoBack || !tab.isHome -> { goBack(); true }
@@ -493,6 +520,41 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (tab.devToolsActive) DevTools.show(app, view) else DevTools.hide(view)
     }
 
+    fun toggleReader() {
+        val tab = tabs.selected ?: return
+        val view = tab.webView ?: return
+        if (tab.readerActive) {
+            tab.readerActive = false
+            stopReading()
+            ReaderMode.hide(view)
+        } else {
+            ReaderMode.show(app, view) { ok ->
+                tab.readerActive = ok
+                if (!ok) snackbar("No article found on this page")
+            }
+        }
+    }
+
+    /** Speaks the text of the page as it is shown, so reader mode reads the article and nothing else. */
+    fun toggleReadAloud() {
+        if (readingAloud) return stopReading()
+        val view = tabs.selected?.webView ?: return
+        view.evaluateJavascript("(document.body&&document.body.innerText||'')") { raw ->
+            val text = runCatching { JSONObject("{\"t\":$raw}").getString("t") }.getOrNull().orEmpty()
+            if (text.isBlank()) snackbar("Nothing to read on this page") else readAloud.speak(text)
+        }
+    }
+
+    fun stopReading() = readAloud.stop()
+
+    /** Hands the page to the system print dialog, which also offers "Save as PDF". */
+    fun printPage() {
+        val tab = tabs.selected ?: return
+        val view = tab.webView ?: return
+        val name = tab.displayTitle(tab.host).ifBlank { "Page" }.take(80)
+        effects.trySend(UiEffect.Print(view.createPrintDocumentAdapter(name), name))
+    }
+
     fun toggleDesktopForSite() {
         val tab = tabs.selected ?: return
         val host = UrlUtils.displayHost(tab.url)
@@ -561,7 +623,37 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         }
     }
 
-    fun openFile(uri: String, mime: String) { effects.trySend(UiEffect.OpenFile(uri, mime)) }
+    /** The PDF the built-in reader is showing, if any. */
+    var openPdf by mutableStateOf<OpenPdf?>(null)
+        private set
+
+    fun openFile(uri: String, mime: String, name: String = "") {
+        // PDFs stay in the app; the reader offers "open in another app" for anyone who wants one.
+        if (mime.substringBefore(';').trim().equals("application/pdf", true) || name.endsWith(".pdf", true)) {
+            openPdf = OpenPdf(uri, name)
+            screen = Screen.PDF
+            return
+        }
+        effects.trySend(UiEffect.OpenFile(uri, mime))
+    }
+
+    fun closePdf() {
+        openPdf = null
+        screen = Screen.DOWNLOADS
+    }
+
+    fun openPdfExternally() {
+        val pdf = openPdf ?: return
+        effects.trySend(UiEffect.OpenFile(pdf.uri, "application/pdf"))
+    }
+
+    fun sharePdf() {
+        val pdf = openPdf ?: return
+        val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
+            .putExtra(Intent.EXTRA_STREAM, Uri.parse(pdf.uri))
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        effects.trySend(UiEffect.Launch(Intent.createChooser(send, null)))
+    }
 
     fun snackbar(text: String, action: String? = null, block: (() -> Unit)? = null) {
         snackbarChannel.trySend(SnackbarMessage(text, action, block))
@@ -758,6 +850,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         tabs.tabFor(view)?.let { tabs.close(it, remember = false) }
     }
 
+    var readingAloud by mutableStateOf(false)
+        private set
+    private val readAloud = ReadAloud(app) { readingAloud = it }
+
     private val blobDownloader = BlobDownloader(app, viewModelScope, downloads) { message, id ->
         snackbar(message, if (id != null) "View" else null) { screen = Screen.DOWNLOADS }
     }
@@ -765,6 +861,25 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     override fun onBlobMessage(tab: BrowserTab, origin: String, data: String) = blobDownloader.onMessage(tab, origin, data)
 
     override fun startDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
+        val name = URLUtil.guessFileName(url, contentDisposition, mime.ifBlank { null })
+        // A page can start a download without the user picking anything, so an installer gets a question first.
+        if (DownloadNames.isExecutable(name) && UrlUtils.isWebUrl(url)) {
+            prompts.add(
+                Prompt.RiskyDownload(name, UrlUtils.displayHost(url), insecure = !UrlUtils.isHttps(url)) {
+                    enqueueDownload(tab, url, userAgent, contentDisposition, mime, length)
+                },
+            )
+            return
+        }
+        startDownloadNow(tab, url, userAgent, contentDisposition, mime, length)
+    }
+
+    fun answerRiskyDownload(prompt: Prompt.RiskyDownload, download: Boolean) {
+        prompts.remove(prompt)
+        if (download) prompt.start()
+    }
+
+    private fun startDownloadNow(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
         if (url.startsWith("blob:")) {
             if (!pageBridgeSupported) return snackbar("This WebView is too old to save this download. Update Android System WebView.")
             return blobDownloader.start(tab, url, contentDisposition, mime)
@@ -777,6 +892,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             }
             return
         }
+        enqueueDownload(tab, url, userAgent, contentDisposition, mime, length)
+    }
+
+    private fun enqueueDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
         viewModelScope.launch {
             if (Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -806,6 +925,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     override fun onCleared() {
+        readAloud.release()
         runCatching { app.getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback) }
         tabs.destroyAll()
         super.onCleared()

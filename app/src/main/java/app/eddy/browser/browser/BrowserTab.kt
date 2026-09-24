@@ -12,7 +12,7 @@ import java.util.UUID
 
 enum class Security { NONE, SECURE, INSECURE, ERROR }
 
-enum class ErrorKind { OFFLINE, DNS, SSL, TIMEOUT, UNAVAILABLE }
+enum class ErrorKind { OFFLINE, DNS, SSL, TIMEOUT, UNAVAILABLE, INSECURE }
 
 class PageError(
     val kind: ErrorKind,
@@ -49,6 +49,10 @@ class BrowserTab(
     var desktopActive by mutableStateOf(false)
     /** Keeps the on-page developer tools open across navigations in this tab. */
     var devToolsActive by mutableStateOf(false)
+    /** Keeps reader mode on across navigations in this tab. */
+    var readerActive by mutableStateOf(false)
+    /** The http:// URL this tab was upgraded from, so a failed upgrade can offer the original. */
+    @Volatile var httpsUpgradedFrom: String? = null
     var webView by mutableStateOf<EddyWebView?>(null)
     var pullDistance by mutableIntStateOf(0)
 

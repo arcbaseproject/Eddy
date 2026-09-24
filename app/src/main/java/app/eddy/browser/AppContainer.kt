@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
@@ -30,7 +31,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -86,17 +86,28 @@ class AppContainer(private val app: Application) {
             history.prune()
         }
         scope.launch {
-            downloads.events.filterNotNull().collect { event ->
+            downloads.events.collect { event ->
                 val open = PendingIntent.getActivity(
                     app, 0, Intent(app, MainActivity::class.java).setAction(MainActivity.ACTION_OPEN_DOWNLOADS),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 )
+                // Opening straight from the tray; the grant flag lets the chosen app read our MediaStore file.
+                val openFile = if (event.success && event.contentUri.isNotEmpty()) {
+                    PendingIntent.getActivity(
+                        app, event.id.toInt(),
+                        Intent(Intent.ACTION_VIEW)
+                            .setDataAndType(Uri.parse(event.contentUri), event.mimeType.ifBlank { "*/*" })
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+                } else null
                 val n = NotificationCompat.Builder(app, DownloadService.CHANNEL_DONE)
                     .setSmallIcon(if (event.success) android.R.drawable.stat_sys_download_done else android.R.drawable.stat_notify_error)
                     .setContentTitle(event.fileName)
                     .setContentText(app.getString(if (event.success) R.string.download_complete else R.string.download_failed))
                     .setContentIntent(open)
                     .setAutoCancel(true)
+                    .apply { if (openFile != null) addAction(android.R.drawable.ic_menu_view, app.getString(R.string.open), openFile) }
                     .build()
                 runCatching { app.getSystemService(NotificationManager::class.java).notify(event.id.toInt() + 10_000, n) }
             }

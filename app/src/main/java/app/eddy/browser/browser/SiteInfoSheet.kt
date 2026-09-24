@@ -100,6 +100,30 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
                     enabled = settings.adBlock || settings.trackerProtection,
                 )
             }
+            Row(Modifier.fillMaxWidth().heightIn(min = Dimens.touchTarget), verticalAlignment = Alignment.CenterVertically) {
+                Text("Page text size", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                var zoomOpen by remember { mutableStateOf(false) }
+                val zoom = site?.get(SiteFeature.TEXT_ZOOM)
+                Surface(onClick = { zoomOpen = true }, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                    Text(
+                        zoom?.let { "$it%" } ?: "${settings.textZoom}% (default)",
+                        Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    DropdownMenu(expanded = zoomOpen, onDismissRequest = { zoomOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("${settings.textZoom}% (default)") },
+                            onClick = { zoomOpen = false; vm.setSiteTextZoom(tab, null); refresh++ },
+                        )
+                        listOf(75, 100, 125, 150, 175, 200).forEach { percent ->
+                            DropdownMenuItem(
+                                text = { Text("$percent%") },
+                                onClick = { zoomOpen = false; vm.setSiteTextZoom(tab, percent); refresh++ },
+                            )
+                        }
+                    }
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Always use desktop site", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                 Switch(

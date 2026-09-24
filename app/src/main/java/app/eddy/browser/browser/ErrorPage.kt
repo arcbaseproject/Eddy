@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.GppBad
+import androidx.compose.material.icons.rounded.NoEncryption
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
@@ -49,6 +50,7 @@ fun ErrorPage(
     onRetry: () -> Unit,
     onBack: () -> Unit,
     onProceedUnsafe: () -> Unit,
+    onContinueInsecure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val (icon, title, message) = when (error.kind) {
@@ -57,9 +59,16 @@ fun ErrorPage(
         ErrorKind.SSL -> Triple(Icons.Rounded.GppBad, "Connection isn't private", error.detail.ifBlank { "Eddy could not verify this site's security certificate." })
         ErrorKind.TIMEOUT -> Triple(Icons.Rounded.Timer, "Took too long to respond", "${UrlUtils.displayHost(error.url)} did not answer in time. The site may be down, or your connection may be slow.")
         ErrorKind.UNAVAILABLE -> Triple(Icons.Rounded.ErrorOutline, "This page isn't available", "Eddy could not load ${UrlUtils.displayHost(error.url).ifEmpty { "the page" }}.")
+        ErrorKind.INSECURE -> Triple(
+            Icons.Rounded.NoEncryption, "This site doesn't support HTTPS",
+            "${UrlUtils.displayHost(error.url)} did not answer over a secure connection. HTTPS-only mode blocked the plain http version.",
+        )
     }
     val isSsl = error.kind == ErrorKind.SSL
+    val isInsecure = error.kind == ErrorKind.INSECURE
+    val warn = isSsl || isInsecure
     var confirmProceed by remember { mutableStateOf(false) }
+    var confirmInsecure by remember { mutableStateOf(false) }
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -70,20 +79,27 @@ fun ErrorPage(
         ) {
             Box(
                 Modifier.entrance(0).size(112.dp).background(
-                    if (isSsl) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
-                    if (isSsl) MaterialShapes.SoftBurst.toShape() else MaterialShapes.Cookie9Sided.toShape(),
+                    if (warn) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+                    if (warn) MaterialShapes.SoftBurst.toShape() else MaterialShapes.Cookie9Sided.toShape(),
                 ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     icon, null, Modifier.size(48.dp),
-                    tint = if (isSsl) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                    tint = if (warn) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
             Text(title, Modifier.entrance(1), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Text(message, Modifier.entrance(2), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Text(error.url, Modifier.entrance(2), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.Center, maxLines = 2)
-            if (isSsl) {
+            if (isInsecure) {
+                Button(onClick = onRetry, Modifier.entrance(3)) { Text("Try again") }
+                OutlinedButton(onClick = onBack, Modifier.entrance(3)) { Text("Go back") }
+                TextButton(
+                    onClick = { confirmInsecure = true }, Modifier.entrance(3),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("Continue without HTTPS") }
+            } else if (isSsl) {
                 Button(onClick = onBack, Modifier.entrance(3)) { Text("Back to safety") }
                 if (error.sslHandler != null) {
                     TextButton(onClick = { confirmProceed = true }, Modifier.entrance(3), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
@@ -96,6 +112,16 @@ fun ErrorPage(
             }
         }
     }
+    }
+
+    if (confirmInsecure) {
+        ConfirmDialog(
+            title = "Load this site without HTTPS?",
+            message = "Anything you send to ${UrlUtils.displayHost(error.url)} travels unencrypted, and anyone on the network can read or change it. Eddy allows plain http for this site until you close the app.",
+            confirmLabel = "Continue",
+            onDismiss = { confirmInsecure = false },
+            onConfirm = { confirmInsecure = false; onContinueInsecure() },
+        )
     }
 
     if (confirmProceed) {

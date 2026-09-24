@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Https
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Code
@@ -71,6 +72,8 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
         NavRow("Filter lists", { vm.settingsStack.add(SettingsPage.FILTER_LISTS) }, "Enable, add and update lists", Icons.Rounded.Tune)
         GroupDivider()
         SwitchRow("Do Not Track and Global Privacy Control", s.doNotTrack, { v -> vm.launchSettings { it.copy(doNotTrack = v) } }, "Asks sites not to sell or share your data", Icons.Rounded.Lock)
+        GroupDivider()
+        SwitchRow("HTTPS-only mode", s.httpsOnly, { v -> vm.launchSettings { it.copy(httpsOnly = v) } }, "Loads sites over HTTPS and warns before any plain http page", Icons.Rounded.Https)
     }
     SettingsGroup("Passwords") {
         SwitchRow("Offer to save passwords", s.savePasswords, { v -> vm.launchSettings { it.copy(savePasswords = v) } }, if (vm.pageBridgeSupported) "Asks after you sign in or sign up" else "Needs a newer Android System WebView", Icons.Rounded.Key, enabled = vm.pageBridgeSupported)
@@ -91,6 +94,8 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
         NavRow("Site permissions", { vm.settingsStack.add(SettingsPage.SITE_PERMISSIONS) }, "Per-site choices for location, camera and more", Icons.Rounded.Language)
         GroupDivider()
         ActionRow("Clear browsing data", { clearing = true }, "History, cookies, cache and more", Icons.Rounded.DeleteSweep)
+        GroupDivider()
+        SwitchRow("Clear when I leave", s.clearOnExit, { v -> vm.launchSettings { it.copy(clearOnExit = v) } }, "Deletes history, cookies, site data and cache when you swipe Eddy out of recents", Icons.Rounded.Delete)
     }
     SettingsFootnote(
         if (vm.incognitoIsolated) "Incognito tabs use a separate storage profile. Eddy deletes it when the last incognito tab closes."
@@ -139,7 +144,11 @@ fun SitePermissionsSettings(vm: BrowserViewModel) {
         rows.forEachIndexed { i, site ->
             if (i > 0) GroupDivider()
             val summary = SiteFeature.entries.mapNotNull { f ->
-                site.get(f)?.let { v -> "${label(f)}: ${if (v == SiteSettings.ALLOW) "allow" else "block"}" }
+                site.get(f)?.let { v ->
+                    // Text size stores a percentage; every other feature stores allow/block.
+                    if (f == SiteFeature.TEXT_ZOOM) "${label(f)}: $v%"
+                    else "${label(f)}: ${if (v == SiteSettings.ALLOW) "allow" else "block"}"
+                }
             }.joinToString(" · ")
             Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).padding(vertical = 10.dp)) {
@@ -162,6 +171,7 @@ private fun label(f: SiteFeature) = when (f) {
     SiteFeature.THIRD_PARTY_COOKIES -> "3rd-party cookies"
     SiteFeature.DESKTOP -> "desktop site"
     SiteFeature.CONTENT_BLOCKING -> "blocking"
+    SiteFeature.TEXT_ZOOM -> "text size"
 }
 
 @Composable
