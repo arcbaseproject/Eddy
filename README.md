@@ -50,7 +50,9 @@ No image-loading library: favicons and thumbnails are handled by small dedicated
 ## Packaging
 
 Store listing text and screenshots live in `fastlane/metadata/android/en-US/`, the layout
-IzzyOnDroid reads directly from the repository. Each release is a signed APK attached to a
+F-Droid and IzzyOnDroid read directly from the repository. The F-Droid build recipe and submission
+steps are in [`fdroid/`](fdroid/README.md); that build drops the prebuilt `eruda.min.js`, and the app
+hides the developer-tools toggle when the asset is missing. Each release is a signed APK attached to a
 [GitHub release](https://github.com/arcbaseproject/Eddy/releases), with the changelog under
 `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
 

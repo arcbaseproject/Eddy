@@ -1,0 +1,2 @@
+* Scrolling up on pages that scroll inside a panel no longer reloads the page
+* Sign in with Google, Apple and passkeys on sites that offer it, such as GitHub
