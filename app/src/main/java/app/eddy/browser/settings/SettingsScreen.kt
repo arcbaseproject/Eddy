@@ -54,6 +54,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import app.eddy.browser.R
 import app.eddy.browser.BuildConfig
 import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.browser.Screen
@@ -258,9 +270,8 @@ private fun AboutSettings(vm: BrowserViewModel) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isDefault = held() }
     val requestRole = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { isDefault = held() }
 
+    AboutHeader(vm::openInNewTab)
     SettingsGroup {
-        ActionRow("Version", {}, BuildConfig.VERSION_NAME)
-        GroupDivider()
         ActionRow("Replay welcome tour", vm::replayOnboarding, "Walk through Eddy's setup again")
         GroupDivider()
         if (isDefault) {
@@ -280,6 +291,43 @@ private fun AboutSettings(vm: BrowserViewModel) {
             "It contacts the network to load the pages you open, fetch search suggestions (if you enable them), " +
             "fetch favicons for sites on your home page, and update filter lists.",
     )
+}
+
+private const val REPO_URL = "https://github.com/arcbaseproject/Eddy"
+private const val SITE_URL = "https://eddy.libreapps.xyz"
+
+/** App icon, name and version, with links to the website and the source code. */
+@Composable
+private fun AboutHeader(open: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.gutter, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        // The adaptive-icon foreground is drawn on a 108dp canvas with a 72dp safe zone, so it is oversized and clipped.
+        Box(Modifier.size(96.dp).clip(RoundedCornerShape(32.dp)).background(colorResource(R.color.icon_bg)), contentAlignment = Alignment.Center) {
+            Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(144.dp))
+        }
+        Text("Eddy", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.headlineMedium)
+        Text(
+            "Version ${BuildConfig.VERSION_NAME}",
+            Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            "A fast, private browser. No ads, no tracking.",
+            Modifier.padding(top = 12.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+        Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilledTonalButton({ open(SITE_URL) }) {
+                Icon(Icons.Rounded.Language, null, Modifier.size(18.dp))
+                Text("Website", Modifier.padding(start = 8.dp))
+            }
+            FilledTonalButton({ open(REPO_URL) }) {
+                Icon(painterResource(R.drawable.ic_github), null, Modifier.size(18.dp))
+                Text("GitHub", Modifier.padding(start = 8.dp))
+            }
+        }
+    }
 }
 
 /** Slim reminder that the app is still pre-release; shown at the top of the settings list. */

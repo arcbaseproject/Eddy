@@ -1,6 +1,18 @@
 package app.eddy.browser.settings
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import app.eddy.browser.R
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -47,6 +59,7 @@ fun SearchSettings(vm: BrowserViewModel, s: app.eddy.browser.data.models.Setting
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(selected = s.searchEngineId == engine.id, onClick = null)
+                EngineLogo(engine.id, Modifier.padding(start = 16.dp))
                 Column(Modifier.weight(1f).padding(start = 16.dp)) {
                     Text(engine.name, style = MaterialTheme.typography.bodyLarge)
                     Text(engine.searchUrl.substringAfter("://").substringBefore('/'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -60,8 +73,10 @@ fun SearchSettings(vm: BrowserViewModel, s: app.eddy.browser.data.models.Setting
         }
     }
     SettingsGroup("Customize") {
-        NavRowLike("SearXNG instance", s.searxngInstance) { editInstance = true }
-        GroupDivider()
+        if (s.searchEngineId == "searxng") {
+            NavRowLike("SearXNG instance", s.searxngInstance) { editInstance = true }
+            GroupDivider()
+        }
         NavRowLike("Add custom search engine", "Use %s where the query goes", icon = true) { adding = true }
     }
     SettingsFootnote("Eddy asks your default engine for suggestions. Turn them off in General.")
@@ -73,6 +88,26 @@ fun SearchSettings(vm: BrowserViewModel, s: app.eddy.browser.data.models.Setting
         }
     }
     if (adding) AddEngineDialog({ adding = false }) { e -> vm.launchSettings { it.copy(customEngines = it.customEngines + e) }; adding = false }
+}
+
+/** Bundled logos for the built-in engines; custom engines get a generic search icon. */
+@Composable
+private fun EngineLogo(id: String, modifier: Modifier = Modifier) {
+    val logo = when (id) {
+        "duckduckgo" -> R.drawable.engine_duckduckgo
+        "brave" -> R.drawable.engine_brave
+        "startpage" -> R.drawable.engine_startpage
+        "google" -> R.drawable.engine_google
+        "bing" -> R.drawable.engine_bing
+        "ecosia" -> R.drawable.engine_ecosia
+        "searxng" -> R.drawable.engine_searxng
+        else -> null
+    }
+    // A light tile keeps the logos, which assume a white page, readable in dark mode.
+    Box(modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+        if (logo != null) Image(painterResource(logo), null, Modifier.fillMaxSize())
+        else Icon(Icons.Rounded.Search, null, Modifier.size(20.dp), tint = Color.DarkGray)
+    }
 }
 
 @Composable
