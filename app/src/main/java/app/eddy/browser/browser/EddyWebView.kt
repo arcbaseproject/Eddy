@@ -29,6 +29,9 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
     private val refreshThreshold = resources.displayMetrics.density * 72
     private var pullStartY = -1f
     private var pull = 0f
+    /** Set once Chromium reports an unconsumed downward drag at the top. Pages that scroll an inner
+     *  element keep scrollY at 0, so scrollY alone can't tell a pull from a normal scroll. */
+    private var overscrolledTop = false
 
     /** The activity context is swapped in/out so dialogs work but the Activity is never leaked. */
     fun attachTo(context: Context) { ctx.baseContext = context }
@@ -39,13 +42,24 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
         onScrolled?.invoke(t - oldt, t)
     }
 
+    override fun overScrollBy(
+        deltaX: Int, deltaY: Int, scrollX: Int, scrollY: Int, scrollRangeX: Int, scrollRangeY: Int,
+        maxOverScrollX: Int, maxOverScrollY: Int, isTouchEvent: Boolean,
+    ): Boolean {
+        if (deltaY < 0 && scrollY == 0) overscrolledTop = true
+        return super.overScrollBy(deltaX, deltaY, scrollX, scrollY, scrollRangeX, scrollRangeY, maxOverScrollX, maxOverScrollY, isTouchEvent)
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 pullStartY = if (scrollY == 0 && !canScrollVertically(-1)) event.y else -1f
                 pull = 0f
+                overscrolledTop = false
             }
             MotionEvent.ACTION_MOVE -> if (pullStartY >= 0 && event.pointerCount == 1) {
+                // Measure the pull from where the page stopped consuming the drag.
+                if (!overscrolledTop) { pullStartY = event.y; return super.onTouchEvent(event) }
                 val dy = event.y - pullStartY
                 if (dy > touchSlop * 2) {
                     pull = (dy - touchSlop * 2) * 0.5f

@@ -107,6 +107,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             cacheMode = if (tab.incognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
         }
+        // WebView hides PublicKeyCredential by default. Sites like GitHub then drop passkey and
+        // "Continue with Google/Apple" sign-in, since they load those behind a WebAuthn check.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
+            WebSettingsCompat.setWebAuthenticationSupport(view.settings, WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_BROWSER)
+        }
         // Instant back/forward (the page keeps running instead of reloading) and prerendering support.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.BACK_FORWARD_CACHE)) {
             WebSettingsCompat.setBackForwardCacheEnabled(view.settings, true)
