@@ -61,7 +61,7 @@ internal val settingsIndex = listOf(
     SettingEntry("Clear when I leave", listOf(PRIVACY), "clear on exit quit delete data swipe recents"),
     SettingEntry("Reset all settings", listOf(ADVANCED), "defaults restore"),
 
-    SettingEntry("Version", listOf(ABOUT), "build about"),
+    SettingEntry("GitHub", listOf(ABOUT), "version build about source code website"),
     SettingEntry("Replay welcome tour", listOf(ABOUT), "onboarding intro"),
     SettingEntry("Make Eddy your default browser", listOf(ABOUT), "default browser role"),
     SettingEntry("Privacy policy", listOf(PRIVACY_POLICY), "legal data"),

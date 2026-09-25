@@ -1,0 +1,7 @@
+* Background audio and video keep playing when you leave the app, with a Pause button in the notification
+* Option to darken websites that have no dark theme
+* Search selected text in other apps with Eddy
+* Add any page to your home screen
+* Search engine logos in the engine picker
+* Redesigned About page with links to the website and source code
+* Fixes for permission prompts, tab restore, incognito downloads and addresses with a port number
