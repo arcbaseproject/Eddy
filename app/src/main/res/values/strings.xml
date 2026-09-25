@@ -5,6 +5,9 @@
     <string name="download_complete">Download complete</string>
     <string name="open">Open</string>
     <string name="download_failed">Download failed</string>
+    <string name="channel_media">Media playback</string>
+    <string name="media_playing">Playing in Eddy</string>
+    <string name="media_pause">Pause</string>
     <plurals name="downloading_count">
         <item quantity="one">Downloading %d file</item>
         <item quantity="other">Downloading %d files</item>

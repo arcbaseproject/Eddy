@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmarks
@@ -108,7 +109,8 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
             if (webPage) {
                 Group {
                     SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
-                    Row(Icons.Rounded.Home, "Add to home screen", act { tab?.let(vm::addShortcut) })
+                    Row(Icons.Rounded.Home, "Add to start page", act { tab?.let(vm::addShortcut) })
+                    if (tab?.incognito == false) Row(Icons.Rounded.AddToHomeScreen, "Add to home screen", act { vm.addToLauncher(tab) })
                     if (DevTools.available(LocalContext.current)) {
                         SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
                     }

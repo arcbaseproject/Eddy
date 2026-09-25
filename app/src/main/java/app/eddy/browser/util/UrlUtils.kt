@@ -22,7 +22,7 @@ object UrlUtils {
         if (text.isEmpty() || text.any { it.isWhitespace() }) return false
         val scheme = schemeRegex.find(text)?.groupValues?.get(1)?.lowercase()
         if (scheme != null && scheme in explicitSchemes) return true
-        return localHost.matches(text) || (scheme == null && domainLike.matches(text))
+        return localHost.matches(text) || domainLike.matches(text)
     }
 
     /** Turns omnibox text into something loadable: a URL as typed, or a search on [engine]. */
@@ -41,6 +41,16 @@ object UrlUtils {
 
     /** Host without a leading "www.", for display. */
     fun displayHost(url: String): String = host(url).removePrefix("www.")
+
+    /** Permission grants belong to an origin, including its scheme and non-default port. */
+    fun origin(url: String): String? = runCatching {
+        val uri = java.net.URI(url)
+        val scheme = uri.scheme?.lowercase() ?: return null
+        if (scheme != "http" && scheme != "https") return null
+        val host = uri.host?.lowercase() ?: return null
+        val port = uri.port.takeIf { it >= 0 && it != (if (scheme == "https") 443 else 80) }
+        "$scheme://$host" + (port?.let { ":$it" } ?: "")
+    }.getOrNull()
 
     fun isHttps(url: String) = url.startsWith("https://", ignoreCase = true)
 

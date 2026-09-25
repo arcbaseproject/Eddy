@@ -28,6 +28,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.eddy.browser.EddyApp
@@ -59,6 +62,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import app.eddy.browser.MainActivity
+import app.eddy.browser.R
 import java.util.UUID
 
 enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS, PDF }
@@ -158,6 +163,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         app, viewModelScope, sites,
         showPrompt = { prompts.add(it) },
         requestRuntime = ::requestRuntimePermissions,
+        dismissPrompt = { prompts.remove(it) },
     )
     private val ready = CompletableDeferred<Unit>()
     private var suggestJob: Job? = null
@@ -165,6 +171,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     private var ignoreScrollUntil = 0L
 
     init {
+        // ponytail: top-level documents only; media inside cross-origin iframes (embedded players) keeps playing.
+        MediaService.pauseAll = { tabs.tabs.forEach { it.webView?.evaluateJavascript("document.querySelectorAll('video,audio').forEach(m => m.pause())", null) } }
         viewModelScope.launch {
             if (!(settings.restoreTabs && tabs.restore())) openHomeTab()
             // Leftovers from a session that could not be deleted while the app was running.
@@ -256,13 +264,15 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     fun handleIntent(intent: Intent) {
-        if (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_WEB_SEARCH) onboardingSuppressed = true
+        if (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_WEB_SEARCH ||
+            intent.action == Intent.ACTION_PROCESS_TEXT) onboardingSuppressed = true
         viewModelScope.launch {
             ready.await()
             val text = when (intent.action) {
                 Intent.ACTION_VIEW -> intent.dataString
                 Intent.ACTION_WEB_SEARCH -> intent.getStringExtra("query")
                 Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+                Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
                 MAIN_OPEN_DOWNLOADS -> { screen = Screen.DOWNLOADS; null }
                 else -> null
             }?.trim().orEmpty()
@@ -306,6 +316,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun proceedDespiteSslError() {
         val tab = tabs.selected ?: return
         val handler = tab.error?.sslHandler ?: return
+        factory.rememberCertificateException(tab.error!!.url)
         tab.error = null
         handler.proceed()
     }
@@ -357,7 +368,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         get() {
             val tab = tabs.selected
             return customViewActive || linkTarget != null || siteInfoVisible || menuVisible || find != null || editing ||
-                screen != Screen.BROWSER || tab != null && (tab.canGoBack || !tab.isHome || tab.openerId != null)
+                screen != Screen.BROWSER || tab != null && (tab.canGoBack || !tab.isHome ||
+                tab.openerId?.let { opener -> tabs.tabs.any { it.id == opener } } == true)
         }
 
     // ---- omnibox --------------------------------------------------------------------------
@@ -575,8 +587,24 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         }
     }
 
+    /** Pins a launcher icon that opens the page in Eddy. The launcher shows its own confirmation. */
+    fun addToLauncher(tab: BrowserTab) {
+        if (!UrlUtils.isWebUrl(tab.url)) return
+        if (!ShortcutManagerCompat.isRequestPinShortcutSupported(app)) { snackbar("Your launcher does not support shortcuts"); return }
+        viewModelScope.launch {
+            val icon = (tab.favicon ?: favicons.load(UrlUtils.displayHost(tab.url)))
+                ?.let { IconCompat.createWithBitmap(it) } ?: IconCompat.createWithResource(app, R.mipmap.ic_launcher)
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tab.url), app, MainActivity::class.java)
+            val info = ShortcutInfoCompat.Builder(app, UUID.randomUUID().toString())
+                .setShortLabel(tab.displayTitle(tab.host).ifBlank { tab.host }).setIcon(icon).setIntent(intent).build()
+            ShortcutManagerCompat.requestPinShortcut(app, info, null)
+        }
+    }
+
     fun setSiteSetting(tab: BrowserTab, feature: SiteFeature, value: Int?) {
-        val host = UrlUtils.displayHost(tab.url)
+        val host = if (feature in setOf(SiteFeature.CAMERA, SiteFeature.MICROPHONE, SiteFeature.LOCATION)) {
+            UrlUtils.origin(tab.url) ?: return
+        } else UrlUtils.displayHost(tab.url)
         sites.set(host, feature, value)
         tab.webView?.let { factory.prepare(tab, it, tab.url) }
         if (feature == SiteFeature.JAVASCRIPT || feature == SiteFeature.CONTENT_BLOCKING || feature == SiteFeature.THIRD_PARTY_COOKIES) {
@@ -767,7 +795,20 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     fun answerExternal(prompt: Prompt.ExternalApp, open: Boolean) {
         prompts.remove(prompt)
-        if (open) effects.trySend(UiEffect.Launch(prompt.intent)) else prompt.fallbackUrl?.let(::navigate)
+        val tab = tabs.tabs.firstOrNull { it.id == prompt.tabId } ?: return
+        if (tab.id != tabs.selectedId) return
+        if (open) launchExternal(tab, prompt.intent, prompt.fallbackUrl) else externalFallback(tab, prompt.fallbackUrl)
+    }
+
+    private fun externalFallback(tab: BrowserTab, url: String?) {
+        if (tab.id == tabs.selectedId && tab in tabs.tabs && url != null && UrlUtils.isWebUrl(url)) tabs.load(tab, url)
+    }
+
+    private fun launchExternal(tab: BrowserTab, intent: Intent, fallback: String?) {
+        effects.trySend(UiEffect.Launch(intent) {
+            if (fallback != null && UrlUtils.isWebUrl(fallback)) externalFallback(tab, fallback)
+            else snackbar("No app can open this")
+        })
     }
 
     private suspend fun requestRuntimePermissions(perms: List<String>): Map<String, Boolean> {
@@ -799,15 +840,21 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     override fun handleExternalIntent(tab: BrowserTab, intent: Intent, userGesture: Boolean, fallbackUrl: String?) {
-        intent.addCategory(Intent.CATEGORY_BROWSABLE)
+        if (tab.id != tabs.selectedId || tab !in tabs.tabs) return
+        val data = intent.data ?: return
+        if (data.scheme?.lowercase() in setOf("file", "content", "javascript", "data")) return
+        // A page supplies a URL and optional package, never arbitrary Android actions,
+        // components, selectors, flags, or extras.
+        val safe = Intent(Intent.ACTION_VIEW, data).addCategory(Intent.CATEGORY_BROWSABLE)
+        intent.`package`?.takeUnless { it == app.packageName }?.let(safe::setPackage)
         if (!userGesture || settings.externalLinks == ExternalLinks.NEVER) {
             // Redirects that no one asked for never leave the browser.
-            if (fallbackUrl != null && UrlUtils.isWebUrl(fallbackUrl)) navigate(fallbackUrl)
+            if (fallbackUrl != null && UrlUtils.isWebUrl(fallbackUrl)) externalFallback(tab, fallbackUrl)
             else if (userGesture) snackbar("Opening other apps is turned off")
             return
         }
-        if (settings.externalLinks == ExternalLinks.ALWAYS) effects.trySend(UiEffect.Launch(intent))
-        else prompts.add(Prompt.ExternalApp(null, intent, fallbackUrl))
+        if (settings.externalLinks == ExternalLinks.ALWAYS) launchExternal(tab, safe, fallbackUrl)
+        else prompts.add(Prompt.ExternalApp(null, safe, fallbackUrl, tab.id))
     }
 
     override fun requestFileChooser(callback: ValueCallback<Array<Uri>>, params: WebChromeClient.FileChooserParams): Boolean =
@@ -826,6 +873,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun onCustomViewClosed() { customViewActive = false }
 
     override fun requestWebPermission(tab: BrowserTab, request: PermissionRequest) = permissions.onWebRequest(request, tab.incognito)
+    override fun cancelWebPermission(request: PermissionRequest) = permissions.cancel(request)
+    override fun cancelGeolocation(origin: String) = permissions.cancelGeolocation(origin)
 
     override fun requestGeolocation(tab: BrowserTab, origin: String, callback: GeolocationPermissions.Callback) =
         permissions.onGeolocation(origin, callback, tab.incognito)
@@ -925,6 +974,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     override fun onCleared() {
+        MediaService.pauseAll = null
         readAloud.release()
         runCatching { app.getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback) }
         tabs.destroyAll()

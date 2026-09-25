@@ -76,6 +76,8 @@ fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
     SettingsFootnote("Eddy also respects the system Remove animations setting.")
     SettingsGroup("Web content") {
         SliderRowPct(vm, s)
+        GroupDivider()
+        SwitchRow("Darken websites", s.darkenPages, { v -> vm.launchSettings { it.copy(darkenPages = v) } }, "Dark colors for sites without a dark theme, when your phone is in dark mode")
     }
 }
 

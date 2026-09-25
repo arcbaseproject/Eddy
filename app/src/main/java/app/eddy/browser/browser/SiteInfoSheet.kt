@@ -47,6 +47,8 @@ import java.text.DateFormat
 fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) {
     val host = UrlUtils.displayHost(tab.url)
     val site = vm.sites.peek(host)
+    val origin = UrlUtils.origin(tab.url)
+    val permissions = origin?.let(vm.sites::peek)
     var refresh by remember { mutableStateOf(0) } // sites.peek is not observable, so nudge recomposition after edits
     val cookieCount = remember(tab.url, refresh) { vm.cookieCount(tab) }
     val cert = remember(tab.url) { tab.webView?.certificate }
@@ -134,9 +136,9 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             HorizontalDivider()
 
             Text("Permissions", style = MaterialTheme.typography.titleSmall)
-            PermissionRow("Location", site?.get(SiteFeature.LOCATION), "Ask") { set(SiteFeature.LOCATION, it) }
-            PermissionRow("Camera", site?.get(SiteFeature.CAMERA), "Ask") { set(SiteFeature.CAMERA, it) }
-            PermissionRow("Microphone", site?.get(SiteFeature.MICROPHONE), "Ask") { set(SiteFeature.MICROPHONE, it) }
+            PermissionRow("Location", permissions?.get(SiteFeature.LOCATION), "Ask") { set(SiteFeature.LOCATION, it) }
+            PermissionRow("Camera", permissions?.get(SiteFeature.CAMERA), "Ask") { set(SiteFeature.CAMERA, it) }
+            PermissionRow("Microphone", permissions?.get(SiteFeature.MICROPHONE), "Ask") { set(SiteFeature.MICROPHONE, it) }
             PermissionRow("JavaScript", site?.get(SiteFeature.JAVASCRIPT), if (settings.javascript) "Allowed (default)" else "Blocked (default)") { set(SiteFeature.JAVASCRIPT, it) }
             PermissionRow("Pop-ups", site?.get(SiteFeature.POPUPS), "Blocked (default)") { set(SiteFeature.POPUPS, it) }
             PermissionRow("Third-party cookies", site?.get(SiteFeature.THIRD_PARTY_COOKIES), "Follows settings") { set(SiteFeature.THIRD_PARTY_COOKIES, it) }
@@ -149,7 +151,7 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { vm.clearSiteData(tab); onDismiss() }) { Text("Clear site data") }
-                TextButton(onClick = { vm.sites.reset(host); vm.setSiteSetting(tab, SiteFeature.CONTENT_BLOCKING, null); refresh++ }, enabled = site != null) { Text("Reset permissions") }
+                TextButton(onClick = { vm.sites.reset(host); origin?.let(vm.sites::reset); vm.setSiteSetting(tab, SiteFeature.CONTENT_BLOCKING, null); refresh++ }, enabled = site != null || permissions != null) { Text("Reset permissions") }
             }
         }
     }

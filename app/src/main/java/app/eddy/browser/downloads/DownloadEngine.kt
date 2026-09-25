@@ -14,6 +14,7 @@ import app.eddy.browser.data.models.DownloadLocation
 import app.eddy.browser.data.models.Settings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -125,6 +126,7 @@ class DownloadEngine(
             runCatching { context.contentResolver.delete(Uri.parse(d.contentUri), null, null) }
         }
         File(partDir, "$id.part").delete()
+        cookies.remove(id)
         dao.delete(id)
     }
 
@@ -133,20 +135,34 @@ class DownloadEngine(
     private suspend fun Job.cancelAndJoin() { cancel(); join() }
 
     private fun start(id: Long) {
+        val job = scope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
+            slots.withPermit { run(id) }
+        }
+        if (jobs.putIfAbsent(id, job) != null) { job.cancel(); return }
         _active.update { it + 1 }
-        DownloadService.start(context)
-        val job = scope.launch(Dispatchers.IO) {
-            try {
-                slots.withPermit { run(id) }
-            } finally {
-                jobs.remove(id)
-                intents.remove(id)
-                cookies.remove(id)
-                _live.update { it - id }
-                _active.update { it - 1 }
+        job.invokeOnCompletion { cause ->
+            // Even a job cancelled before its body starts needs a terminal database state.
+            scope.launch(Dispatchers.IO) {
+                try {
+                    if (cause is CancellationException) {
+                        if (intents[id] == DownloadStatus.CANCELED) finishCanceled(id)
+                        else dao.get(id)?.let { dao.update(it.copy(status = DownloadStatus.PAUSED)) }
+                    }
+                } finally {
+                    intents.remove(id)
+                    _live.update { it - id }
+                    jobs.remove(id, job)
+                    _active.update { it - 1 }
+                }
             }
         }
-        jobs[id] = job
+        try {
+            DownloadService.start(context)
+            job.start()
+        } catch (e: Exception) {
+            job.cancel()
+            throw e
+        }
     }
 
     private suspend fun run(id: Long) {
@@ -158,10 +174,6 @@ class DownloadEngine(
             d = transfer(d, part)
             publish(d, part)
         } catch (e: CancellationException) {
-            withContext(NonCancellable) {
-                if (intents[id] == DownloadStatus.CANCELED) finishCanceled(id)
-                else dao.get(id)?.let { dao.update(it.copy(status = DownloadStatus.PAUSED)) }
-            }
             throw e
         } catch (e: Exception) {
             withContext(NonCancellable) {
@@ -195,7 +207,7 @@ class DownloadEngine(
                 else -> throw IOException("HTTP $code")
             }
             val total = when {
-                code == 206 -> conn.getHeaderField("Content-Range")?.substringAfter('/')?.toLongOrNull() ?: -1L
+                code == 206 -> DownloadRanges.total(conn.getHeaderField("Content-Range"), offset, conn.contentLengthLong)
                 else -> conn.contentLengthLong
             }
             val disposition = conn.getHeaderField("Content-Disposition").orEmpty()
@@ -285,14 +297,15 @@ class DownloadEngine(
             throw e
         }
         part.delete()
+        cookies.remove(d.id)
         dao.update(d.copy(status = DownloadStatus.COMPLETED, contentUri = uri.toString(), totalBytes = d.downloadedBytes))
         _events.tryEmit(DownloadEvent(d.id, d.fileName, success = true, contentUri = uri.toString(), mimeType = d.mimeType))
     }
 
     /** Adds an already complete local file (a blob the page handed over) to Downloads and the list. */
-    suspend fun importFile(source: File, name: String, mime: String): Long = withContext(Dispatchers.IO) {
+    suspend fun importFile(source: File, name: String, mime: String, incognito: Boolean = false): Long = withContext(Dispatchers.IO) {
         val id = dao.insert(
-            DownloadEntity(url = "blob", fileName = sanitize(name), mimeType = mime, totalBytes = source.length(), downloadedBytes = source.length()),
+            DownloadEntity(url = "blob", fileName = sanitize(name), mimeType = mime, totalBytes = source.length(), downloadedBytes = source.length(), incognito = incognito),
         )
         val part = File(partDir, "$id.part")
         source.copyTo(part, overwrite = true)
@@ -312,7 +325,7 @@ class DownloadEngine(
         val bytes = if (header.endsWith(";base64")) Base64.decode(payload, Base64.DEFAULT) else Uri.decode(payload).toByteArray()
         val mime = header.removePrefix("data:").substringBefore(';').ifBlank { request.mimeType.ifBlank { "application/octet-stream" } }
         val name = sanitize(DownloadNames.forResponse(request.contentDisposition, mime))
-        val id = dao.insert(DownloadEntity(url = "data-uri", fileName = name, mimeType = mime, totalBytes = bytes.size.toLong(), downloadedBytes = bytes.size.toLong()))
+        val id = dao.insert(DownloadEntity(url = "data-uri", fileName = name, mimeType = mime, totalBytes = bytes.size.toLong(), downloadedBytes = bytes.size.toLong(), incognito = request.incognito))
         File(partDir, "$id.part").writeBytes(bytes)
         val d = dao.get(id)!!
         try {
@@ -325,6 +338,7 @@ class DownloadEngine(
 
     private suspend fun finishCanceled(id: Long) {
         File(partDir, "$id.part").delete()
+        cookies.remove(id)
         dao.get(id)?.let { dao.update(it.copy(status = DownloadStatus.CANCELED, downloadedBytes = 0)) }
     }
 

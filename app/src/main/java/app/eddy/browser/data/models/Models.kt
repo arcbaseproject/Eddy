@@ -89,6 +89,7 @@ data class Settings(
     val userAgentMode: UserAgentMode = UserAgentMode.DEFAULT,
     val customUserAgent: String = "",
     val textZoom: Int = 100,
+    val darkenPages: Boolean = false,
     val webDebugging: Boolean = false,
     val shortcuts: List<Shortcut> = emptyList(),
 ) {

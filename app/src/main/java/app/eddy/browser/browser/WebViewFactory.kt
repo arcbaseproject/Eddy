@@ -28,6 +28,8 @@ import app.eddy.browser.util.UrlUtils
 import java.util.concurrent.ConcurrentHashMap
 
 /** Builds and configures WebViews. All per-tab and per-site policy is applied here in one place. */
+@androidx.annotation.OptIn(markerClass = [WebSettingsCompat.ExperimentalSpeculativeLoading::class,
+    Profile.ExperimentalPreconnect::class, Profile.ExperimentalWarmUpRendererProcess::class])
 class WebViewFactory(private val appContext: Context, private val host: BrowserHost) {
 
     private val defaultUa: String by lazy { WebSettings.getDefaultUserAgent(appContext) }
@@ -36,10 +38,19 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     /** Client hints (Sec-CH-UA-*, navigator.userAgentData) the system WebView reports; captured from the first view. */
     private var mobileMeta: UserAgentMetadata? = null
     private val desktopMeta by lazy {
-        mobileMeta?.let { UserAgentMetadata.Builder(it).setMobile(false).setPlatform("Linux").setModel("").setFormFactors(listOf("Desktop")).build() }
+        mobileMeta?.let {
+            UserAgentMetadata.Builder(it).setMobile(false).setPlatform("Linux").setModel("").apply {
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA_FORM_FACTORS)) setFormFactors(listOf("Desktop"))
+            }.build()
+        }
     }
     private val mainExecutor by lazy { java.util.concurrent.Executor { Handler(Looper.getMainLooper()).post(it) } }
     private val connectivity = appContext.getSystemService(ConnectivityManager::class.java)
+    private val certificateExceptions = mutableSetOf<String>()
+    private var sslPreferencesCleared = false
+
+    fun rememberCertificateException(url: String) { certificateExceptions.add(UrlUtils.host(url)) }
+    fun hasCertificateException(url: String): Boolean = UrlUtils.host(url) in certificateExceptions
 
     /** Each incognito session gets its own storage profile, so a new session can never see an old one. */
     @Volatile var incognitoProfile: String = newProfileName()
@@ -65,6 +76,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         val view = EddyWebView(MutableContextWrapper(appContext))
         view.incognito = tab.incognito
         if (tab.incognito && incognitoIsolated) WebViewCompat.setProfile(view, incognitoProfile)
+        if (!sslPreferencesCleared) {
+            // Chromium may outlive the previous ViewModel. Do not inherit untracked SSL decisions.
+            view.clearSslPreferences()
+            sslPreferencesCleared = true
+        }
 
         // Pages that set no background of their own must render like they do in any browser: dark text on white.
         // Tinting this with the app theme would make plain pages unreadable in dark mode.
@@ -136,6 +152,10 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     /** Settings that do not depend on the current site; also re-run when the user changes a preference. */
     fun applyGlobal(view: EddyWebView, s: Settings) {
         WebView.setWebContentsDebuggingEnabled(s.webDebugging)
+        // ponytail: WebView only darkens while its theme is dark, i.e. the system is in dark mode; the in-app Dark theme does not count.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(view.settings, s.darkenPages)
+        }
         val cookies = cookieManager(view.incognito)
         cookies.setAcceptCookie(s.cookieMode != CookieMode.BLOCK_ALL)
         cookies.setAcceptThirdPartyCookies(view, s.cookieMode == CookieMode.ALLOW_ALL)
@@ -222,7 +242,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
 
     /** Also covers the site's other hosts: neverssl.com hands http traffic to a random subdomain. */
     fun insecureAllowed(host: String): Boolean =
-        host in insecureHosts || insecureHosts.any { UrlUtils.sameSite(it, host) }
+        host in insecureHosts || insecureHosts.any { host.endsWith(".$it") }
 
     /** The URL to actually load: https:// when HTTPS-only is on and this host has no exception. */
     fun upgrade(url: String): String =

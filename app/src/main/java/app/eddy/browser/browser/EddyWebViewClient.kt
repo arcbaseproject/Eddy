@@ -63,6 +63,7 @@ class EddyWebViewClient(
             }
             "about", "data", "blob", "file", "javascript", "view-source" -> return false
             "intent" -> {
+                if (!request.isForMainFrame) return true
                 val raw = uri.toString()
                 runCatching { Intent.parseUri(raw, Intent.URI_INTENT_SCHEME) }.getOrNull()?.let {
                     // Strip anything that could target our own components or carry selectors.
@@ -73,6 +74,7 @@ class EddyWebViewClient(
                 return true
             }
             else -> {
+                if (!request.isForMainFrame) return true
                 host.handleExternalIntent(tab, Intent(Intent.ACTION_VIEW, uri), request.hasGesture(), null)
                 return true
             }
@@ -184,6 +186,7 @@ class EddyWebViewClient(
     }
 
     private fun securityFor(url: String) = when {
+        UrlUtils.isHttps(url) && factory.hasCertificateException(url) -> Security.ERROR
         UrlUtils.isHttps(url) -> Security.SECURE
         url.startsWith("http://", true) -> Security.INSECURE
         else -> Security.NONE

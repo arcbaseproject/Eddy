@@ -29,6 +29,12 @@ class UrlUtilsTest {
         assertEquals("https://duckduckgo.com/?q=javascript%3Aalert%281%29", UrlUtils.resolve("javascript:alert(1)", engine))
     }
 
+    @Test fun resolvesDomainWithPort() {
+        assertEquals("https://example.com:8443/path", UrlUtils.resolve("example.com:8443/path", engine))
+        assertEquals("https://sub.example.com:443", UrlUtils.resolve("sub.example.com:443", engine))
+        assertFalse(UrlUtils.isUrl("javascript:alert(1)"))
+    }
+
     @Test fun hosts() {
         assertEquals("example.com", UrlUtils.displayHost("https://www.example.com:8080/x"))
         assertEquals("a.b.com", UrlUtils.host("https://user:pw@a.b.com/x"))
@@ -60,4 +66,12 @@ class UrlUtilsTest {
         assertFalse(UrlUtils.isLocalHost("http://example.com"))
         assertFalse(UrlUtils.isLocalHost("http://localhost.example.com"))
     }
+    @Test fun permissionsUseExactOrigins() {
+        assertEquals("https://www.example.com", UrlUtils.origin("https://WWW.example.com:443/path"))
+        assertEquals("https://example.com:8443", UrlUtils.origin("https://example.com:8443/"))
+        assertEquals("http://example.com", UrlUtils.origin("http://example.com:80"))
+        assertEquals("http://[::1]:8080", UrlUtils.origin("http://[::1]:8080/path"))
+        assertEquals(null, UrlUtils.origin("file:///private"))
+    }
+
 }

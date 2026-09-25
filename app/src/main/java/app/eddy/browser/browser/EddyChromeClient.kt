@@ -12,6 +12,7 @@ import android.net.Uri
 import app.eddy.browser.util.UrlUtils
 
 class EddyChromeClient(private val tab: BrowserTab, private val host: BrowserHost) : WebChromeClient() {
+    private var geolocationOrigin: String? = null
 
     override fun onProgressChanged(view: WebView, newProgress: Int) {
         if (tab.error != null) return
@@ -42,9 +43,17 @@ class EddyChromeClient(private val tab: BrowserTab, private val host: BrowserHos
     }
 
     override fun onPermissionRequest(request: PermissionRequest) = host.requestWebPermission(tab, request)
+    override fun onPermissionRequestCanceled(request: PermissionRequest) = host.cancelWebPermission(request)
+    override fun onGeolocationPermissionsHidePrompt() {
+        geolocationOrigin?.let(host::cancelGeolocation)
+        geolocationOrigin = null
+    }
 
-    override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) =
+    override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
+        onGeolocationPermissionsHidePrompt()
+        geolocationOrigin = origin
         host.requestGeolocation(tab, origin, callback)
+    }
 
     override fun onShowFileChooser(
         webView: WebView,

@@ -25,7 +25,7 @@ class BlobDownloader(
     private val engine: DownloadEngine,
     private val onResult: (String, Long?) -> Unit,
 ) {
-    private class Job(val tabId: String, val origin: String, val name: String, val mime: String, val file: File) {
+    private class Job(val tabId: String, val origin: String, val name: String, val mime: String, val file: File, val incognito: Boolean) {
         var size = 0L
         var failed = false
     }
@@ -41,7 +41,7 @@ class BlobDownloader(
         val origin = Regex("^(https?://[^/?#]+)", RegexOption.IGNORE_CASE).find(tab.url)?.value?.lowercase() ?: return
         val id = ids.incrementAndGet()
         val type = mime.ifBlank { "application/octet-stream" }
-        jobs[id] = Job(tab.id, origin, DownloadNames.forResponse(disposition, type), type, File(dir, "$id.tmp"))
+        jobs[id] = Job(tab.id, origin, DownloadNames.forResponse(disposition, type), type, File(dir, "$id.tmp"), tab.incognito)
         view.evaluateJavascript(script(id, blobUrl), null)
     }
 
@@ -66,7 +66,7 @@ class BlobDownloader(
                 if (!job.file.exists()) job.file.createNewFile() // an empty blob is still a valid download
                 val name = json.optString("name").ifBlank { job.name }
                 val mime = json.optString("mime").ifBlank { job.mime }
-                val downloadId = runCatching { engine.importFile(job.file, name, mime) }.getOrNull()
+                val downloadId = runCatching { engine.importFile(job.file, name, mime, job.incognito) }.getOrNull()
                 onResult(if (downloadId != null) "Saved $name" else "Could not save $name", downloadId)
             }
             "error" -> fail(id, job)

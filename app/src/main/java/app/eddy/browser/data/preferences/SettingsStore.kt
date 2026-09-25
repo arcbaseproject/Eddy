@@ -79,6 +79,7 @@ class SettingsStore(private val context: Context) {
         val uaMode = stringPreferencesKey("ua_mode")
         val ua = stringPreferencesKey("ua")
         val zoom = intPreferencesKey("text_zoom")
+        val darken = booleanPreferencesKey("darken_pages")
         val debug = booleanPreferencesKey("web_debug")
         val shortcuts = stringPreferencesKey("shortcuts")
     }
@@ -131,6 +132,7 @@ class SettingsStore(private val context: Context) {
             userAgentMode = this[K.uaMode].toEnum(d.userAgentMode),
             customUserAgent = this[K.ua] ?: "",
             textZoom = this[K.zoom] ?: d.textZoom,
+            darkenPages = this[K.darken] ?: d.darkenPages,
             webDebugging = this[K.debug] ?: d.webDebugging,
             shortcuts = this[K.shortcuts]?.let(::decodeShortcuts) ?: DefaultShortcuts,
         )
@@ -179,6 +181,7 @@ class SettingsStore(private val context: Context) {
         this[K.uaMode] = s.userAgentMode.name
         this[K.ua] = s.customUserAgent
         this[K.zoom] = s.textZoom
+        this[K.darken] = s.darkenPages
         this[K.debug] = s.webDebugging
         this[K.shortcuts] = encodeShortcuts(s.shortcuts)
     }

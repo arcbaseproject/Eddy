@@ -64,6 +64,8 @@ class BrowserTab(
     @Volatile var trackerBlockingActive: Boolean = true
 
     var savedState: Bundle? = null
+    /** Invalidates an asynchronous restore when the tab navigates, closes, or returns home. */
+    var restoreVersion = 0
     var hasPersistedState = false
     var lastActive = System.currentTimeMillis()
     var lastHistoryId = 0L

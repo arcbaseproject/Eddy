@@ -21,6 +21,7 @@ import app.eddy.browser.util.UrlUtils
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class PermissionAnswer(val allow: Boolean, val remember: Boolean)
 
@@ -34,7 +35,7 @@ sealed interface Prompt {
     ) : Prompt
 
     class HttpAuth(val host: String, val realm: String, val handler: HttpAuthHandler) : Prompt
-    class ExternalApp(val label: String?, val intent: Intent, val fallbackUrl: String?) : Prompt
+    class ExternalApp(val label: String?, val intent: Intent, val fallbackUrl: String?, val tabId: String) : Prompt
 
     /** A download of an executable or installer type, which the user confirms before it starts. */
     class RiskyDownload(val fileName: String, val sourceHost: String, val insecure: Boolean, val start: () -> Unit) : Prompt
@@ -46,7 +47,7 @@ sealed interface UiEffect {
     class RequestPermissions(val permissions: List<String>, val result: CompletableDeferred<Map<String, Boolean>>) : UiEffect
     class ShowCustomView(val view: View, val callback: WebChromeClient.CustomViewCallback) : UiEffect
     data object HideCustomView : UiEffect
-    class Launch(val intent: Intent) : UiEffect
+    class Launch(val intent: Intent, val onFailure: (() -> Unit)? = null) : UiEffect
     class OpenFile(val uri: String, val mime: String) : UiEffect
     class Print(val adapter: PrintDocumentAdapter, val jobName: String) : UiEffect
 }
@@ -60,9 +61,16 @@ class WebPermissionCoordinator(
     private val sites: SitePermissions,
     private val showPrompt: (Prompt) -> Unit,
     private val requestRuntime: suspend (List<String>) -> Map<String, Boolean>,
+    private val dismissPrompt: (Prompt) -> Unit = {},
 ) {
+    private val webRequests = mutableMapOf<PermissionRequest, Job>()
+    private val locations = mutableMapOf<String, Job>()
+
+    fun cancel(request: PermissionRequest) { webRequests.remove(request)?.cancel() }
+    fun cancelGeolocation(origin: String) { locations.remove(origin)?.cancel() }
+
     fun onWebRequest(request: PermissionRequest, incognito: Boolean) {
-        val host = UrlUtils.displayHost(request.origin.toString())
+        val host = UrlUtils.origin(request.origin.toString()) ?: run { request.deny(); return }
         val map = request.resources.mapNotNull { res ->
             when (res) {
                 PermissionRequest.RESOURCE_VIDEO_CAPTURE -> res to SiteFeature.CAMERA
@@ -76,7 +84,7 @@ class WebPermissionCoordinator(
             if (drm.isEmpty()) request.deny() else request.grant(drm.toTypedArray())
             return
         }
-        scope.launch {
+        val job = scope.launch {
             val allowed = decide(host, map.map { it.second }, incognito)
             val runtime = allowed.mapNotNull {
                 when (it) {
@@ -91,28 +99,34 @@ class WebPermissionCoordinator(
             }.map { it.first } + drm
             if (granted.isEmpty()) request.deny() else request.grant(granted.toTypedArray())
         }
+        webRequests[request] = job
+        job.invokeOnCompletion { webRequests.remove(request) }
     }
 
     fun onGeolocation(origin: String, callback: GeolocationPermissions.Callback, incognito: Boolean) {
-        val host = UrlUtils.displayHost(origin)
-        scope.launch {
+        val host = UrlUtils.origin(origin) ?: run { callback.invoke(origin, false, false); return }
+        locations.remove(origin)?.cancel()
+        val job = scope.launch {
             val allowed = SiteFeature.LOCATION in decide(host, listOf(SiteFeature.LOCATION), incognito)
             val ok = allowed && ensureRuntime(
                 listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
             ).values.any { it }
             callback.invoke(origin, ok, false)
         }
+        locations[origin] = job
+        job.invokeOnCompletion { locations.remove(origin) }
     }
 
     /** Applies stored site policy; anything undecided is put to the user in a single prompt. */
     private suspend fun decide(host: String, features: List<SiteFeature>, incognito: Boolean): Set<SiteFeature> {
-        val stored = sites.peek(host)
+        val stored = if (incognito) null else sites.peek(host)
         val undecided = features.filter { stored?.get(it) == null }
         val allowed = features.filter { stored?.get(it) == SiteSettings.ALLOW }.toMutableSet()
         if (undecided.isNotEmpty()) {
             val answer = CompletableDeferred<PermissionAnswer>()
-            showPrompt(Prompt.Permission(host, undecided, answer, incognito))
-            val a = answer.await()
+            val prompt = Prompt.Permission(host, undecided, answer, incognito)
+            showPrompt(prompt)
+            val a = try { answer.await() } finally { dismissPrompt(prompt) }
             if (a.allow) allowed += undecided
             if (a.remember && !incognito) undecided.forEach { sites.set(host, it, if (a.allow) SiteSettings.ALLOW else SiteSettings.BLOCK) }
         }

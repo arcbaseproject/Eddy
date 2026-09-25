@@ -19,6 +19,7 @@ import app.eddy.browser.data.database.EddyDatabase
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.preferences.SettingsStore
 import app.eddy.browser.downloads.DownloadEngine
+import app.eddy.browser.browser.MediaService
 import app.eddy.browser.downloads.DownloadService
 import app.eddy.browser.history.HistoryManager
 import app.eddy.browser.passwords.PasswordManager
@@ -74,6 +75,7 @@ class AppContainer(private val app: Application) {
     fun start() {
         startWebViewEarly()
         DownloadService.createChannels(app)
+        MediaService.createChannel(app)
         FilterUpdateService.schedule(app)
         scope.launch {
             val initial = settings.value
@@ -118,15 +120,17 @@ class AppContainer(private val app: Application) {
      * Loads the WebView implementation in the background instead of on the first navigation, and keeps a
      * renderer process ready. Without this the first page load pays for Chromium start-up on the UI thread.
      */
+    @androidx.annotation.OptIn(markerClass = [WebViewCompat.ExperimentalAsyncStartUp::class, Profile.ExperimentalWarmUpRendererProcess::class])
     private fun startWebViewEarly() {
-        if (!WebViewFeature.isStartupFeatureSupported(app, WebViewFeature.STARTUP_FEATURE_SET_UI_THREAD_STARTUP_MODE)) return
+        if (!WebViewFeature.isStartupFeatureSupported(app, WebViewFeature.STARTUP_FEATURE_SET_UI_THREAD_STARTUP_MODE_V2)) return
         val executor = Executors.newSingleThreadExecutor()
         val config = WebViewStartUpConfig.Builder(executor).setShouldRunUiThreadStartUpTasks(false).build()
         runCatching {
             WebViewCompat.startUpWebView(app, config, WebViewCompat.WebViewStartUpCallback {
                 // Profile calls must run on the main thread.
                 Handler(Looper.getMainLooper()).post {
-                    if (WebViewFeature.isFeatureSupported(WebViewFeature.WARM_UP_RENDERER_PROCESS)) {
+                    if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) &&
+                        WebViewFeature.isFeatureSupported(WebViewFeature.WARM_UP_RENDERER_PROCESS)) {
                         runCatching { ProfileStore.getInstance().getOrCreateProfile(Profile.DEFAULT_PROFILE_NAME).warmUpRendererProcess() }
                     }
                 }

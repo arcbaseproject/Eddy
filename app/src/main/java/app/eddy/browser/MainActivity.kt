@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -39,9 +38,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.withStarted
 import app.eddy.browser.browser.BrowserRoot
 import app.eddy.browser.privacy.ExitCleanupService
 import app.eddy.browser.browser.BrowserViewModel
+import app.eddy.browser.browser.MediaService
 import app.eddy.browser.browser.UiEffect
 import app.eddy.browser.data.models.ThemeMode
 import kotlinx.coroutines.CompletableDeferred
@@ -98,7 +99,16 @@ class MainActivity : ComponentActivity() {
             BrowserRoot(vm)
         }
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) { vm.effectFlow.collect(::handleEffect) }
+            // A permission dialog/file picker can stop this Activity. Do not cancel the
+            // in-flight effect after removing it from the channel.
+            vm.effectFlow.collect { effect ->
+                try {
+                    lifecycle.withStarted { }
+                    handleEffect(effect)
+                } finally {
+                    if (effect is UiEffect.RequestPermissions) effect.result.complete(emptyMap())
+                }
+            }
         }
         lifecycleScope.launch {
             // The service only matters once the task is swiped away, so it is started, not bound.
@@ -116,18 +126,33 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        vm.tabs.selected?.webView?.resumeTimers()
+        vm.tabs.selected?.webView?.onResume()
     }
 
     override fun onStop() {
         super.onStop()
         vm.onStop()
-        // Keep timers running while something is playing so background audio is not cut off.
-        if (!getSystemService(AudioManager::class.java).isMusicActive) vm.tabs.selected?.webView?.pauseTimers()
+        // pauseTimers is process-wide: reopening on a home or dormant tab cannot resume it.
+        // Pause only this view, and keep background playback running.
+        if (!MediaService.isPlaying(this)) vm.tabs.selected?.webView?.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        MediaService.stop(this)
+    }
+
+    // Started while still in the foreground: Android refuses a foreground-service start once the app is backgrounded.
+    override fun onPause() {
+        super.onPause()
+        if (MediaService.isPlaying(this)) MediaService.start(this)
     }
 
     override fun onDestroy() {
-        if (isFinishing || !isChangingConfigurations) vm.tabs.onActivityDestroyed()
+        hideCustomView()
+        vm.tabs.onActivityDestroyed()
+        permissionWaiter?.complete(emptyMap())
+        permissionWaiter = null
         fileCallback?.onReceiveValue(null)
         fileCallback = null
         super.onDestroy()
@@ -161,9 +186,9 @@ class MainActivity : ComponentActivity() {
             is UiEffect.Launch -> try {
                 startActivity(effect.intent)
             } catch (_: ActivityNotFoundException) {
-                vm.snackbar("No app can open this")
+                effect.onFailure?.invoke() ?: vm.snackbar("No app can open this")
             } catch (_: SecurityException) {
-                vm.snackbar("Could not open this")
+                effect.onFailure?.invoke() ?: vm.snackbar("Could not open this")
             }
             is UiEffect.Print -> try {
                 getSystemService(PrintManager::class.java)

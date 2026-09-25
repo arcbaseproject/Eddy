@@ -33,6 +33,8 @@ interface BrowserHost {
     fun showCustomView(view: View, callback: WebChromeClient.CustomViewCallback)
     fun hideCustomView()
     fun requestWebPermission(tab: BrowserTab, request: PermissionRequest)
+    fun cancelWebPermission(request: PermissionRequest)
+    fun cancelGeolocation(origin: String)
     fun requestGeolocation(tab: BrowserTab, origin: String, callback: GeolocationPermissions.Callback)
     fun requestHttpAuth(tab: BrowserTab, handler: HttpAuthHandler, host: String, realm: String)
     fun createPopup(parent: BrowserTab, resultMsg: Message, userGesture: Boolean): Boolean

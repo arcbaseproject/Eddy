@@ -19,6 +19,7 @@ android {
         targetSdk = 37
         versionCode = 6
         versionName = "0.4.0-beta"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Release signing reads keystore.properties (git-ignored). Without it, e.g. on CI, the release APK stays unsigned.
@@ -75,4 +76,7 @@ dependencies {
     implementation(libs.compose.material.icons)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:core:1.7.0")
+    androidTestImplementation(libs.junit)
 }

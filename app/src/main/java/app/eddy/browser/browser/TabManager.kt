@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.os.Parcel
+import android.util.AtomicFile
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.runtime.getValue
@@ -72,7 +73,10 @@ class TabManager(
         tabs.add(at, tab)
         // Build the view before selecting: select() may start ensureWebView() synchronously and would create a second one.
         if (url.isNotEmpty()) tab.webView = createView(tab, null)
-        if (select) select(tab)
+        if (select) select(tab) else {
+            tab.webView?.onPause()
+            evictInactive(MAX_LIVE)
+        }
         requestPersist()
         return tab
     }
@@ -94,12 +98,15 @@ class TabManager(
     /** Builds the WebView for a restored/evicted tab, reading its serialised history off the main thread. */
     suspend fun ensureWebView(tab: BrowserTab) {
         // building guards the await below: without it two callers both pass the null check and one view is orphaned.
-        if (tab.webView != null || tab.isHome || !building.add(tab.id)) return
+        if (tab !in tabs || tab.webView != null || tab.isHome || !building.add(tab.id)) return
+        val version = tab.restoreVersion
         try {
             val state = tab.savedState ?: if (tab.hasPersistedState) withContext(stateIo) { readState(tab.id) } else null
+            if (tab !in tabs || tab.isHome || tab.webView != null || tab.restoreVersion != version) return
             tab.webView = createView(tab, state)
             tab.savedState = null
-            if (tab.id == selectedId) tab.webView?.onResume()
+            if (tab.id == selectedId) tab.webView?.onResume() else tab.webView?.onPause()
+            evictInactive(MAX_LIVE)
         } finally {
             building.remove(tab.id)
         }
@@ -108,11 +115,16 @@ class TabManager(
     private fun createView(tab: BrowserTab, state: Bundle?, loadUrl: Boolean = true): EddyWebView {
         val view = factory().create(tab)
         val restored = state != null && view.restoreState(state) != null
+        tab.canGoBack = view.canGoBack()
+        tab.canGoForward = view.canGoForward()
         if (!restored && loadUrl && tab.url.isNotEmpty()) factory().load(tab, view, tab.url)
         return view
     }
 
     fun load(tab: BrowserTab, url: String) {
+        tab.restoreVersion++
+        tab.savedState = null
+        tab.hasPersistedState = false
         tab.error?.sslHandler?.cancel()
         tab.error = null
         tab.url = url
@@ -274,11 +286,13 @@ class TabManager(
     }
 
     private fun destroyView(tab: BrowserTab) {
+        tab.restoreVersion++
         val view = tab.webView ?: return
         tab.webView = null
         view.onScrolled = null
         view.onPull = null
         view.onPullRelease = null
+        factory().cancelPrerender(view)
         (view.parent as? ViewGroup)?.removeView(view)
         view.stopLoading()
         view.destroy()
@@ -312,20 +326,25 @@ class TabManager(
         ).toString()
         val ids = normal.map { it.id }.toSet()
         scope.launch(stateIo) {
-            live.forEach { (id, bytes) -> File(stateDir, "$id.bin").writeBytes(bytes) }
-            stateDir.listFiles()?.filter { it.nameWithoutExtension !in ids }?.forEach { it.delete() }
-            indexFile.writeText(index)
+            runCatching {
+                live.forEach { (id, bytes) -> File(stateDir, "$id.bin").writeAtomically(bytes) }
+                stateDir.listFiles()?.filter { it.nameWithoutExtension !in ids }?.forEach { it.delete() }
+                indexFile.writeAtomically(index.toByteArray())
+            }
         }
         thumbnails.prune(tabs.map { it.id }.toSet())
     }
 
     /** Rebuilds the tab list from disk. Only the selected tab gets a WebView; the rest stay dormant. */
     suspend fun restore(): Boolean {
-        val json = withContext(Dispatchers.IO) { runCatching { JSONObject(indexFile.readText()) }.getOrNull() } ?: return false
+        val json = withContext(stateIo) {
+            runCatching { AtomicFile(indexFile).openRead().bufferedReader().use { JSONObject(it.readText()) } }.getOrNull()
+        } ?: return false
         val arr = json.optJSONArray("tabs") ?: return false
         for (i in 0 until arr.length()) {
-            val o = arr.getJSONObject(i)
-            val id = o.getString("id")
+            val o = arr.optJSONObject(i) ?: continue
+            val id = o.optString("id").takeIf { it.matches(Regex("[a-fA-F0-9-]{36}")) } ?: continue
+            if (tabs.any { it.id == id }) continue
             tabs.add(
                 BrowserTab(id = id, initialUrl = o.optString("url"), initialTitle = o.optString("title"))
                     .also { it.hasPersistedState = File(stateDir, "$id.bin").exists() },
@@ -339,10 +358,17 @@ class TabManager(
 
     private fun writeState(id: String, state: Bundle) {
         val bytes = state.toBytes()
-        scope.launch(stateIo) { File(stateDir, "$id.bin").writeBytes(bytes) }
+        scope.launch(stateIo) { runCatching { File(stateDir, "$id.bin").writeAtomically(bytes) } }
     }
 
-    private fun readState(id: String): Bundle? = runCatching { File(stateDir, "$id.bin").readBytes().toBundle() }.getOrNull()
+    private fun File.writeAtomically(bytes: ByteArray) {
+        val file = AtomicFile(this)
+        val stream = file.startWrite()
+        try { stream.write(bytes); file.finishWrite(stream) }
+        catch (e: Exception) { file.failWrite(stream); throw e }
+    }
+
+    private fun readState(id: String): Bundle? = runCatching { AtomicFile(File(stateDir, "$id.bin")).openRead().use { it.readBytes().toBundle() } }.getOrNull()
 
     private fun Bundle.toBytes(): ByteArray {
         val p = Parcel.obtain()
