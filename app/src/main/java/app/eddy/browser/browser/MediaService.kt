@@ -28,10 +28,12 @@ class MediaService : Service() {
 
     // Only this app's playback is reported. The grace period covers the gap between tracks or before an ad.
     private val callback = object : AudioManager.AudioPlaybackCallback() {
-        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
-            handler.removeCallbacks(stopRunnable)
-            if (configs.isEmpty()) handler.postDelayed(stopRunnable, IDLE_STOP_MS)
-        }
+        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) = scheduleStopIfIdle()
+    }
+
+    private fun scheduleStopIfIdle() {
+        handler.removeCallbacks(stopRunnable)
+        if (!isPlaying(this)) handler.postDelayed(stopRunnable, IDLE_STOP_MS)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -44,6 +46,7 @@ class MediaService : Service() {
         }
         startForeground(NOTIFICATION_ID, build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
         audio.registerAudioPlaybackCallback(callback, handler)
+        scheduleStopIfIdle()
         return START_NOT_STICKY
     }
 
@@ -84,7 +87,10 @@ class MediaService : Service() {
             )
         }
 
-        fun isPlaying(context: Context) = context.getSystemService(AudioManager::class.java).activePlaybackConfigurations.isNotEmpty()
+        // A paused WebView player stays in the playback list, so also require audio to be actually playing.
+        // ponytail: isMusicActive is device-wide, so another app's music keeps the notification up.
+        fun isPlaying(context: Context) = context.getSystemService(AudioManager::class.java)
+            .let { it.activePlaybackConfigurations.isNotEmpty() && it.isMusicActive }
 
         fun start(context: Context) = ContextCompat.startForegroundService(context, Intent(context, MediaService::class.java))
 

@@ -17,8 +17,8 @@ android {
         applicationId = "app.eddy.browser"
         minSdk = 29
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.5.1-beta"
+        versionCode = 9
+        versionName = "0.5.2-beta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -36,6 +36,8 @@ android {
     }
 
     buildTypes {
+        // Debug builds use Android's debug key, so they get their own package instead of replacing the release install.
+        debug { applicationIdSuffix = ".debug" }
         release {
             signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
