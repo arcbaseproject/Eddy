@@ -32,9 +32,17 @@ Builds:
       - yes
     prebuild: rm -f src/main/assets/eruda.min.js
 
+  - versionName: 0.6.0-beta
+    versionCode: 10
+    commit: c3ea17fce4a8fc404ce8ffdcc57670ce735323da
+    subdir: app
+    gradle:
+      - yes
+    prebuild: rm -f src/main/assets/eruda.min.js
+
 AllowedAPKSigningKeys: 6b6dbcd2ff731c4697385c73b95811cbb1272de796e4440afab0c9aa7b2fcc57
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+(-beta)?$
-CurrentVersion: 0.5.2-beta
-CurrentVersionCode: 9
+CurrentVersion: 0.6.0-beta
+CurrentVersionCode: 10
