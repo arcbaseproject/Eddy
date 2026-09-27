@@ -41,6 +41,8 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,7 +70,6 @@ import app.eddy.browser.ui.components.ConfirmDialog
 import app.eddy.browser.ui.components.EmptyState
 import app.eddy.browser.ui.components.SiteIcon
 import app.eddy.browser.ui.components.EddyIconButton
-import app.eddy.browser.ui.components.swipeToDismiss
 import app.eddy.browser.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -175,37 +176,41 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
     val border by animateFloatAsState(if (selected) 3f else 0f, spatialSpring(), label = "selected")
     val title = tab.displayTitle(if (tab.isHome) "New tab" else "Tab")
 
-    Surface(
-        modifier = modifier.swipeToDismiss { haptics.confirm(); vm.closeTab(tab) }
-            .semantics { contentDescription = "$title. ${tab.host}. Swipe sideways to close." },
-        shape = RoundedCornerShape(28.dp),
-        color = if (tab.incognito) scheme.tertiaryContainer.copy(alpha = 0.5f) else scheme.surfaceContainerHigh,
-        border = if (border > 0.05f) androidx.compose.foundation.BorderStroke(border.dp, scheme.primary) else null,
-        onClick = { vm.selectTab(tab) },
+    SwipeToDismissBox(
+        rememberSwipeToDismissBoxState(), backgroundContent = {}, modifier,
+        onDismiss = { haptics.confirm(); vm.closeTab(tab) },
     ) {
-        Column(Modifier.padding(6.dp)) {
-            Row(Modifier.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (tab.isHome) Icon(Icons.Rounded.Home, null, Modifier.size(20.dp), tint = scheme.primary)
-                else SiteIcon(tab.host, size = 20.dp, live = tab.favicon)
-                Text(title, Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                EddyIconButton(Icons.Rounded.Close, "Close $title", { haptics.confirm(); vm.closeTab(tab) }, Modifier.size(40.dp))
-            }
-            Box(
-                Modifier.fillMaxWidth().height(thumbHeight).clip(RoundedCornerShape(22.dp)).background(scheme.surfaceContainerLowest),
-                contentAlignment = Alignment.Center,
-            ) {
-                val bmp = thumb
-                when {
-                    bmp != null -> Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
-                    tab.isHome -> Icon(Icons.Rounded.Home, null, Modifier.size(40.dp), tint = scheme.outline)
-                    else -> SiteIcon(tab.host, size = 56.dp, live = tab.favicon)
+        Surface(
+            modifier = Modifier.semantics { contentDescription = "$title. ${tab.host}. Swipe sideways to close." },
+            shape = RoundedCornerShape(28.dp),
+            color = if (tab.incognito) scheme.tertiaryContainer.copy(alpha = 0.5f) else scheme.surfaceContainerHigh,
+            border = if (border > 0.05f) androidx.compose.foundation.BorderStroke(border.dp, scheme.primary) else null,
+            onClick = { vm.selectTab(tab) },
+        ) {
+            Column(Modifier.padding(6.dp)) {
+                Row(Modifier.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (tab.isHome) Icon(Icons.Rounded.Home, null, Modifier.size(20.dp), tint = scheme.primary)
+                    else SiteIcon(tab.host, size = 20.dp, live = tab.favicon)
+                    Text(title, Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    EddyIconButton(Icons.Rounded.Close, "Close $title", { haptics.confirm(); vm.closeTab(tab) }, Modifier.size(40.dp))
                 }
+                Box(
+                    Modifier.fillMaxWidth().height(thumbHeight).clip(RoundedCornerShape(22.dp)).background(scheme.surfaceContainerLowest),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val bmp = thumb
+                    when {
+                        bmp != null -> Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+                        tab.isHome -> Icon(Icons.Rounded.Home, null, Modifier.size(40.dp), tint = scheme.outline)
+                        else -> SiteIcon(tab.host, size = 56.dp, live = tab.favicon)
+                    }
+                }
+                Text(
+                    if (tab.isHome) "Start page" else tab.host,
+                    Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
             }
-            Text(
-                if (tab.isHome) "Start page" else tab.host,
-                Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
         }
     }
 }
