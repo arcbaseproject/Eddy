@@ -54,8 +54,8 @@ internal val settingsIndex = listOf(
     SettingEntry("After closing a tab, show", listOf(TABS), "close neighbouring recent"),
 
     SettingEntry("User agent", listOf(ADVANCED), "desktop mobile custom"),
-    SettingEntry("Custom search engines", listOf(ADVANCED, SEARCH_ENGINES), "add engine"),
-    SettingEntry("Custom filter lists", listOf(ADVANCED, FILTER_LISTS), "add list url"),
+    SettingEntry("Add custom search engine", listOf(GENERAL, SEARCH_ENGINES), "custom engine"),
+    SettingEntry("Add filter list", listOf(PRIVACY, FILTER_LISTS), "custom list url"),
     SettingEntry("Web debugging", listOf(ADVANCED), "developer inspect devtools usb"),
     SettingEntry("HTTPS-only mode", listOf(PRIVACY), "https secure encryption upgrade insecure http"),
     SettingEntry("Clear when I leave", listOf(PRIVACY), "clear on exit quit delete data swipe recents"),

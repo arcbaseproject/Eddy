@@ -165,7 +165,7 @@ private fun RootPage(vm: BrowserViewModel, searching: Boolean, query: String, on
         GroupDivider()
         NavRow("Tabs", { open(SettingsPage.TABS) }, "Restore, layout, closing", Icons.Rounded.Tab)
         GroupDivider()
-        NavRow("Advanced", { open(SettingsPage.ADVANCED) }, "User agent, search engines, developer", Icons.Rounded.Build)
+        NavRow("Advanced", { open(SettingsPage.ADVANCED) }, "User agent, developer", Icons.Rounded.Build)
     }
     SettingsGroup {
         NavRow("About Eddy", { open(SettingsPage.ABOUT) }, "Version and default browser", Icons.Rounded.Info)
@@ -244,11 +244,6 @@ private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
             GroupDivider()
             ActionRow("Custom user agent", { editUa = true }, s.customUserAgent.ifBlank { "Not set (uses mobile default)" })
         }
-    }
-    SettingsGroup("Search and filtering") {
-        NavRow("Custom search engines", { vm.settingsStack.add(SettingsPage.SEARCH_ENGINES) })
-        GroupDivider()
-        NavRow("Custom filter lists", { vm.settingsStack.add(SettingsPage.FILTER_LISTS) })
     }
     SettingsGroup("Developer") {
         SwitchRow("Web debugging", s.webDebugging, { v -> vm.launchSettings { it.copy(webDebugging = v) } }, "Lets chrome://inspect attach to pages over USB")

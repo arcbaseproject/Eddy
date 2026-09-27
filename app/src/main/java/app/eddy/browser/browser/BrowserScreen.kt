@@ -69,6 +69,7 @@ import kotlin.math.sign
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -263,6 +264,13 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                 swipe.snapTo(swipe.value + if (free) dx else dx / 4)
             }
         }
+    }.pointerInput(atTop) {
+        // Swiping the bar away from the screen edge opens the tab switcher.
+        var dy = 0f
+        detectVerticalDragGestures(
+            onDragStart = { dy = 0f },
+            onDragEnd = { if ((if (atTop) dy else -dy) > 48.dp.toPx()) { haptics.tick(); vm.openTabSwitcher() } },
+        ) { _, d -> dy += d }
     }.graphicsLayer { translationX = swipe.value }
     val swipeDir by remember { derivedStateOf { sign(swipe.value).toInt() } }
 

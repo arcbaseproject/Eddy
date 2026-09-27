@@ -14,8 +14,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import app.eddy.browser.ui.animation.rememberHaptics
 import app.eddy.browser.ui.animation.spatialSpring
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sign
@@ -28,6 +31,7 @@ fun Modifier.swipeToDismiss(onDismiss: () -> Unit): Modifier {
     val haptics = rememberHaptics()
     var width by remember { mutableFloatStateOf(1f) }
     val settle = spatialSpring<Float>()
+    val flingSpeed = with(LocalDensity.current) { 400.dp.toPx() }
     return this
         .onSizeChanged { width = it.width.toFloat().coerceAtLeast(1f) }
         .graphicsLayer {
@@ -37,15 +41,17 @@ fun Modifier.swipeToDismiss(onDismiss: () -> Unit): Modifier {
         }
         .draggable(
             orientation = Orientation.Horizontal,
-            state = rememberDraggableState { delta -> scope.launch { offset.snapTo(offset.value + delta) } },
+            // Undispatched so every move lands before onDragStopped. A queued snapTo would cancel the release animation
+            // and leave the card frozen mid-swipe, which happened on high touch-rate screens.
+            state = rememberDraggableState { delta -> scope.launch(start = CoroutineStart.UNDISPATCHED) { offset.snapTo(offset.value + delta) } },
             onDragStopped = { velocity ->
-                val flung = abs(velocity) > 1800f
-                val far = abs(offset.value) > width * 0.4f
+                val flung = abs(velocity) > flingSpeed
+                val far = abs(offset.value) > width * 0.25f
                 if (flung || far) {
                     val dir = if (flung) sign(velocity) else sign(offset.value)
                     haptics.confirm()
-                    offset.animateTo(dir * width * 1.3f, spring(stiffness = 500f))
-                    onDismiss()
+                    // Close even if a new touch interrupts the fly-out, so the card never stays stuck half off screen.
+                    try { offset.animateTo(dir * width * 1.3f, spring(stiffness = 500f)) } finally { onDismiss() }
                 } else {
                     offset.animateTo(0f, settle)
                 }
