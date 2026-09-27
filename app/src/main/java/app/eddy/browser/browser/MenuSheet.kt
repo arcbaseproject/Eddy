@@ -16,15 +16,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AddToHomeScreen
+import androidx.compose.material.icons.automirrored.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmarks
-import androidx.compose.material.icons.rounded.ChromeReaderMode
+import androidx.compose.material.icons.automirrored.rounded.ChromeReaderMode
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.DesktopWindows
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.History
@@ -77,7 +77,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
             if (webPage) {
                 val quick = listOf(
                     Quick(Icons.AutoMirrored.Rounded.ArrowForward, "Forward", tab?.canGoForward == true, false, act { vm.goForward() }),
-                    Quick(Icons.Rounded.Refresh, "Reload", tab?.webView != null, false, act { vm.reloadOrStop() }),
+                    Quick(Icons.Rounded.Refresh, "Reload", tab?.webView != null, false, act { vm.reload() }),
                     Quick(
                         if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
                         if (bookmarked) "Saved" else "Bookmark", true, bookmarked, act { vm.toggleBookmark() },
@@ -85,11 +85,11 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
                     Quick(Icons.Rounded.Share, "Share", true, false, act { vm.share() }),
                     Quick(Icons.Rounded.Search, "Find", tab?.webView != null && tab.error == null, false, { vm.openFind() }),
                     Quick(
-                        Icons.Rounded.ChromeReaderMode, "Reader", tab?.webView != null, tab?.readerActive == true,
+                        Icons.AutoMirrored.Rounded.ChromeReaderMode, "Reader", tab?.webView != null, tab?.readerActive == true,
                         act { vm.toggleReader() },
                     ),
                     Quick(
-                        if (vm.readingAloud) Icons.Rounded.Stop else Icons.Rounded.VolumeUp,
+                        if (vm.readingAloud) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.VolumeUp,
                         if (vm.readingAloud) "Stop" else "Read aloud",
                         tab?.webView != null && tab.error == null, vm.readingAloud, act { vm.toggleReadAloud() },
                     ),
@@ -110,7 +110,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
                 Group {
                     SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
                     Row(Icons.Rounded.Home, "Add to start page", act { tab?.let(vm::addShortcut) })
-                    if (tab?.incognito == false) Row(Icons.Rounded.AddToHomeScreen, "Add to home screen", act { vm.addToLauncher(tab) })
+                    if (tab?.incognito == false) Row(Icons.AutoMirrored.Rounded.AddToHomeScreen, "Add to home screen", act { vm.addToLauncher(tab) })
                     if (DevTools.available(LocalContext.current)) {
                         SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
                     }

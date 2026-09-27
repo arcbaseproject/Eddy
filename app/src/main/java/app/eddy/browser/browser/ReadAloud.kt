@@ -34,6 +34,9 @@ class ReadAloud(private val context: Context, private val onStateChange: (Boolea
                 })
                 flush(e)
             } else {
+                // Drop the dead engine so the next tap tries again instead of doing nothing for the rest of the session.
+                tts?.shutdown()
+                tts = null
                 pending = null
                 onStateChange(false)
             }

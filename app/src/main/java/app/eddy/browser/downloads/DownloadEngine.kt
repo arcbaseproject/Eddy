@@ -214,6 +214,8 @@ class DownloadEngine(
             val mime = conn.contentType?.substringBefore(';')?.trim().orEmpty().ifBlank { d.mimeType }
             val name = if (disposition.isNotEmpty() || d.fileName.startsWith("downloadfile")) {
                 sanitize(URLUtil.guessFileName(d.url, disposition.ifEmpty { null }, mime.ifBlank { null }))
+                    // The user was only asked about installers under the first name; a later response cannot turn it into one.
+                    .takeUnless { DownloadNames.isExecutable(it) && !DownloadNames.isExecutable(d.fileName) } ?: d.fileName
             } else d.fileName
             d = d.copy(
                 totalBytes = total, mimeType = mime, fileName = name, downloadedBytes = offset,

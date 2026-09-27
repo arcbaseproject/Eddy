@@ -20,7 +20,7 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -142,7 +142,7 @@ private fun HistoryRow(vm: BrowserViewModel, entry: HistoryEntry) {
             EddyIconButton(Icons.Rounded.Delete, "Delete ${entry.title.ifBlank { entry.host }}", { vm.history.delete(entry.id) }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(menu, { menu = false }) {
-            DropdownMenuItem(text = { Text("Open in new tab") }, leadingIcon = { Icon(Icons.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(entry.url) })
+            DropdownMenuItem(text = { Text("Open in new tab") }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(entry.url) })
             DropdownMenuItem(text = { Text("Open in incognito tab") }, leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) }, onClick = { menu = false; vm.openInNewTab(entry.url, incognito = true) })
             DropdownMenuItem(text = { Text("Copy link") }, leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) }, onClick = {
                 menu = false

@@ -7,6 +7,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.downloads.DownloadRequest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -201,7 +202,7 @@ class BrowserAuditTest {
         Thread.sleep(400)
         shell("input keyevent KEYCODE_HOME")
         Thread.sleep(400)
-        shell("am start -n app.eddy.browser/.MainActivity")
+        shell("am start -n ${instrumentation.targetContext.packageName}/app.eddy.browser.MainActivity")
         Thread.sleep(400)
         shell("input keyevent KEYCODE_BACK")
         await { result.isCompleted }
@@ -418,4 +419,124 @@ class BrowserAuditTest {
         }
     }
 
+    // ---- regression tests for the audit fixes ------------------------------------------------
+
+    @Test fun bookmarkEditOntoExistingUrlDoesNotCrash() = runBlocking {
+        val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.bookmarks()
+        val a = "https://audit.test/a-" + System.nanoTime()
+        val b = "https://audit.test/b-" + System.nanoTime()
+        dao.insert(app.eddy.browser.data.database.Bookmark(title = "A", url = a))
+        val idB = dao.insert(app.eddy.browser.data.database.Bookmark(title = "B", url = b))
+        try {
+            dao.update(app.eddy.browser.data.database.Bookmark(id = idB, title = "B", url = a))
+            assertEquals(1, dao.all().first().count { it.url == a })
+        } finally { dao.deleteByUrl(a); dao.deleteByUrl(b) }
+    }
+
+    @Test fun httpsUpgradeRedirectLoopShowsInsecureError() {
+        val eddy = instrumentation.targetContext.applicationContext as EddyApp
+        runBlocking { eddy.container.settingsStore.update { it.copy(httpsOnly = true) } }
+        await { vm.settingsState.value.httpsOnly }
+        lateinit var tab: app.eddy.browser.browser.BrowserTab
+        var handled = false
+        main {
+            tab = vm.tabs.newTab("about:blank")
+            tab.httpsUpgradedFrom = "http://loop.example/"
+            val view = tab.webView!!
+            val request = object : android.webkit.WebResourceRequest {
+                override fun getUrl() = Uri.parse("http://loop.example/")
+                override fun isForMainFrame() = true
+                override fun isRedirect() = true
+                override fun hasGesture() = false
+                override fun getMethod() = "GET"
+                override fun getRequestHeaders() = emptyMap<String, String>()
+            }
+            handled = view.webViewClient.shouldOverrideUrlLoading(view, request)
+        }
+        runBlocking { eddy.container.settingsStore.update { it.copy(httpsOnly = false) } }
+        main {
+            assertTrue("Redirect back to http was upgraded again", handled)
+            assertEquals(app.eddy.browser.browser.ErrorKind.INSECURE, tab.error?.kind)
+            assertEquals("http://loop.example/", tab.error?.url)
+        }
+    }
+
+    @Test fun namedDataInstallerDownloadAsksFirst() {
+        HttpFixture().use { server ->
+            main { vm.navigate(server.origin + "/a") }
+            await { vm.tabs.selected!!.title == "A" && !vm.tabs.selected!!.isLoading }
+            javascript("window.__eddyDownloadName='payload.apk'")
+            main { vm.startDownload(vm.tabs.selected!!, "data:text/plain,hi", "", "", "text/plain", 2) }
+            await { vm.prompts.any { it is app.eddy.browser.browser.Prompt.RiskyDownload } }
+            main {
+                val prompt = vm.prompts.filterIsInstance<app.eddy.browser.browser.Prompt.RiskyDownload>().first()
+                assertEquals("payload.apk", prompt.fileName)
+                vm.answerRiskyDownload(prompt, false)
+            }
+        }
+    }
+
+    @Test fun closingPasswordsKeepsIncognitoSecure() {
+        fun secure(): Boolean {
+            var flags = 0
+            scenario.onActivity { flags = it.window.attributes.flags }
+            return flags and android.view.WindowManager.LayoutParams.FLAG_SECURE != 0
+        }
+        main { vm.newTab(incognito = true) }
+        await { secure() }
+        main { vm.screen = app.eddy.browser.browser.Screen.PASSWORDS }
+        Thread.sleep(1500)
+        main { vm.screen = app.eddy.browser.browser.Screen.BROWSER }
+        Thread.sleep(1500) // past the passwords exit animation, when it disposes
+        assertTrue("Incognito tab lost FLAG_SECURE after closing passwords", secure())
+    }
+
+    @Test fun sharedTextOpensItsLink() {
+        HttpFixture().use { server ->
+            main { vm.handleIntent(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Look at this ${server.origin}/b please")) }
+            await { vm.tabs.selected!!.title == "B" && !vm.tabs.selected!!.isLoading }
+        }
+    }
+
+    @Test fun intentWithoutDataUsesFallback() {
+        HttpFixture().use { server ->
+            main {
+                val intent = Intent.parseUri("intent:#Intent;package=com.audit.missing;end", Intent.URI_INTENT_SCHEME)
+                vm.handleExternalIntent(vm.tabs.selected!!, intent, true, server.origin + "/b")
+            }
+            await { vm.tabs.selected!!.title == "B" && !vm.tabs.selected!!.isLoading }
+        }
+    }
+
+    @Test fun unfinishedClearOnExitSessionIsCleanedUp() {
+        val context = instrumentation.targetContext
+        val eddy = context.applicationContext as EddyApp
+        runBlocking { eddy.container.database.history().insert(app.eddy.browser.data.database.HistoryEntry(url = "https://audit.test/", title = "T", host = "audit.test", visitTime = 1)) }
+        File(context.filesDir, "tabs.json").writeText("{}")
+        val state = File(context.filesDir, "tabstate/audit.bin").apply { writeText("x") }
+        app.eddy.browser.privacy.ExitCleanup.markOpen(context)
+        assertTrue(app.eddy.browser.privacy.ExitCleanup.pending(context))
+        main { runBlocking { app.eddy.browser.privacy.ExitCleanup.run(context, eddy.container) } }
+        assertFalse(app.eddy.browser.privacy.ExitCleanup.pending(context))
+        assertFalse(File(context.filesDir, "tabs.json").exists())
+        assertFalse(state.exists())
+        assertTrue("Tab state folder must survive for TabManager", state.parentFile!!.isDirectory)
+        assertTrue(runBlocking { eddy.container.database.history().recent(10).first() }.isEmpty())
+    }
+
+    @Test fun copiedSecretIsClearedButLaterCopiesAreNot() {
+        val context = instrumentation.targetContext
+        val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+        fun text(): String? { var t: String? = null; main { t = clipboard.primaryClip?.getItemAt(0)?.text?.toString() }; return t }
+        main { vm.copySecret("Password", "hunter2") }
+        assertEquals("hunter2", text())
+        main { app.eddy.browser.passwords.ClipboardClearReceiver().onReceive(context, Intent()) }
+        assertNotEquals("hunter2", text())
+        main {
+            vm.copySecret("Password", "hunter2")
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("note", "mine"))
+            app.eddy.browser.passwords.ClipboardClearReceiver().onReceive(context, Intent())
+        }
+        assertEquals("Later copy was wiped", "mine", text())
+    }
 }

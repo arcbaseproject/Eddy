@@ -117,7 +117,10 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                 EmptyState(
                     if (incognito) Icons.Rounded.VisibilityOff else Icons.Rounded.Home,
                     if (incognito) "No incognito tabs" else "No tabs",
-                    if (incognito) "Incognito tabs save no history. Their cookies go away when you close them." else "Open a new tab to start browsing.",
+                    if (incognito) {
+                        if (vm.incognitoIsolated) "Incognito tabs save no history. Their cookies go away when you close them."
+                        else "Incognito tabs save no history. This device's WebView shares their cookies with normal tabs."
+                    } else "Open a new tab to start browsing.",
                     Modifier.weight(1f),
                 )
             } else {

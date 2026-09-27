@@ -37,6 +37,7 @@ import app.eddy.browser.EddyApp
 import app.eddy.browser.data.database.LoginEntity
 import app.eddy.browser.data.database.SiteSettings
 import androidx.webkit.JavaScriptReplyProxy
+import org.json.JSONArray
 import org.json.JSONObject
 import app.eddy.browser.data.models.ExternalLinks
 import app.eddy.browser.data.models.HomepageMode
@@ -46,6 +47,8 @@ import app.eddy.browser.data.models.Shortcut
 import app.eddy.browser.downloads.BlobDownloader
 import app.eddy.browser.downloads.DownloadNames
 import app.eddy.browser.downloads.DownloadRequest
+import app.eddy.browser.privacy.ExitCleanup
+import app.eddy.browser.passwords.ClipboardClearReceiver
 import app.eddy.browser.privacy.SiteFeature
 import app.eddy.browser.settings.SettingsPage
 import app.eddy.browser.util.UrlUtils
@@ -139,6 +142,9 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         private set
     var autofillOffer by mutableStateOf<AutofillOffer?>(null)
         private set
+    /** True while incognito content is on screen: an incognito tab, or the incognito side of the tab switcher. */
+    val incognitoShown: Boolean get() = if (screen == Screen.TABS) switcherIncognito else tabs.selected?.incognito == true
+
     /** True after the user passed the screen lock for this visit to the password manager. */
     var passwordsUnlocked by mutableStateOf(false)
     private var pendingLogin: PendingLogin? = null
@@ -174,6 +180,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         // ponytail: top-level documents only; media inside cross-origin iframes (embedded players) keeps playing.
         MediaService.pauseAll = { tabs.tabs.forEach { it.webView?.evaluateJavascript("document.querySelectorAll('video,audio').forEach(m => m.pause())", null) } }
         viewModelScope.launch {
+            // The last session ended without the swipe cleanup running (the system had stopped its service).
+            if (settings.clearOnExit && ExitCleanup.pending(app)) runCatching { ExitCleanup.run(app, container) }
             if (!(settings.restoreTabs && tabs.restore())) openHomeTab()
             // Leftovers from a session that could not be deleted while the app was running.
             tabs.sweepIncognitoProfiles()
@@ -271,7 +279,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             val text = when (intent.action) {
                 Intent.ACTION_VIEW -> intent.dataString
                 Intent.ACTION_WEB_SEARCH -> intent.getStringExtra("query")
-                Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+                // Apps often share "Some title https://link"; open the link rather than searching the whole text.
+                Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let { t -> t.split(Regex("\\s+")).firstOrNull(UrlUtils::isWebUrl) ?: t }
                 Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
                 MAIN_OPEN_DOWNLOADS -> { screen = Screen.DOWNLOADS; null }
                 else -> null
@@ -296,13 +305,12 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     fun reloadOrStop() {
         val tab = tabs.selected ?: return
-        val view = tab.webView
-        val err = tab.error
-        when {
-            err != null -> retry()
-            tab.isLoading -> view?.stopLoading()
-            else -> view?.reload()
-        }
+        if (tab.isLoading && tab.error == null) tab.webView?.stopLoading() else reload()
+    }
+
+    fun reload() {
+        val tab = tabs.selected ?: return
+        if (tab.error != null) retry() else tab.webView?.reload()
     }
 
     fun retry() {
@@ -477,6 +485,13 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     fun selectTab(tab: BrowserTab) { tabs.select(tab); screen = Screen.BROWSER }
+
+    /** The neighbouring tab of the same kind (normal or incognito), or null at either end. */
+    fun adjacentTab(step: Int): BrowserTab? {
+        val current = tabs.selected ?: return null
+        val group = tabs.tabs.filter { it.incognito == current.incognito }
+        return group.getOrNull(group.indexOf(current) + step)
+    }
 
     fun closeTab(tab: BrowserTab) {
         val title = tab.displayTitle("Tab")
@@ -766,17 +781,15 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     /** Copies a secret and clears it from the clipboard after a minute if nothing else replaced it. */
     fun copySecret(label: String, secret: String) {
-        val clipboard = app.getSystemService(ClipboardManager::class.java)
         val clip = ClipData.newPlainText(label, secret).apply {
-            description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+            description.extras = PersistableBundle().apply {
+                putBoolean("android.content.extra.IS_SENSITIVE", true)
+                putBoolean(ClipboardClearReceiver.MARK, true)
+            }
         }
-        clipboard.setPrimaryClip(clip)
+        app.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
+        ClipboardClearReceiver.schedule(app, CLIPBOARD_CLEAR_MS)
         snackbar("$label copied")
-        viewModelScope.launch {
-            delay(CLIPBOARD_CLEAR_MS)
-            val current = runCatching { clipboard.primaryClip?.getItemAt(0)?.text?.toString() }.getOrNull()
-            if (current == secret) clipboard.clearPrimaryClip()
-        }
     }
 
     // ---- prompts --------------------------------------------------------------------------
@@ -825,6 +838,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (!tab.incognito && UrlUtils.isWebUrl(url) && !(tab.lastHistoryUrl == url && now - tab.lastHistoryAt < 5000)) {
             tab.lastHistoryUrl = url
             tab.lastHistoryAt = now
+            // Until the insert returns, a title change must not land on the previous page's row.
+            tab.lastHistoryId = 0
             viewModelScope.launch { tab.lastHistoryId = history.record(url, tab.title) }
         }
         resolvePendingLogin(tab, fromTimer = false)
@@ -841,7 +856,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     override fun handleExternalIntent(tab: BrowserTab, intent: Intent, userGesture: Boolean, fallbackUrl: String?) {
         if (tab.id != tabs.selectedId || tab !in tabs.tabs) return
-        val data = intent.data ?: return
+        // intent:#Intent;package=…;end has no data to hand over; the page's fallback is all that is left.
+        val data = intent.data ?: return externalFallback(tab, fallbackUrl)
         if (data.scheme?.lowercase() in setOf("file", "content", "javascript", "data")) return
         // A page supplies a URL and optional package, never arbitrary Android actions,
         // components, selectors, flags, or extras.
@@ -910,12 +926,23 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     override fun onBlobMessage(tab: BrowserTab, origin: String, data: String) = blobDownloader.onMessage(tab, origin, data)
 
     override fun startDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
-        val name = URLUtil.guessFileName(url, contentDisposition, mime.ifBlank { null })
+        if ((url.startsWith("data:") || url.startsWith("blob:")) && contentDisposition.isBlank() && tab.webView != null) {
+            // Ask the page which name the link requested; WebView drops it for data: and blob: URLs.
+            tab.webView?.evaluateJavascript("(window.__eddyDownloadName||'')") { raw ->
+                val name = runCatching { JSONArray("[$raw]").getString(0) }.getOrNull().orEmpty().replace("\"", "")
+                startDownload(tab, url, userAgent, if (name.isNotEmpty()) "attachment; filename=\"$name\"" else "attachment", mime, length)
+            }
+            return
+        }
+        // guessFileName swaps the extension to match the MIME type, but data: and blob: saves keep the page's name as written.
+        val name = listOf(URLUtil.guessFileName(url, contentDisposition, mime.ifBlank { null }), DownloadNames.forResponse(contentDisposition, mime))
+            .firstOrNull(DownloadNames::isExecutable)
         // A page can start a download without the user picking anything, so an installer gets a question first.
-        if (DownloadNames.isExecutable(name) && UrlUtils.isWebUrl(url)) {
+        if (name != null) {
+            val source = if (UrlUtils.isWebUrl(url)) url else tab.url
             prompts.add(
-                Prompt.RiskyDownload(name, UrlUtils.displayHost(url), insecure = !UrlUtils.isHttps(url)) {
-                    enqueueDownload(tab, url, userAgent, contentDisposition, mime, length)
+                Prompt.RiskyDownload(name, UrlUtils.displayHost(source), insecure = !UrlUtils.isHttps(source)) {
+                    startDownloadNow(tab, url, userAgent, contentDisposition, mime, length)
                 },
             )
             return
@@ -932,14 +959,6 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (url.startsWith("blob:")) {
             if (!pageBridgeSupported) return snackbar("This WebView is too old to save this download. Update Android System WebView.")
             return blobDownloader.start(tab, url, contentDisposition, mime)
-        }
-        if (url.startsWith("data:") && contentDisposition.isBlank() && tab.webView != null) {
-            // Ask the page which name the link requested; WebView drops it for data: URLs.
-            tab.webView?.evaluateJavascript("(window.__eddyDownloadName||'')") { raw ->
-                val name = raw?.trim('"').orEmpty()
-                startDownload(tab, url, userAgent, if (name.isNotEmpty()) "attachment; filename=\"$name\"" else "attachment", mime, length)
-            }
-            return
         }
         enqueueDownload(tab, url, userAgent, contentDisposition, mime, length)
     }

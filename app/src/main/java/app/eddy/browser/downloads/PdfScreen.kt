@@ -20,7 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +63,7 @@ fun PdfScreen(vm: BrowserViewModel) {
         onBack = { vm.closePdf() },
         actions = {
             EddyIconButton(Icons.Rounded.Share, "Share ${open.name}", { vm.sharePdf() })
-            EddyIconButton(Icons.Rounded.OpenInNew, "Open in another app", { vm.openPdfExternally() })
+            EddyIconButton(Icons.AutoMirrored.Rounded.OpenInNew, "Open in another app", { vm.openPdfExternally() })
         },
     ) { padding ->
         when (val count = document.pageCount) {

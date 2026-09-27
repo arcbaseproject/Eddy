@@ -33,6 +33,7 @@ private val PrivacySections = listOf(
     Section(
         "The short version",
         "Eddy does not collect, sell or share your personal data. It has no accounts, advertising, analytics or crash reporting. " +
+            "The only thing it sends to the developer is a support message you choose to send. " +
             "Your history, bookmarks, settings and downloads list stay on your device.",
     ),
     Section(
@@ -52,7 +53,8 @@ private val PrivacySections = listOf(
             "• Search suggestions: as you type, Eddy sends your text to your search engine to fetch suggestions. Turn this off in Settings > General.\n" +
             "• Site icons: Eddy may request /favicon.ico from a site on your home page.\n" +
             "• Filter lists: Eddy downloads the ad and tracker lists you enable from their publishers about once a day.\n" +
-            "• Downloads you start.\n\n" +
+            "• Downloads you start.\n" +
+            "• Support messages: see below.\n\n" +
             "Each site, search engine and list host you contact can see your IP address and the usual information a browser sends, and applies its own privacy policy.",
     ),
     Section(
@@ -77,6 +79,14 @@ private val PrivacySections = listOf(
             "Passwords you copy leave the clipboard after a minute. If you export passwords, Eddy writes a plain-text CSV file to the place you choose and cannot protect it afterwards. You can turn saving and autofill off in Settings > Privacy and security, and delete saved logins at any time.",
     ),
     Section(
+        "Support messages",
+        "Settings > Support lets you send a message to the developer. Eddy sends it only when you tap Send. " +
+            "It includes your message, your email address if you enter one, and the Eddy and Android version numbers. " +
+            "Eddy delivers it through Web3Forms (web3forms.com), which forwards it by email and applies its own privacy policy. " +
+            "The developer uses it only to answer you and improve Eddy, and does not share it. " +
+            "To limit abuse, Eddy stores the time of your last message on your device and allows one message every 10 minutes.",
+    ),
+    Section(
         "Do Not Track and blocking",
         "When you enable it, Eddy sends the Do Not Track and Global Privacy Control signals. Sites can ignore them. " +
             "Ad and tracker blocking is best-effort and cannot stop every form of tracking.",
@@ -94,7 +104,7 @@ private val PrivacySections = listOf(
     Section(
         "Changes and questions",
         "When this policy changes, the new version ships with the app and the date above changes. " +
-            "For questions, contact the developer through the app's store page.",
+            "For questions, use Settings > Support or contact the developer through the app's store page.",
     ),
 )
 
@@ -117,6 +127,11 @@ private val TermsSections = listOf(
         "Security warnings",
         "Eddy warns you about connection and certificate problems. If you continue anyway, you accept the risk. " +
             "Blocking of ads, trackers and dangerous sites is a convenience and does not catch everything.",
+    ),
+    Section(
+        "Support messages",
+        "Do not use the support form to send spam, abuse, or other people's personal data. Eddy limits how often you can send messages, " +
+            "and the developer may ignore messages that break these terms. Replies are not guaranteed.",
     ),
     Section(
         "Third-party content and software",

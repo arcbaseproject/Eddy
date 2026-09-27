@@ -225,6 +225,8 @@ class MainActivity : ComponentActivity() {
         val extra = mutableListOf<Intent>()
         if (cameraAllowed && wantsPhoto && !wantsVideo) {
             val dir = File(cacheDir, "capture").apply { mkdirs() }
+            // Photos already handed to a page are not needed once a day has passed; incognito captures included.
+            dir.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86_400_000L }?.forEach { it.delete() }
             val file = File(dir, "IMG_${System.currentTimeMillis()}.jpg")
             val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
             cameraUri = uri

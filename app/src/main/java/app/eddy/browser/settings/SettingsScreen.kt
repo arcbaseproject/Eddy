@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PrivacyTip
@@ -127,6 +128,7 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
                     SettingsPage.FILTER_LISTS -> FilterListsSettings(vm, settings)
                     SettingsPage.SEARCH_ENGINES -> SearchSettings(vm, settings)
                     SettingsPage.ABOUT -> AboutSettings(vm)
+                    SettingsPage.SUPPORT -> SupportSettings()
                     SettingsPage.PRIVACY_POLICY -> PrivacyPolicyPage()
                     SettingsPage.TERMS -> TermsPage()
                 }
@@ -167,6 +169,8 @@ private fun RootPage(vm: BrowserViewModel, searching: Boolean, query: String, on
     }
     SettingsGroup {
         NavRow("About Eddy", { open(SettingsPage.ABOUT) }, "Version and default browser", Icons.Rounded.Info)
+        GroupDivider()
+        NavRow("Support", { open(SettingsPage.SUPPORT) }, "Send feedback or report a bug", Icons.Rounded.Email)
     }
     SettingsGroup("Legal") {
         NavRow("Privacy policy", { open(SettingsPage.PRIVACY_POLICY) }, "What Eddy stores and what it sends", Icons.Rounded.PrivacyTip)
@@ -289,7 +293,7 @@ private fun AboutSettings(vm: BrowserViewModel) {
     SettingsFootnote(
         "Eddy has no advertising, analytics or tracking code and sends no telemetry. " +
             "It contacts the network to load the pages you open, fetch search suggestions (if you enable them), " +
-            "fetch favicons for sites on your home page, and update filter lists.",
+            "fetch favicons for sites on your home page, update filter lists, and send support messages you write.",
     )
 }
 

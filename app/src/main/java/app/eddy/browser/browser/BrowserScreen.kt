@@ -54,7 +54,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import kotlin.math.abs
+import kotlin.math.sign
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -86,6 +101,7 @@ import app.eddy.browser.home.HomeScreen
 import app.eddy.browser.settings.SettingsScreen
 import app.eddy.browser.tabs.TabSwitcher
 import app.eddy.browser.ui.animation.effectSpring
+import app.eddy.browser.ui.animation.rememberHaptics
 import app.eddy.browser.ui.animation.spatialSpring
 import app.eddy.browser.ui.components.LocalFavicons
 import app.eddy.browser.ui.theme.Dimens
@@ -102,7 +118,7 @@ import androidx.compose.runtime.mutableStateOf
 fun BrowserRoot(vm: BrowserViewModel) {
     val settings by vm.settingsState.collectAsStateWithLifecycle()
     val selected = vm.tabs.selected
-    val incognito = if (vm.screen == Screen.TABS) vm.switcherIncognito else selected?.incognito == true
+    val incognito = vm.incognitoShown
 
     // Incognito content stays out of screenshots and the recents thumbnail while an incognito tab is on screen.
     val context = LocalContext.current
@@ -210,12 +226,56 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
     val browsing = vm.screen == Screen.BROWSER
 
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    Box(Modifier.fillMaxSize()) {
+    // Firefox-style tab swipe: dragging the bar slides the page and bar sideways and pulls the neighbouring tab in.
+    val swipe = remember { Animatable(0f) }
+    var pageWidth by remember { mutableIntStateOf(0) }
+    val haptics = rememberHaptics()
+    val scope = rememberCoroutineScope()
+    val settle = spatialSpring<Float>()
+    val slide = spatialSpring<Float>(bouncy = false)
+    val tabSwipe = Modifier.pointerInput(Unit) {
+        val tracker = VelocityTracker()
+        detectHorizontalDragGestures(
+            onDragStart = { tracker.resetTracking() },
+            onDragCancel = { scope.launch { swipe.animateTo(0f, settle) } },
+            onDragEnd = {
+                val offset = swipe.value
+                val velocity = tracker.calculateVelocity().x
+                val step = if (offset < 0) 1 else -1
+                val next = vm.adjacentTab(step)
+                val commit = next != null && (abs(offset) > pageWidth / 3f || (abs(velocity) > 800f && sign(velocity) == sign(offset)))
+                scope.launch {
+                    if (commit && next != null) {
+                        // Switch on release and re-base the offset so the new tab carries on from where its preview was.
+                        // The settle is then just motion, so the next swipe can grab it straight away.
+                        haptics.tick()
+                        vm.selectTab(next)
+                        swipe.snapTo(offset + step * pageWidth)
+                        swipe.animateTo(0f, slide)
+                    } else swipe.animateTo(0f, settle)
+                }
+            },
+        ) { change, dx ->
+            tracker.addPosition(change.uptimeMillis, change.position)
+            scope.launch {
+                // Rubber-band when there is no tab that way.
+                val free = vm.adjacentTab(if (swipe.value + dx < 0) 1 else -1) != null
+                swipe.snapTo(swipe.value + if (free) dx else dx / 4)
+            }
+        }
+    }.graphicsLayer { translationX = swipe.value }
+    val swipeDir by remember { derivedStateOf { sign(swipe.value).toInt() } }
+
+    Box(Modifier.fillMaxSize().onSizeChanged { pageWidth = it.width }) {
         // While typing into a page the keyboard, not the toolbar, gets the space. The editor manages its own insets.
         Column(Modifier.fillMaxSize().then(if (vm.editing) Modifier else Modifier.imePadding())) {
-            if (atTop) Chrome(vm, tab, atTop = true, hidden = imeVisible && !vm.editing)
+            if (atTop) Chrome(vm, tab, atTop = true, hidden = imeVisible && !vm.editing, swipe = tabSwipe)
             Box(Modifier.weight(1f).fillMaxWidth().then(if (atTop) Modifier.navigationBarsPadding() else Modifier)) {
-                if (tab != null) {
+                // Sits in the page area so the screenshot lines up with the page it replaces.
+                if (swipeDir != 0) vm.adjacentTab(-swipeDir)?.let {
+                    TabPeek(vm, it, if (atTop) Modifier else Modifier.statusBarsPadding()) { swipe.value - swipeDir * pageWidth }
+                }
+                if (tab != null) Box(Modifier.fillMaxSize().graphicsLayer { translationX = swipe.value }.background(MaterialTheme.colorScheme.background)) {
                     if (tab.isHome) {
                         HomeScreen(vm, settings, tab.incognito, contentPaddingFor(atTop))
                     } else {
@@ -235,7 +295,7 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                 AutofillLayer(vm, tab, imeVisible, Modifier.align(Alignment.BottomCenter))
                 SaveLoginLayer(vm, tab, atTop, Modifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter))
             }
-            if (!atTop) Chrome(vm, tab, atTop = false, hidden = imeVisible && !vm.editing)
+            if (!atTop) Chrome(vm, tab, atTop = false, hidden = imeVisible && !vm.editing, swipe = tabSwipe)
         }
 
         AnimatedVisibility(vm.editing, enter = fadeIn(effectSpring()), exit = fadeOut(effectSpring())) {
@@ -275,7 +335,7 @@ private fun contentPaddingFor(atTop: Boolean): PaddingValues =
 
 /** Address pill plus toolbar. While scrolling down only a slim pill remains, so the page gets the room. */
 @Composable
-private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidden: Boolean) {
+private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidden: Boolean, swipe: Modifier) {
     val home = tab?.isHome != false
     val expanded = vm.chromeVisible || home
     if (hidden) return
@@ -297,6 +357,7 @@ private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidde
             onNewTab = { vm.newTab(incognito = tab?.incognito == true) },
             onTabs = vm::openTabSwitcher,
             onMenu = { vm.menuVisible = true },
+            modifier = swipe,
         )
     }
 }
@@ -355,5 +416,15 @@ private fun FindLayer(vm: BrowserViewModel, atTop: Boolean, modifier: Modifier) 
         exit = slideOutVertically(spatialSpring()) { if (atTop) -it else it } + fadeOut(effectSpring()),
     ) {
         if (state != null) FindBar(state, vm::findQuery, vm::findNext, vm::closeFind)
+    }
+}
+
+/** The neighbouring tab's last screenshot, shown sliding in beside the page during a tab swipe. */
+@Composable
+private fun TabPeek(vm: BrowserViewModel, tab: BrowserTab, modifier: Modifier, offset: () -> Float) {
+    val thumb by produceState(vm.thumbnails.peek(tab.id), tab.id) { value = vm.thumbnails.load(tab.id) }
+    Box(Modifier.fillMaxSize().graphicsLayer { translationX = offset() }.background(MaterialTheme.colorScheme.background).then(modifier)) {
+        // FillWidth, not Crop: the screenshot shows at page scale instead of being blown up to fill the box.
+        thumb?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillWidth, alignment = Alignment.TopCenter) }
     }
 }

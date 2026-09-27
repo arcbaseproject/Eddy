@@ -16,10 +16,15 @@ object DownloadNames {
     fun isExecutable(fileName: String): Boolean =
         fileName.substringAfterLast('.', "").lowercase() in executableExtensions
 
-    private val filename = Regex("filename\\*?=(?:UTF-8'')?\"?([^\";]+)\"?", RegexOption.IGNORE_CASE)
+    private val filename = Regex("filename(\\*?)=(?:UTF-8'')?\"?([^\";]+)\"?", RegexOption.IGNORE_CASE)
 
     fun forResponse(disposition: String, mime: String): String {
-        filename.find(disposition)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }?.let { return java.net.URLDecoder.decode(it, "UTF-8") }
+        filename.find(disposition)?.let { m ->
+            val raw = m.groupValues[2].trim()
+            // Only the RFC 5987 filename* form is percent-encoded; a plain name like "50% off.pdf" is taken as written.
+            val name = if (m.groupValues[1].isEmpty()) raw else runCatching { java.net.URLDecoder.decode(raw.replace("+", "%2B"), "UTF-8") }.getOrDefault(raw)
+            if (name.isNotEmpty()) return name
+        }
         val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime.substringBefore(';').trim().lowercase())
         return "download" + (ext?.let { ".$it" } ?: "")
     }

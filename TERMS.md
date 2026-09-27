@@ -18,6 +18,10 @@ You may use Eddy for personal and lawful purposes. You are responsible for the s
 
 Eddy warns you about connection and certificate problems. If you continue anyway, you accept the risk. Blocking of ads, trackers and dangerous sites is a convenience and does not catch everything.
 
+## Support messages
+
+Do not use the support form to send spam, abuse, or other people's personal data. Eddy limits how often you can send messages, and the developer may ignore messages that break these terms. Replies are not guaranteed.
+
 ## Third-party content and software
 
 Web pages, search engines, filter lists and downloaded files come from third parties. Eddy does not control or endorse them, and their own terms apply. Eddy uses Android System WebView and open-source libraries, which remain under their own licences.

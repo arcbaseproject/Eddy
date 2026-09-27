@@ -64,7 +64,8 @@ interface BookmarkDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(bookmark: Bookmark): Long
 
-    @Update
+    // An edit that lands on a URL the target folder already holds replaces that duplicate instead of failing the unique index.
+    @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(bookmark: Bookmark)
 
     @Delete

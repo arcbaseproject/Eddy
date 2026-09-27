@@ -95,7 +95,7 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
         GroupDivider()
         ActionRow("Clear browsing data", { clearing = true }, "History, cookies, cache and more", Icons.Rounded.DeleteSweep)
         GroupDivider()
-        SwitchRow("Clear when I leave", s.clearOnExit, { v -> vm.launchSettings { it.copy(clearOnExit = v) } }, "Deletes history, cookies, site data and cache when you swipe Eddy out of recents", Icons.Rounded.Delete)
+        SwitchRow("Clear when I leave", s.clearOnExit, { v -> vm.launchSettings { it.copy(clearOnExit = v) } }, "Deletes history, open tabs, cookies, site data and cache when you swipe Eddy away or it closes", Icons.Rounded.Delete)
     }
     SettingsFootnote(
         if (vm.incognitoIsolated) "Incognito tabs use a separate storage profile. Eddy deletes it when the last incognito tab closes."

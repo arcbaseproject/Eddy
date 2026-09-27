@@ -78,7 +78,7 @@ data class Settings(
     val doNotTrack: Boolean = true,
     /** Upgrades http:// pages to https:// and shows a warning when the secure version does not load. */
     val httpsOnly: Boolean = true,
-    /** Clears history, cookies, site data and cache when the app is swiped away. */
+    /** Clears history, open tabs, cookies, site data and cache when the app is swiped away or its process ends. */
     val clearOnExit: Boolean = false,
     val onboardingCompleted: Boolean = false,
     val savePasswords: Boolean = true,

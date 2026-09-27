@@ -1,14 +1,14 @@
 package app.eddy.browser.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Mail
 import androidx.compose.material.icons.rounded.Map
-import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.PlayCircle
@@ -31,10 +31,10 @@ object ShortcutIcons {
         "mail" to Icons.Rounded.Mail,
         "video" to Icons.Rounded.PlayCircle,
         "music" to Icons.Rounded.MusicNote,
-        "news" to Icons.Rounded.Article,
+        "news" to Icons.AutoMirrored.Rounded.Article,
         "shop" to Icons.Rounded.ShoppingBag,
         "map" to Icons.Rounded.Map,
-        "book" to Icons.Rounded.MenuBook,
+        "book" to Icons.AutoMirrored.Rounded.MenuBook,
         "code" to Icons.Rounded.Code,
         "game" to Icons.Rounded.SportsEsports,
         "photo" to Icons.Rounded.Photo,

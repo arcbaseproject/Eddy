@@ -64,6 +64,7 @@ internal val settingsIndex = listOf(
     SettingEntry("GitHub", listOf(ABOUT), "version build about source code website"),
     SettingEntry("Replay welcome tour", listOf(ABOUT), "onboarding intro"),
     SettingEntry("Make Eddy your default browser", listOf(ABOUT), "default browser role"),
+    SettingEntry("Support", listOf(SUPPORT), "feedback contact help bug report email"),
     SettingEntry("Privacy policy", listOf(PRIVACY_POLICY), "legal data"),
     SettingEntry("Terms of service", listOf(TERMS), "legal tos"),
 )

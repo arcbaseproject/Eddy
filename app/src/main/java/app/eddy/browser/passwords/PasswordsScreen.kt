@@ -29,7 +29,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -98,7 +98,8 @@ fun PasswordsScreen(vm: BrowserViewModel) {
         val window = (context as Activity).window
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         onDispose {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            // This runs after the exit animation, when an incognito tab may already be back on screen and own the flag.
+            if (!vm.incognitoShown) window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             vm.passwordsUnlocked = false
         }
     }
@@ -253,7 +254,7 @@ private fun LoginSheet(vm: BrowserViewModel, login: LoginEntity, onEdit: () -> U
             HorizontalDivider()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = { onDismiss(); vm.navigate(login.origin) }) {
-                    Icon(Icons.Rounded.OpenInNew, null, Modifier.size(18.dp)); Text("Open site", Modifier.padding(start = 6.dp))
+                    Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp)); Text("Open site", Modifier.padding(start = 6.dp))
                 }
                 OutlinedButton(onClick = onEdit) { Icon(Icons.Rounded.Edit, null, Modifier.size(18.dp)); Text("Edit", Modifier.padding(start = 6.dp)) }
                 TextButton(onClick = { confirmDelete = true }) { Icon(Icons.Rounded.Delete, null, Modifier.size(18.dp)); Text("Delete", Modifier.padding(start = 6.dp)) }

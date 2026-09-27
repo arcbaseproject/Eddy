@@ -51,7 +51,7 @@ fun PromptHost(vm: BrowserViewModel) {
 
 @Composable
 private fun PermissionDialog(p: Prompt.Permission, vm: BrowserViewModel) {
-    var rememberChoice by remember { mutableStateOf(true) }
+    var rememberChoice by remember(p) { mutableStateOf(true) }
     val what = p.features.joinToString(" and ") {
         when (it) {
             SiteFeature.CAMERA -> "camera"
@@ -71,8 +71,8 @@ private fun PermissionDialog(p: Prompt.Permission, vm: BrowserViewModel) {
 
 @Composable
 private fun AuthDialog(p: Prompt.HttpAuth, vm: BrowserViewModel) {
-    var user by remember { mutableStateOf("") }
-    var pass by remember { mutableStateOf("") }
+    var user by remember(p) { mutableStateOf("") }
+    var pass by remember(p) { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = { vm.answerAuth(p, null, null) },
         title = { Text("Sign in to ${p.host}") },

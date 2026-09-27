@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Tab
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -58,7 +58,7 @@ fun LinkSheet(vm: BrowserViewModel, target: HitTarget, onDismiss: () -> Unit) {
                 Action(Icons.Rounded.Share, "Share link", run { vm.share(link) })
             }
             if (image != null) {
-                Action(Icons.Rounded.OpenInNew, "Open image in new tab", run { vm.openInNewTab(image, select = false) })
+                Action(Icons.AutoMirrored.Rounded.OpenInNew, "Open image in new tab", run { vm.openInNewTab(image, select = false) })
                 Action(Icons.Rounded.Download, "Download image", run {
                     vm.tabs.selected?.let { vm.startDownload(it, image, it.webView?.settings?.userAgentString.orEmpty(), "", "", -1) }
                 })

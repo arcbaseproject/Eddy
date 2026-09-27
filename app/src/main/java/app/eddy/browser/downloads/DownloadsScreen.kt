@@ -24,8 +24,8 @@ import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.FolderZip
 import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.InsertDriveFile
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
@@ -138,7 +138,7 @@ private fun DownloadCard(vm: BrowserViewModel, d: DownloadEntity, progress: Live
                     DownloadStatus.FAILED, DownloadStatus.CANCELED -> {
                         if (d.url.startsWith("http")) EddyIconButton(Icons.Rounded.Refresh, "Retry ${d.fileName}", { vm.downloads.retry(d.id) })
                     }
-                    DownloadStatus.COMPLETED -> EddyIconButton(Icons.Rounded.OpenInNew, "Open ${d.fileName}", { vm.openFile(d.contentUri, d.mimeType, d.fileName) })
+                    DownloadStatus.COMPLETED -> EddyIconButton(Icons.AutoMirrored.Rounded.OpenInNew, "Open ${d.fileName}", { vm.openFile(d.contentUri, d.mimeType, d.fileName) })
                 }
                 if (!running) EddyIconButton(Icons.Rounded.Delete, "Delete ${d.fileName}", { if (d.status == DownloadStatus.COMPLETED) confirmDelete = true else vm.downloads.delete(d.id, false) })
             }
@@ -167,7 +167,7 @@ private fun iconFor(mime: String, name: String): ImageVector = when {
     mime.startsWith("audio/") -> Icons.Rounded.Audiotrack
     mime == "application/pdf" || mime.startsWith("text/") -> Icons.Rounded.Description
     mime.contains("zip") || mime.contains("compressed") || name.endsWith(".zip") || name.endsWith(".7z") || name.endsWith(".rar") || name.endsWith(".tar.gz") -> Icons.Rounded.FolderZip
-    else -> Icons.Rounded.InsertDriveFile
+    else -> Icons.AutoMirrored.Rounded.InsertDriveFile
 }
 
 private fun typeLabel(mime: String, name: String): String {

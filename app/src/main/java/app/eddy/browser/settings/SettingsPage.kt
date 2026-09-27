@@ -12,6 +12,7 @@ enum class SettingsPage(val title: String) {
     FILTER_LISTS("Filter lists"),
     SEARCH_ENGINES("Search engines"),
     ABOUT("About"),
+    SUPPORT("Support"),
     PRIVACY_POLICY("Privacy policy"),
     TERMS("Terms of service"),
 }

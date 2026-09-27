@@ -1,0 +1,7 @@
+* Swipe the address bar left or right to switch tabs
+* Send feedback from Settings > Support
+* "Clear when I leave" now also runs if Android closed Eddy first, and clears open tabs
+* Copied passwords leave the clipboard even while Eddy is in the background
+* Warns before saving an app installer from any download link
+* Fixes a crash when editing bookmarks and when pausing and resuming downloads
+* Fixes an endless reload with HTTPS-only on some sites, and more

@@ -28,7 +28,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -171,7 +171,7 @@ private fun BookmarkRow(vm: BrowserViewModel, b: Bookmark, onEdit: () -> Unit) {
         }
         DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onEdit() })
-            DropdownMenuItem(text = { Text("Open in new tab") }, leadingIcon = { Icon(Icons.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(b.url) })
+            DropdownMenuItem(text = { Text("Open in new tab") }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(b.url) })
             DropdownMenuItem(text = { Text("Open in incognito tab") }, leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) }, onClick = { menu = false; vm.openInNewTab(b.url, incognito = true) })
             DropdownMenuItem(text = { Text("Copy link") }, leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) }, onClick = {
                 menu = false
@@ -234,7 +234,7 @@ private fun BookmarkEditor(b: Bookmark, folders: List<BookmarkFolder>, onDismiss
             }
         },
         confirmButton = {
-            TextButton(enabled = valid, onClick = { onSave(b.copy(title = title.trim(), url = url.trim().let { if (UrlUtils.isWebUrl(it)) it else "https://$it" }, folderId = folderId)) }) { Text("Save") }
+            TextButton(enabled = valid, onClick = { onSave(b.copy(title = title.trim(), url = UrlUtils.resolve(url.trim(), app.eddy.browser.data.models.SearchEngine("", "", "%s")), folderId = folderId)) }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

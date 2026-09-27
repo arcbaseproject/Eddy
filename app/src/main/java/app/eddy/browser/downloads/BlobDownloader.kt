@@ -64,7 +64,8 @@ class BlobDownloader(
                 if (job.failed) return@launch
                 jobs.remove(id)
                 if (!job.file.exists()) job.file.createNewFile() // an empty blob is still a valid download
-                val name = json.optString("name").ifBlank { job.name }
+                // The page may rename the file after the download started, but not into an installer nobody was asked about.
+                val name = json.optString("name").takeUnless { it.isBlank() || DownloadNames.isExecutable(it) && !DownloadNames.isExecutable(job.name) } ?: job.name
                 val mime = json.optString("mime").ifBlank { job.mime }
                 val downloadId = runCatching { engine.importFile(job.file, name, mime, job.incognito) }.getOrNull()
                 onResult(if (downloadId != null) "Saved $name" else "Could not save $name", downloadId)

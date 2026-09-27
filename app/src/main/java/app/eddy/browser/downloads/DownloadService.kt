@@ -33,7 +33,9 @@ class DownloadService : Service() {
             combine(engine.active, engine.live) { active, live -> active to live }.collect { (active, live) ->
                 if (active == 0) {
                     stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
+                    // Only this start: a newer startForegroundService() still owes its startForeground() call,
+                    // and destroying the service under it crashes the app.
+                    stopSelf(startId)
                 } else {
                     val known = live.values.filter { it.total > 0 }
                     val percent = if (known.isEmpty()) null else (known.sumOf { it.downloaded } * 100 / known.sumOf { it.total }).toInt()

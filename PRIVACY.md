@@ -4,7 +4,7 @@ _Last updated September 2026_
 
 ## The short version
 
-Eddy does not collect, sell or share your personal data. It has no accounts, advertising, analytics or crash reporting. Your history, bookmarks, settings and downloads list stay on your device.
+Eddy does not collect, sell or share your personal data. It has no accounts, advertising, analytics or crash reporting. The only thing it sends to the developer is a support message you choose to send. Your history, bookmarks, settings and downloads list stay on your device.
 
 ## What Eddy stores on your device
 
@@ -25,6 +25,7 @@ Besides loading the pages you ask for, Eddy makes these requests:
 - Site icons: Eddy may request /favicon.ico from a site on your home page.
 - Filter lists: Eddy downloads the ad and tracker lists you enable from their publishers about once a day.
 - Downloads you start.
+- Support messages: see below.
 
 Each site, search engine and list host you contact can see your IP address and the usual information a browser sends, and applies its own privacy policy.
 
@@ -43,6 +44,10 @@ Eddy shows web pages with Android System WebView, a Google component built on Ch
 
 When you sign in or sign up on a site, Eddy asks whether to save or update the login. It asks only after the sign-in works, and never in incognito tabs. Passwords stay on your device: Eddy does not sync, upload or share them. Eddy fills a saved login only after you tap its suggestion, and only on the exact site address where you saved it. If your device has a screen lock, Eddy asks for it before showing the password list, and hides that screen from screenshots and the recent-apps view. Passwords you copy leave the clipboard after a minute. If you export passwords, Eddy writes a plain-text CSV file to the place you choose and cannot protect it afterwards. You can turn saving and autofill off in Settings > Privacy and security, and delete saved logins at any time.
 
+## Support messages
+
+Settings > Support lets you send a message to the developer. Eddy sends it only when you tap Send. It includes your message, your email address if you enter one, and the Eddy and Android version numbers. Eddy delivers it through Web3Forms (web3forms.com), which forwards it by email and applies its own privacy policy. The developer uses it only to answer you and improve Eddy, and does not share it. To limit abuse, Eddy stores the time of your last message on your device and allows one message every 10 minutes.
+
 ## Do Not Track and blocking
 
 When you enable it, Eddy sends the Do Not Track and Global Privacy Control signals. Sites can ignore them. Ad and tracker blocking is best-effort and cannot stop every form of tracking.
@@ -57,6 +62,6 @@ Eddy is a general-purpose browser and is not directed at children.
 
 ## Changes and questions
 
-When this policy changes, the new version ships with the app and the date above changes. For questions, contact the developer through the app's store page.
+When this policy changes, the new version ships with the app and the date above changes. For questions, use Settings > Support or contact the developer through the app's store page.
 
 This document mirrors the policy inside the app (Settings > Legal). You can also open an issue at https://github.com/arcbaseproject/Eddy/issues with questions.

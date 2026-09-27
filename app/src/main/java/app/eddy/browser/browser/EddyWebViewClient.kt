@@ -49,6 +49,17 @@ class EddyWebViewClient(
             "http", "https" -> {
                 val url = uri.toString()
                 val upgraded = factory.upgrade(url)
+                // The upgraded page redirects straight back to http: upgrading again would loop forever.
+                if (request.isForMainFrame && request.isRedirect && upgraded != url &&
+                    tab.httpsUpgradedFrom?.let { UrlUtils.host(it) == UrlUtils.host(url) } == true
+                ) {
+                    view.stopLoading()
+                    tab.error = PageError(ErrorKind.INSECURE, url, "")
+                    tab.url = url
+                    tab.isLoading = false
+                    tab.security = Security.INSECURE
+                    return true
+                }
                 if (request.isForMainFrame && upgraded != url) {
                     tab.httpsUpgradedFrom = url
                     view.loadUrl(upgraded)

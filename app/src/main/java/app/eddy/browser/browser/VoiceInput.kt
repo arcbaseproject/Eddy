@@ -70,7 +70,8 @@ fun rememberVoiceState(): VoiceState = remember { VoiceState() }
 @Composable
 fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoiceState(), modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    if (!SpeechRecognizer.isRecognitionAvailable(context)) return
+    // A package-manager query; the omnibox recomposes on every keystroke, so ask once.
+    if (!remember { SpeechRecognizer.isRecognitionAvailable(context) }) return
 
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
