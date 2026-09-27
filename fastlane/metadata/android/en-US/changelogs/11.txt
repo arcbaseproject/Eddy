@@ -1,0 +1,3 @@
+* Swipe up on the toolbar to open the tab list
+* Fixes tab cards getting stuck when swiped away
+* Settings > Advanced no longer repeats the search engine and filter list shortcuts

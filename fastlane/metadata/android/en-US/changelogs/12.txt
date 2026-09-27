@@ -1,0 +1,3 @@
+* Swiping a tab card away now reliably closes it; a flick or short drag is enough
+* Swipe up on the toolbar to open the tab list
+* Settings > Advanced no longer repeats the search engine and filter list shortcuts
