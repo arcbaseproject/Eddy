@@ -286,6 +286,51 @@ class BrowserAuditTest {
         }
     }
 
+    @Test fun backFromPopupReturnsToOpener() {
+        HttpFixture().use { server ->
+            main { vm.navigate(server.origin + "/a"); vm.setSiteSetting(vm.tabs.selected!!, app.eddy.browser.privacy.SiteFeature.POPUPS, app.eddy.browser.data.database.SiteSettings.ALLOW) }
+            await { vm.tabs.selected!!.title == "A" && !vm.tabs.selected!!.isLoading }
+            var parent = ""
+            main { parent = vm.tabs.selectedId!! }
+            javascript("window.open('/b')")
+            await { vm.tabs.selected!!.title == "B" && !vm.tabs.selected!!.isLoading }
+            main { assertTrue(vm.onBack()) }
+            await { vm.tabs.selectedId == parent }
+            main { assertEquals("Popup tab was sent to the start page instead of closed", 1, vm.tabs.tabs.size) }
+        }
+    }
+
+    @Test fun popupOpensInBackgroundWhenSwitchingIsOff() {
+        HttpFixture().use { server ->
+            main { vm.launchSettings { it.copy(switchToNewTabs = false) } }
+            await { !vm.settings.switchToNewTabs }
+            try {
+                main { vm.navigate(server.origin + "/a"); vm.setSiteSetting(vm.tabs.selected!!, app.eddy.browser.privacy.SiteFeature.POPUPS, app.eddy.browser.data.database.SiteSettings.ALLOW) }
+                await { vm.tabs.selected!!.title == "A" && !vm.tabs.selected!!.isLoading }
+                var parent = ""
+                main { parent = vm.tabs.selectedId!! }
+                javascript("window.open('/b')")
+                await { vm.tabs.tabs.any { it.openerId == parent && it.title == "B" } }
+                main { assertEquals("Popup took focus with switching off", parent, vm.tabs.selectedId) }
+            } finally {
+                main { vm.launchSettings { it.copy(switchToNewTabs = true) } }
+                await { vm.settings.switchToNewTabs }
+            }
+        }
+    }
+
+    @Test fun moveReordersTabs() {
+        main {
+            val a = vm.tabs.selected!!
+            val b = vm.tabs.newTab("about:blank", select = false)
+            val c = vm.tabs.newTab("about:blank", select = false)
+            vm.tabs.move(a, c)
+            assertEquals(listOf(b, c, a), vm.tabs.tabs.toList())
+            vm.tabs.move(a, b)
+            assertEquals(listOf(a, b, c), vm.tabs.tabs.toList())
+        }
+    }
+
     @Test fun authenticatedDownloadCanPauseAndResume() = runBlocking {
         val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
         HttpFixture().use { server ->

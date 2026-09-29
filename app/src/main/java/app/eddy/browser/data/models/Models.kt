@@ -84,6 +84,8 @@ data class Settings(
     val savePasswords: Boolean = true,
     val autofillPasswords: Boolean = true,
     val restoreTabs: Boolean = true,
+    /** Whether a tab a page opens (target=_blank, window.open) comes to the front. */
+    val switchToNewTabs: Boolean = true,
     val tabLayout: TabLayout = TabLayout.GRID,
     val closeTabBehavior: CloseTabBehavior = CloseTabBehavior.ADJACENT,
     val userAgentMode: UserAgentMode = UserAgentMode.DEFAULT,

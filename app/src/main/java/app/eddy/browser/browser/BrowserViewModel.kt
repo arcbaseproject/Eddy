@@ -297,6 +297,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val view = tab.webView
         when {
             view != null && view.canGoBack() -> { tab.error?.sslHandler?.cancel(); tab.error = null; view.goBack() }
+            // A tab opened from another one goes back to it, like closing a popup, instead of to the start page.
+            tab.openerId != null && tabs.tabs.any { it.id == tab.openerId } -> tabs.close(tab, remember = false)
             !tab.isHome -> tabs.showHome(tab)
         }
     }
@@ -907,8 +909,11 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             snackbar("Popup blocked", "Allow") { sites.set(host, SiteFeature.POPUPS, SiteSettings.ALLOW) }
             return false
         }
-        screen = Screen.BROWSER
-        return tabs.createPopup(parent, resultMsg)
+        val switch = settings.switchToNewTabs
+        if (switch) screen = Screen.BROWSER
+        return tabs.createPopup(parent, resultMsg).also { created ->
+            if (created && !switch) snackbar("Opened in a new tab", "Switch") { tabs.tabs.lastOrNull { it.openerId == parent.id }?.let(::selectTab) }
+        }
     }
 
     override fun closeWindow(view: EddyWebView) {

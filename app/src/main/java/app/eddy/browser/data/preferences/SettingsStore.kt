@@ -74,6 +74,7 @@ class SettingsStore(private val context: Context) {
         val savePasswords = booleanPreferencesKey("save_passwords")
         val autofillPasswords = booleanPreferencesKey("autofill_passwords")
         val restore = booleanPreferencesKey("restore_tabs")
+        val switchToNew = booleanPreferencesKey("switch_to_new_tabs")
         val tabLayout = stringPreferencesKey("tab_layout")
         val closeBehavior = stringPreferencesKey("close_behavior")
         val uaMode = stringPreferencesKey("ua_mode")
@@ -127,6 +128,7 @@ class SettingsStore(private val context: Context) {
             savePasswords = this[K.savePasswords] ?: d.savePasswords,
             autofillPasswords = this[K.autofillPasswords] ?: d.autofillPasswords,
             restoreTabs = this[K.restore] ?: d.restoreTabs,
+            switchToNewTabs = this[K.switchToNew] ?: d.switchToNewTabs,
             tabLayout = this[K.tabLayout].toEnum(d.tabLayout),
             closeTabBehavior = this[K.closeBehavior].toEnum(d.closeTabBehavior),
             userAgentMode = this[K.uaMode].toEnum(d.userAgentMode),
@@ -176,6 +178,7 @@ class SettingsStore(private val context: Context) {
         this[K.savePasswords] = s.savePasswords
         this[K.autofillPasswords] = s.autofillPasswords
         this[K.restore] = s.restoreTabs
+        this[K.switchToNew] = s.switchToNewTabs
         this[K.tabLayout] = s.tabLayout.name
         this[K.closeBehavior] = s.closeTabBehavior.name
         this[K.uaMode] = s.userAgentMode.name

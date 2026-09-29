@@ -17,7 +17,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -46,6 +51,8 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -53,6 +60,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -84,6 +100,12 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
     var menu by remember { mutableStateOf(false) }
     var confirmCloseAll by remember { mutableStateOf(false) }
     val columns = if (settings.tabLayout == TabLayout.LIST) 1 else 2
+    // Long-press drag to reorder, tracked in root coordinates like the start page's shortcut grid.
+    val slots = remember { mutableStateMapOf<String, Rect>() }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var finger by remember { mutableStateOf(Offset.Zero) }
+    var grab by remember { mutableStateOf(Offset.Zero) }
+    var lastSwap by remember { mutableLongStateOf(0L) }
 
     Box(modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -125,20 +147,54 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                     Modifier.weight(1f),
                 )
             } else {
+                // Opens scrolled to the current tab rather than the top of a long list.
+                val grid = remember(incognito) { LazyGridState(shown.indexOfFirst { it.id == vm.tabs.selectedId }.coerceAtLeast(0)) }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
                     modifier = Modifier.weight(1f),
+                    state = grid,
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(start = Dimens.gutter, end = Dimens.gutter, top = 8.dp, bottom = 120.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(shown, key = { it.id }) { tab ->
+                        val dragging = draggingId == tab.id
                         TabCard(
                             vm = vm,
                             tab = tab,
                             selected = tab.id == vm.tabs.selectedId,
                             thumbHeight = if (columns == 1) 120.dp else Dimens.tabCardThumbHeight,
-                            modifier = Modifier.animateItem(),
+                            dragging = dragging,
+                            // The dragged card follows the finger, so only the others animate into their new places.
+                            modifier = Modifier
+                                .animateItem(placementSpec = if (dragging) null else spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntOffset.VisibilityThreshold))
+                                .zIndex(if (dragging) 1f else 0f)
+                                .onGloballyPositioned { c -> slots[tab.id] = Rect(c.positionInRoot(), c.size.toSize()) }
+                                .pointerInput(tab.id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { local ->
+                                            haptics.longPress()
+                                            draggingId = tab.id
+                                            grab = local
+                                            finger = (slots[tab.id]?.topLeft ?: Offset.Zero) + local
+                                        },
+                                        onDrag = { change, _ ->
+                                            change.consume()
+                                            finger = (slots[tab.id]?.topLeft ?: Offset.Zero) + change.position
+                                            val now = System.currentTimeMillis()
+                                            // Let layout catch up with one swap before considering the next.
+                                            if (now - lastSwap < 150) return@detectDragGesturesAfterLongPress
+                                            val visible = grid.layoutInfo.visibleItemsInfo.map { it.key }
+                                            val target = shown.firstOrNull { it.id != tab.id && it.id in visible && slots[it.id]?.contains(finger) == true }
+                                            if (target != null) { haptics.tick(); vm.tabs.move(tab, target); lastSwap = now }
+                                        },
+                                        onDragEnd = { draggingId = null },
+                                        onDragCancel = { draggingId = null },
+                                    )
+                                }
+                                .graphicsLayer {
+                                    if (dragging) (finger - grab - (slots[tab.id]?.topLeft ?: finger - grab)).let { translationX = it.x; translationY = it.y }
+                                },
                         )
                     }
                 }
@@ -169,19 +225,21 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
 }
 
 @Composable
-private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, thumbHeight: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, thumbHeight: androidx.compose.ui.unit.Dp, dragging: Boolean, modifier: Modifier = Modifier) {
     val haptics = rememberHaptics()
     val thumb by produceState(vm.thumbnails.peek(tab.id), tab.id, tab.thumbVersion) { value = vm.thumbnails.load(tab.id) }
     val scheme = MaterialTheme.colorScheme
     val border by animateFloatAsState(if (selected) 3f else 0f, spatialSpring(), label = "selected")
+    val lift by animateFloatAsState(if (dragging) 1.05f else 1f, spatialSpring(), label = "lift")
     val title = tab.displayTitle(if (tab.isHome) "New tab" else "Tab")
 
     SwipeToDismissBox(
-        rememberSwipeToDismissBoxState(), backgroundContent = {}, modifier,
+        rememberSwipeToDismissBoxState(), backgroundContent = {}, modifier.graphicsLayer { scaleX = lift; scaleY = lift },
+        gesturesEnabled = !dragging,
         onDismiss = { haptics.confirm(); vm.closeTab(tab) },
     ) {
         Surface(
-            modifier = Modifier.semantics { contentDescription = "$title. ${tab.host}. Swipe sideways to close." },
+            modifier = Modifier.semantics { contentDescription = "$title. ${tab.host}. Swipe sideways to close, long-press and drag to move." },
             shape = RoundedCornerShape(28.dp),
             color = if (tab.incognito) scheme.tertiaryContainer.copy(alpha = 0.5f) else scheme.surfaceContainerHigh,
             border = if (border > 0.05f) androidx.compose.foundation.BorderStroke(border.dp, scheme.primary) else null,

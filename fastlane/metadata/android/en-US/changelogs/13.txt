@@ -1,0 +1,4 @@
+* The tab list opens scrolled to your current tab
+* Long-press a tab in the tab list and drag it to reorder
+* New setting: Settings > Tabs > Switch to tabs opened by links
+* Back in a tab a link opened returns to the page that opened it

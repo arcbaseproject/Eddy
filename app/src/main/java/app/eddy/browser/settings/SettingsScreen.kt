@@ -220,6 +220,8 @@ private fun TabSettings(vm: BrowserViewModel, s: Settings) {
     SettingsGroup("Behavior") {
         SwitchRow("Restore tabs on launch", s.restoreTabs, { v -> vm.launchSettings { it.copy(restoreTabs = v) } }, "Eddy does not restore incognito tabs")
         GroupDivider()
+        SwitchRow("Switch to tabs opened by links", s.switchToNewTabs, { v -> vm.launchSettings { it.copy(switchToNewTabs = v) } }, "When off, they open in the background")
+        GroupDivider()
         ChoiceRow("Tab switcher layout", TabLayout.entries, s.tabLayout, { if (it == TabLayout.GRID) "Grid" else "List" }, { v -> vm.launchSettings { it.copy(tabLayout = v) } })
         GroupDivider()
         ChoiceRow(

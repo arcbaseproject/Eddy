@@ -50,6 +50,7 @@ internal val settingsIndex = listOf(
     SettingEntry("Clear browsing data", listOf(PRIVACY), "delete history cache cookies wipe"),
 
     SettingEntry("Restore tabs on launch", listOf(TABS), "reopen session"),
+    SettingEntry("Switch to tabs opened by links", listOf(TABS), "new tab background focus automatic"),
     SettingEntry("Tab switcher layout", listOf(TABS), "grid list"),
     SettingEntry("After closing a tab, show", listOf(TABS), "close neighbouring recent"),
 

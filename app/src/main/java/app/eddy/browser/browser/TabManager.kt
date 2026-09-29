@@ -162,7 +162,8 @@ class TabManager(
         tab.webView = view
         transport.webView = view
         resultMsg.sendToTarget()
-        select(tab)
+        if (settings().switchToNewTabs) select(tab) else view.onPause()
+        requestPersist()
         return true
     }
 
@@ -171,6 +172,15 @@ class TabManager(
         destroyView(tab)
         tab.isLoading = false
         tab.error = PageError(ErrorKind.UNAVAILABLE, tab.url, "The page stopped responding.")
+    }
+
+    /** Moves [tab] into [target]'s place; tabs in between shift by one. */
+    fun move(tab: BrowserTab, target: BrowserTab) {
+        val from = tabs.indexOf(tab)
+        val to = tabs.indexOf(target)
+        if (from < 0 || to < 0 || from == to) return
+        tabs.add(to, tabs.removeAt(from))
+        requestPersist()
     }
 
     fun destroyAll() = tabs.forEach(::destroyView)
