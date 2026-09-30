@@ -112,6 +112,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
             WebSettingsCompat.setWebAuthenticationSupport(view.settings, WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_BROWSER)
         }
+        // WebView tags every request with X-Requested-With: <package>. X (Twitter) and others read it as an
+        // embedded view and refuse sign-in ("not allowed to log in at this time"). An empty allow-list drops it.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
+            WebSettingsCompat.setRequestedWithHeaderOriginAllowList(view.settings, emptySet())
+        }
         // Instant back/forward (the page keeps running instead of reloading) and prerendering support.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.BACK_FORWARD_CACHE)) {
             WebSettingsCompat.setBackForwardCacheEnabled(view.settings, true)
