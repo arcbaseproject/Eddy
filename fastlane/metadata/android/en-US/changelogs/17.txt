@@ -1,0 +1,1 @@
+* Signing in to X (Twitter) works: Eddy no longer tells sites it is an embedded web view
