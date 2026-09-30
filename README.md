@@ -32,6 +32,17 @@ The welcome tour on first launch:
   <img src="docs/screenshots/tour-customize.png" width="180" alt="Welcome tour, theme and search engine picker">
 </p>
 
+## Install and update
+
+Download the APK from [GitHub releases](https://github.com/arcbaseproject/Eddy/releases). Eddy does
+not update itself. To get updates automatically, use [Obtainium](https://obtainium.imranr.dev):
+
+1. In Obtainium, tap **Add App**.
+2. Paste `https://github.com/arcbaseproject/Eddy` as the source URL.
+3. Turn on **Include prereleases**. Every Eddy release is a beta published as a GitHub pre-release,
+   so Obtainium finds no updates without this setting.
+4. Tap **Add**, then install.
+
 ## Build
 
 Requirements: JDK 21+ (tested on 26), Android SDK with platform 37 and build-tools 37.

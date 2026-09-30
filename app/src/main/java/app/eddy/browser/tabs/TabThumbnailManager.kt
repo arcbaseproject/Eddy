@@ -34,6 +34,8 @@ class TabThumbnailManager(context: Context, private val scope: CoroutineScope) {
         runCatching {
             val c = Canvas(bmp)
             c.scale(scale, scale)
+            // A parent applies the scroll offset when it draws a child; drawing the view directly must do it too.
+            c.translate(-view.scrollX.toFloat(), -view.scrollY.toFloat())
             view.draw(c)
         }.onFailure { return }
         cache.put(tab.id, bmp)

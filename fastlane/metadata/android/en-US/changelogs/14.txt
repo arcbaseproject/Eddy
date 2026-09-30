@@ -1,0 +1,1 @@
+* Tab previews now show the part of the page you were looking at, not a blank card
