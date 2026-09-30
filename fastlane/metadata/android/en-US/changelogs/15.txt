@@ -1,0 +1,1 @@
+* Messages at the bottom of the screen now sit just above the toolbar

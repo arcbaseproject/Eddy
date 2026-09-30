@@ -181,9 +181,10 @@ fun BrowserRoot(vm: BrowserViewModel) {
                     if (vm.screen == Screen.BROWSER && settings.toolbarPosition == ToolbarPosition.BOTTOM && !vm.editing) 1f else 0f,
                     spatialSpring(), label = "snackLift",
                 )
+                // Over the bottom bar, the message sits just above it (chromeGap + omniboxHeight, less the snackbar's own 12dp margin, plus 8dp).
                 SnackbarHost(
                     snackbar,
-                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp + (lift * 76).dp),
+                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp + (lift * 38).dp),
                 ) { data ->
                     // Swiping either way dismisses; without this the message has to time out on its own.
                     val dismiss = key(data) {
