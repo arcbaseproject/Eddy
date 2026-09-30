@@ -152,6 +152,10 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         WebViewCompat.addWebMessageListener(view, BlobDownloader.NAME, setOf("*")) { _, message, sourceOrigin, isMainFrame, _ ->
             if (isMainFrame) message.data?.let { host.onBlobMessage(tab, sourceOrigin.toString(), it) }
         }
+        WebViewCompat.addWebMessageListener(view, ClipboardBridge.NAME, setOf("*")) { _, _, sourceOrigin, isMainFrame, reply ->
+            if (isMainFrame) host.onClipboardRead(tab, sourceOrigin.toString(), reply)
+        }
+        WebViewCompat.addDocumentStartJavaScript(view, ClipboardBridge.SOURCE, setOf("*"))
     }
 
     /** Settings that do not depend on the current site; also re-run when the user changes a preference. */

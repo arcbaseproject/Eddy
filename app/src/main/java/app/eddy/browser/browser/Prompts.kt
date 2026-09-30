@@ -13,6 +13,7 @@ import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import androidx.core.content.ContextCompat
+import androidx.webkit.JavaScriptReplyProxy
 import app.eddy.browser.data.database.SiteSettings
 import app.eddy.browser.privacy.get
 import app.eddy.browser.privacy.SiteFeature
@@ -36,6 +37,9 @@ sealed interface Prompt {
 
     class HttpAuth(val host: String, val realm: String, val handler: HttpAuthHandler) : Prompt
     class ExternalApp(val label: String?, val intent: Intent, val fallbackUrl: String?, val tabId: String) : Prompt
+
+    /** The page asked to read the clipboard (a "paste" button); nothing is sent unless the user allows it. */
+    class Paste(val host: String, val reply: JavaScriptReplyProxy) : Prompt
 
     /** A download of an executable or installer type, which the user confirms before it starts. */
     class RiskyDownload(val fileName: String, val sourceHost: String, val insecure: Boolean, val start: () -> Unit) : Prompt

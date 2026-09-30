@@ -931,16 +931,21 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     override fun onBlobMessage(tab: BrowserTab, origin: String, data: String) = blobDownloader.onMessage(tab, origin, data)
 
     override fun startDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
-        if ((url.startsWith("data:") || url.startsWith("blob:")) && contentDisposition.isBlank() && tab.webView != null) {
-            // Ask the page which name the link requested; WebView drops it for data: and blob: URLs.
-            tab.webView?.evaluateJavascript("(window.__eddyDownloadName||'')") { raw ->
+        if (!contentDisposition.contains("filename", ignoreCase = true) && tab.webView != null) {
+            // Ask the page which name the link requested (a[download]); WebView never passes it on. Read once, so it
+            // cannot name a later download.
+            tab.webView?.evaluateJavascript("(function(){var n=window.__eddyDownloadName||'';window.__eddyDownloadName='';return n})()") { raw ->
                 val name = runCatching { JSONArray("[$raw]").getString(0) }.getOrNull().orEmpty().replace("\"", "")
-                startDownload(tab, url, userAgent, if (name.isNotEmpty()) "attachment; filename=\"$name\"" else "attachment", mime, length)
+                confirmDownload(tab, url, userAgent, if (name.isNotEmpty()) "attachment; filename=\"$name\"" else contentDisposition.ifBlank { "attachment" }, mime, length)
             }
             return
         }
+        confirmDownload(tab, url, userAgent, contentDisposition, mime, length)
+    }
+
+    private fun confirmDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
         // guessFileName swaps the extension to match the MIME type, but data: and blob: saves keep the page's name as written.
-        val name = listOf(URLUtil.guessFileName(url, contentDisposition, mime.ifBlank { null }), DownloadNames.forResponse(contentDisposition, mime))
+        val name = listOf(URLUtil.guessFileName(url, contentDisposition, mime.ifBlank { null }), DownloadNames.forDownload(url, contentDisposition, mime))
             .firstOrNull(DownloadNames::isExecutable)
         // A page can start a download without the user picking anything, so an installer gets a question first.
         if (name != null) {
@@ -953,6 +958,22 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             return
         }
         startDownloadNow(tab, url, userAgent, contentDisposition, mime, length)
+    }
+
+    override fun onClipboardRead(tab: BrowserTab, origin: String, reply: JavaScriptReplyProxy) {
+        // Only the page on screen may ask; a background tab would get a dialog the user cannot place.
+        if (tab.id != tabs.selectedId || (!origin.startsWith("http://") && !origin.startsWith("https://"))) {
+            return reply.postMessage("{\"ok\":false}")
+        }
+        prompts.add(Prompt.Paste(UrlUtils.displayHost(origin), reply))
+    }
+
+    fun answerPaste(prompt: Prompt.Paste, allow: Boolean) {
+        prompts.remove(prompt)
+        val cm = app.getSystemService(ClipboardManager::class.java)
+        val text = if (allow) runCatching { cm.primaryClip?.getItemAt(0)?.coerceToText(app)?.toString() }.getOrNull().orEmpty() else null
+        val json = if (text != null) JSONObject().put("ok", true).put("text", text) else JSONObject().put("ok", false)
+        runCatching { prompt.reply.postMessage(json.toString()) }
     }
 
     fun answerRiskyDownload(prompt: Prompt.RiskyDownload, download: Boolean) {

@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
-import android.webkit.URLUtil
 import app.eddy.browser.data.database.DownloadDao
 import app.eddy.browser.data.database.DownloadEntity
 import app.eddy.browser.data.database.DownloadStatus
@@ -83,10 +82,10 @@ class DownloadEngine(
 
     suspend fun enqueue(request: DownloadRequest): Long {
         if (request.url.startsWith("data:", ignoreCase = true)) return saveDataUri(request)
-        val name = sanitize(URLUtil.guessFileName(request.url, request.contentDisposition, request.mimeType.ifBlank { null }))
+        val name = sanitize(DownloadNames.forDownload(request.url, request.contentDisposition, request.mimeType))
         val id = dao.insert(
             DownloadEntity(
-                url = request.url, fileName = name, mimeType = request.mimeType,
+                url = request.url, fileName = name, mimeType = DownloadNames.typeFor(name, request.mimeType),
                 totalBytes = request.contentLength, userAgent = request.userAgent, referer = request.referer,
                 incognito = request.incognito,
             ),
@@ -211,12 +210,13 @@ class DownloadEngine(
                 else -> conn.contentLengthLong
             }
             val disposition = conn.getHeaderField("Content-Disposition").orEmpty()
-            val mime = conn.contentType?.substringBefore(';')?.trim().orEmpty().ifBlank { d.mimeType }
+            val served = conn.contentType?.substringBefore(';')?.trim().orEmpty().ifBlank { d.mimeType }
             val name = if (disposition.isNotEmpty() || d.fileName.startsWith("downloadfile")) {
-                sanitize(URLUtil.guessFileName(d.url, disposition.ifEmpty { null }, mime.ifBlank { null }))
+                sanitize(DownloadNames.forDownload(d.url, disposition, served))
                     // The user was only asked about installers under the first name; a later response cannot turn it into one.
                     .takeUnless { DownloadNames.isExecutable(it) && !DownloadNames.isExecutable(d.fileName) } ?: d.fileName
             } else d.fileName
+            val mime = DownloadNames.typeFor(name, served)
             d = d.copy(
                 totalBytes = total, mimeType = mime, fileName = name, downloadedBytes = offset,
                 etag = conn.getHeaderField("ETag").orEmpty(), resumable = code == 206 || conn.getHeaderField("Accept-Ranges") == "bytes",
@@ -307,7 +307,7 @@ class DownloadEngine(
     /** Adds an already complete local file (a blob the page handed over) to Downloads and the list. */
     suspend fun importFile(source: File, name: String, mime: String, incognito: Boolean = false): Long = withContext(Dispatchers.IO) {
         val id = dao.insert(
-            DownloadEntity(url = "blob", fileName = sanitize(name), mimeType = mime, totalBytes = source.length(), downloadedBytes = source.length(), incognito = incognito),
+            DownloadEntity(url = "blob", fileName = sanitize(name), mimeType = DownloadNames.typeFor(name, mime), totalBytes = source.length(), downloadedBytes = source.length(), incognito = incognito),
         )
         val part = File(partDir, "$id.part")
         source.copyTo(part, overwrite = true)

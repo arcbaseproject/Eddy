@@ -1,6 +1,7 @@
 package app.eddy.browser.downloads
 
 import android.webkit.MimeTypeMap
+import android.webkit.URLUtil
 
 /** File names for downloads that have no usable URL (data: and blob:), taken from Content-Disposition or the type. */
 object DownloadNames {
@@ -17,6 +18,21 @@ object DownloadNames {
         fileName.substringAfterLast('.', "").lowercase() in executableExtensions
 
     private val filename = Regex("filename(\\*?)=(?:UTF-8'')?\"?([^\";]+)\"?", RegexOption.IGNORE_CASE)
+
+    /**
+     * URLUtil.guessFileName, except a Content-Disposition name is kept as written and a generic type is not
+     * trusted: servers send real videos as application/octet-stream, which guessFileName would rename to .bin.
+     */
+    fun forDownload(url: String, disposition: String, mime: String): String =
+        if (filename.containsMatchIn(disposition)) forResponse(disposition, mime)
+        else URLUtil.guessFileName(url, disposition.ifEmpty { null }, mime.takeUnless { it.isBlank() || isGeneric(it) })
+
+    /** The name's own type when the server only said application/octet-stream, so the file opens in the right app. */
+    fun typeFor(fileName: String, mime: String): String =
+        if (mime.isNotBlank() && !isGeneric(mime)) mime
+        else MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileName.substringAfterLast('.', "").lowercase()) ?: mime
+
+    private fun isGeneric(mime: String) = mime.substringBefore(';').trim().equals("application/octet-stream", ignoreCase = true)
 
     fun forResponse(disposition: String, mime: String): String {
         filename.find(disposition)?.let { m ->

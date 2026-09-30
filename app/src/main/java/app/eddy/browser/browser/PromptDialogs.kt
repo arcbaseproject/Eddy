@@ -45,6 +45,13 @@ fun PromptHost(vm: BrowserViewModel) {
             confirmButton = { TextButton(onClick = { vm.answerRiskyDownload(p, true) }) { Text("Download") } },
             dismissButton = { TextButton(onClick = { vm.answerRiskyDownload(p, false) }) { Text("Cancel") } },
         )
+        is Prompt.Paste -> AlertDialog(
+            onDismissRequest = { vm.answerPaste(p, false) },
+            title = { Text("Paste from clipboard?") },
+            text = { Text("${p.host} wants to read the text you copied.") },
+            confirmButton = { TextButton(onClick = { vm.answerPaste(p, true) }) { Text("Paste") } },
+            dismissButton = { TextButton(onClick = { vm.answerPaste(p, false) }) { Text("Block") } },
+        )
         null -> Unit
     }
 }

@@ -32,4 +32,12 @@ class DownloadNamesTest {
     @Test fun extendedFilenameIsDecoded() {
         assertEquals("€ rates.pdf", DownloadNames.forResponse("attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf", ""))
     }
+
+    @Test fun dispositionNameSurvivesGenericType() {
+        // tikcdn.io (ssstik.io) serves its .mp4 files as application/octet-stream.
+        assertEquals(
+            "ssstik.io_@tiktok_1790735776421.mp4",
+            DownloadNames.forDownload("https://tikcdn.io/ssstik/7106594312292453675", "attachment; filename=ssstik.io_@tiktok_1790735776421.mp4", "application/octet-stream"),
+        )
+    }
 }

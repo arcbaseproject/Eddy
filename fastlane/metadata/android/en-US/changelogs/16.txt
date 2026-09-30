@@ -1,0 +1,2 @@
+* Downloads keep the file name the site gives them, so videos from sites like ssstik.io save as .mp4 and not .bin
+* Paste buttons on websites work: Eddy asks before a page reads your clipboard
