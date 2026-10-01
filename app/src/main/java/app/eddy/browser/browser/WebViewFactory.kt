@@ -346,7 +346,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
          * Generic ad-slot selectors, kept deliberately narrow: every one names advertising outright,
          * so a false positive hides only a slot the request blocker has already emptied.
          */
-        private const val COSMETIC_CSS =
+        const val COSMETIC_CSS =
             ".adsbygoogle,ins.adsbygoogle,[id^=\"google_ads_iframe\"],[id^=\"div-gpt-ad\"],[id^=\"google_ads_\"]," +
                 "iframe[src*=\"doubleclick.net\"],iframe[src*=\"googlesyndication.com\"],iframe[src*=\"adnxs.com\"]," +
                 "iframe[src*=\"amazon-adsystem.com\"],.ad-slot,.ad-banner,.ad-container,.ad-wrapper,.ad-placeholder," +

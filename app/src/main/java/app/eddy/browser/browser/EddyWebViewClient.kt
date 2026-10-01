@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.http.SslError
 import android.os.Message
+import android.util.Log
 import android.webkit.HttpAuthHandler
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.SslErrorHandler
@@ -181,6 +182,7 @@ class EddyWebViewClient(
         if (!ContentBlocker.isThirdParty(reqHost, pageHost)) return null
         if (!host.blocker.isBlocked(reqHost, tab.blockingActive, tab.trackerBlockingActive)) return null
         tab.blockedRaw++
+        Log.d("ContentBlocker", "Blocked $reqHost on $pageHost")
         return blocked(request)
     }
 

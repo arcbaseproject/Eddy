@@ -198,7 +198,7 @@ class MainActivity : ComponentActivity() {
             }
             is UiEffect.OpenFile -> try {
                 startActivity(
-                    Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(effect.uri), effect.mime.ifBlank { "*/*" })
+                    Intent(Intent.ACTION_VIEW).setDataAndTypeAndNormalize(Uri.parse(effect.uri), effect.mime.ifBlank { "*/*" })
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
                 )
             } catch (_: Exception) {

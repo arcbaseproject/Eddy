@@ -53,6 +53,7 @@ import app.eddy.browser.privacy.SiteFeature
 import app.eddy.browser.settings.SettingsPage
 import app.eddy.browser.util.UrlUtils
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -65,14 +66,23 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import app.eddy.browser.MainActivity
 import app.eddy.browser.R
 import java.util.UUID
 
-enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS, PDF }
+enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS, PDF, SOURCE }
 
 /** A downloaded PDF opened in the built-in reader. */
 class OpenPdf(val uri: String, val name: String)
+
+/** Text shown in the source viewer: a page's markup, a downloaded text file or the app's log. Back returns to [from]. */
+class OpenSource(val name: String, val text: String, val from: Screen, val isLog: Boolean = false)
+
+private val TEXT_MIME = Regex("text/.*|application/(json|xml|javascript|xhtml\\+xml|[\\w.-]+\\+(json|xml))")
+private val TEXT_EXTENSIONS = setOf("txt", "html", "htm", "xhtml", "css", "js", "mjs", "json", "xml", "svg", "md", "csv", "log", "ini", "yml", "yaml")
+// ponytail: longer files are cut off; page through the stream if people need whole multi-megabyte logs.
+private const val MAX_SOURCE_CHARS = 2_000_000
 
 enum class DataType { HISTORY, COOKIES, CACHE, DOWNLOADS, SITE_SETTINGS, PASSWORDS }
 
@@ -366,6 +376,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             editing -> { stopEditing(); true }
             screen == Screen.SETTINGS && settingsStack.isNotEmpty() -> { settingsStack.removeAt(settingsStack.lastIndex); true }
             screen == Screen.PDF -> { closePdf(); true }
+            screen == Screen.SOURCE -> { closeSource(); true }
             screen != Screen.BROWSER -> { screen = Screen.BROWSER; true }
             tab == null -> false
             tab.canGoBack || !tab.isHome -> { goBack(); true }
@@ -679,7 +690,75 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             screen = Screen.PDF
             return
         }
+        if (TEXT_MIME.matches(mime.substringBefore(';').trim().lowercase()) || name.substringAfterLast('.', "").lowercase() in TEXT_EXTENSIONS) {
+            viewModelScope.launch {
+                val text = withContext(Dispatchers.IO) {
+                    runCatching {
+                        app.contentResolver.openInputStream(Uri.parse(uri))?.bufferedReader()?.use { r ->
+                            val buf = CharArray(8192)
+                            buildString {
+                                while (length < MAX_SOURCE_CHARS) {
+                                    val n = r.read(buf)
+                                    if (n < 0) break
+                                    append(buf, 0, n)
+                                }
+                            }
+                        }
+                    }.getOrNull()
+                }
+                if (text == null) return@launch snackbar("Could not open this file, or it was moved")
+                openSource = OpenSource(name, text, screen)
+                screen = Screen.SOURCE
+            }
+            return
+        }
         effects.trySend(UiEffect.OpenFile(uri, mime))
+    }
+
+    /** The text the source viewer is showing, if any. */
+    var openSource by mutableStateOf<OpenSource?>(null)
+        private set
+
+    fun viewPageSource() {
+        val tab = tabs.selected ?: return
+        val view = tab.webView ?: return
+        // ponytail: the live DOM, not the raw response, so script changes show; fetch the URL if exact bytes matter.
+        val js = "(document.doctype?new XMLSerializer().serializeToString(document.doctype)+'\\n':'')+document.documentElement.outerHTML"
+        view.evaluateJavascript(js) { raw ->
+            // The ad-hiding style is ours, not the site's.
+            val text = runCatching { JSONObject("{\"t\":$raw}").getString("t") }.getOrNull()
+                ?.replace("<style>${WebViewFactory.COSMETIC_CSS}</style>", "")
+            if (text.isNullOrEmpty()) return@evaluateJavascript snackbar("Could not read this page's source")
+            openSource = OpenSource(tab.url, text, Screen.BROWSER)
+            screen = Screen.SOURCE
+        }
+    }
+
+    fun viewAppLogs() {
+        viewModelScope.launch {
+            // An app may read its own process's logcat without any permission.
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    ProcessBuilder("logcat", "-d", "-v", "time", "--pid=${android.os.Process.myPid()}")
+                        .redirectErrorStream(true).start().inputStream.bufferedReader().use { it.readText() }
+                }.getOrNull()
+            }
+            if (text.isNullOrBlank()) return@launch snackbar("No logs to show")
+            openSource = OpenSource("App logs", text, screen, isLog = true)
+            screen = Screen.SOURCE
+        }
+    }
+
+    fun closeSource() {
+        screen = openSource?.from ?: Screen.BROWSER
+        openSource = null
+    }
+
+    fun copySource() {
+        val source = openSource ?: return
+        // The clipboard goes through Binder, which refuses anything past roughly 1 MB.
+        runCatching { app.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(source.name, source.text)) }
+            .onSuccess { snackbar("Source copied") }.onFailure { snackbar("Too large to copy") }
     }
 
     fun closePdf() {

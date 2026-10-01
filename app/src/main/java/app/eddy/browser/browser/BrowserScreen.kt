@@ -167,6 +167,7 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 Overlay(vm.screen == Screen.DOWNLOADS, overlayModifier) { DownloadsScreen(vm) }
                 Overlay(vm.screen == Screen.PASSWORDS, overlayModifier) { PasswordsScreen(vm) }
                 Overlay(vm.screen == Screen.PDF, overlayModifier) { PdfScreen(vm) }
+                Overlay(vm.screen == Screen.SOURCE, overlayModifier) { SourceScreen(vm) }
                 Overlay(vm.screen == Screen.SETTINGS, overlayModifier) { SettingsScreen(vm, settings) }
 
                 val snackbar = remember { SnackbarHostState() }

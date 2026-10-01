@@ -98,7 +98,7 @@ class AppContainer(private val app: Application) {
                     PendingIntent.getActivity(
                         app, event.id.toInt(),
                         Intent(Intent.ACTION_VIEW)
-                            .setDataAndType(Uri.parse(event.contentUri), event.mimeType.ifBlank { "*/*" })
+                            .setDataAndTypeAndNormalize(Uri.parse(event.contentUri), event.mimeType.ifBlank { "*/*" })
                             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),
                         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                     )

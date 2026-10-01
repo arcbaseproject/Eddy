@@ -1,0 +1,4 @@
+* View source: see a page's markup from the menu
+* Downloaded text files (txt, json, html, csv and more) open in a built-in viewer
+* App logs in Settings › Advanced, for attaching to bug reports
+* Fixed some downloaded files not opening in other apps

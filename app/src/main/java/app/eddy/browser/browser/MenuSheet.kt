@@ -110,6 +110,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
                 Group {
                     SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
                     Row(Icons.Rounded.Home, "Add to start page", act { tab?.let(vm::addShortcut) })
+                    if (tab?.webView != null && tab.error == null) Row(Icons.Rounded.Code, "View source", act { vm.viewPageSource() })
                     if (tab?.incognito == false) Row(Icons.AutoMirrored.Rounded.AddToHomeScreen, "Add to home screen", act { vm.addToLauncher(tab) })
                     if (DevTools.available(LocalContext.current)) {
                         SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }

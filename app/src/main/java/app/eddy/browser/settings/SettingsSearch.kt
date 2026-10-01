@@ -60,6 +60,7 @@ internal val settingsIndex = listOf(
     SettingEntry("Web debugging", listOf(ADVANCED), "developer inspect devtools usb"),
     SettingEntry("HTTPS-only mode", listOf(PRIVACY), "https secure encryption upgrade insecure http"),
     SettingEntry("Clear when I leave", listOf(PRIVACY), "clear on exit quit delete data swipe recents"),
+    SettingEntry("App logs", listOf(ADVANCED), "logcat debug crash bug report"),
     SettingEntry("Reset all settings", listOf(ADVANCED), "defaults restore"),
 
     SettingEntry("GitHub", listOf(ABOUT), "version build about source code website"),

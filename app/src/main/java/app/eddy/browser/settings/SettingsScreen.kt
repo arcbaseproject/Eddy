@@ -250,6 +250,8 @@ private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
     SettingsGroup("Developer") {
         SwitchRow("Web debugging", s.webDebugging, { v -> vm.launchSettings { it.copy(webDebugging = v) } }, "Lets chrome://inspect attach to pages over USB")
         GroupDivider()
+        ActionRow("App logs", vm::viewAppLogs, "Recent log output from Eddy, for bug reports")
+        GroupDivider()
         ActionRow("Reset all settings", { confirmReset = true }, "Restores defaults. Bookmarks and history stay.")
     }
     if (editUa) TextInputDialog("Custom user agent", s.customUserAgent, "User agent string", onDismiss = { editUa = false }) { v -> vm.launchSettings { it.copy(customUserAgent = v) }; editUa = false }
