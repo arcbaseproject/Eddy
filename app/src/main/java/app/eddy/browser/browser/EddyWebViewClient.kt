@@ -49,6 +49,7 @@ class EddyWebViewClient(
         when (scheme) {
             "http", "https" -> {
                 val url = uri.toString()
+                if (request.isForMainFrame && closeAdPopup(view, url)) return true
                 val upgraded = factory.upgrade(url)
                 // The upgraded page redirects straight back to http: upgrading again would loop forever.
                 if (request.isForMainFrame && request.isRedirect && upgraded != url &&
@@ -93,8 +94,22 @@ class EddyWebViewClient(
         }
     }
 
+    /**
+     * Popunder ads open a window and send it to an ad server, often on a real tap, so the popup gesture
+     * check lets them through. Main-frame loads skip [shouldInterceptRequest], so check the popup's host here.
+     */
+    private fun closeAdPopup(view: WebView, url: String): Boolean {
+        if (!tab.popup) return false
+        val h = UrlUtils.host(url)
+        if (h.isEmpty() || !host.blocker.isBlocked(h, tab.blockingActive, tab.trackerBlockingActive)) return false
+        Log.d("ContentBlocker", "Closed popup to $h")
+        view.stopLoading()
+        view.post { (view as? EddyWebView)?.let(host::closeWindow) }
+        return true
+    }
+
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-        if (url.startsWith(ERROR_SCHEME)) return
+        if (url.startsWith(ERROR_SCHEME) || closeAdPopup(view, url)) return
         tab.pageHost = UrlUtils.host(url)
         val newPage = tab.url != url
         tab.url = url

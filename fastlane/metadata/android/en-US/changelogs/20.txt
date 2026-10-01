@@ -1,0 +1,1 @@
+* Popup ads that open on a tap now close when they land on a known ad server

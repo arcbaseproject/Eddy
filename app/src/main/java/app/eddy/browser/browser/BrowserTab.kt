@@ -72,6 +72,8 @@ class BrowserTab(
     var lastHistoryUrl = ""
     var lastHistoryAt = 0L
     var openerId: String? = null
+    /** Opened by the page through window.open; closes itself if it lands on a blocked ad host. */
+    var popup = false
 
     /** Main thread only. */
     fun publishBlocked() { if (blockedCount != blockedRaw) blockedCount = blockedRaw }

@@ -156,7 +156,7 @@ class TabManager(
 
     fun createPopup(parent: BrowserTab, resultMsg: Message): Boolean {
         val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
-        val tab = BrowserTab(incognito = parent.incognito, initialUrl = "about:blank").also { it.openerId = parent.id }
+        val tab = BrowserTab(incognito = parent.incognito, initialUrl = "about:blank").also { it.openerId = parent.id; it.popup = true }
         tabs.add(tabs.indexOf(parent) + 1, tab)
         val view = factory().create(tab)
         tab.webView = view
