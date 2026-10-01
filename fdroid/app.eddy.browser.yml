@@ -1,5 +1,6 @@
 # Copy of metadata/app.eddy.browser.yml in gitlab.com/fdroid/fdroiddata, kept here so the build
-# steps stay in sync with the app. F-Droid's bot updates its copy on each new v* tag.
+# steps stay in sync with the app. Until fdroiddata!50152 is merged, push each release to that MR by hand;
+# after that F-Droid's bot picks up new v* tags itself.
 
 Categories:
   - Browser
