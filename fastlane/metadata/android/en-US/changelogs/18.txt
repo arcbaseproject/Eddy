@@ -1,0 +1,1 @@
+* Fixed a crash when a site asks for a passkey, such as X after entering your username
