@@ -110,28 +110,19 @@ private val PrivacySections = listOf(
 
 private val TermsSections = listOf(
     Section(
-        "Accepting these terms",
-        "Installing or using Eddy means you agree to these terms. If you disagree, do not use the app.",
-    ),
-    Section(
         "Beta software",
         "Eddy is in beta. It may contain bugs, features may change or disappear, and you could lose tabs, bookmarks or settings. " +
             "Keep your own copy of anything important, for example by exporting your bookmarks.",
     ),
     Section(
-        "Your use of the app",
-        "You may use Eddy for personal and lawful purposes. You are responsible for the sites you visit, the content you view or download, " +
-            "and for following the laws that apply to you. Do not use Eddy to attack, disrupt or gain unauthorised access to any service.",
+        "Licence",
+        "Eddy is free software under the Apache License 2.0. You may use, study, share and change it for any purpose under that licence, " +
+            "and nothing on this page limits it. You are responsible for the sites you visit and the content you view or download.",
     ),
     Section(
         "Security warnings",
         "Eddy warns you about connection and certificate problems. If you continue anyway, you accept the risk. " +
             "Blocking of ads, trackers and dangerous sites is a convenience and does not catch everything.",
-    ),
-    Section(
-        "Support messages",
-        "Do not use the support form to send spam, abuse, or other people's personal data. Eddy limits how often you can send messages, " +
-            "and the developer may ignore messages that break these terms. Replies are not guaranteed.",
     ),
     Section(
         "Third-party content and software",
@@ -149,11 +140,7 @@ private val TermsSections = listOf(
             "arising from your use of Eddy.",
     ),
     Section(
-        "Ending your use",
-        "Uninstall Eddy to stop using it. These terms continue to apply to what happened while you used it.",
-    ),
-    Section(
         "Changes",
-        "New versions of the app may update these terms. If you keep using Eddy after an update, you accept the new terms.",
+        "New versions of the app may update this page.",
     ),
 )

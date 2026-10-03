@@ -175,7 +175,7 @@ private fun RootPage(vm: BrowserViewModel, searching: Boolean, query: String, on
     SettingsGroup("Legal") {
         NavRow("Privacy policy", { open(SettingsPage.PRIVACY_POLICY) }, "What Eddy stores and what it sends", Icons.Rounded.PrivacyTip)
         GroupDivider()
-        NavRow("Terms of service", { open(SettingsPage.TERMS) }, "Rules for using the app", Icons.Rounded.Gavel)
+        NavRow("Terms of service", { open(SettingsPage.TERMS) }, "Licence and disclaimers", Icons.Rounded.Gavel)
     }
 }
 

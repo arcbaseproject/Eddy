@@ -29,4 +29,10 @@ Eddy is a lightweight Android browser built on the system WebView, with a one-ha
 * Search suggestions, voice input and a customisable start page
 * Desktop site mode that loads real desktop layouts
 
+<b>Network connections</b>
+Besides the pages you open, Eddy connects to:
+* Filter list hosts, about once a day in the background. The AdGuard DNS filter (adguardteam.github.io) and HaGeZi pop-up ads list (raw.githubusercontent.com) are on by default; turn them off in Settings > Privacy and security > Filter lists.
+* Web3Forms (api.web3forms.com), a third-party service, only when you tap Send in Settings > Support.
+* Your search engine for suggestions as you type, if enabled.
+
 Eddy is free software under the Apache 2.0 licence. Source code and issue tracker: https://github.com/arcbaseproject/Eddy

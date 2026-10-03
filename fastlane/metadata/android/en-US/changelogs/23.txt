@@ -1,0 +1,2 @@
+* Terms page no longer limits how you use Eddy; it states the Apache 2.0 licence and the warranty disclaimer
+* Store description lists every network connection Eddy makes
