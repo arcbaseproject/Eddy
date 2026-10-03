@@ -205,6 +205,10 @@ class SettingsStore(private val context: Context) {
                 "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt",
             ),
             FilterList(
+                "hagezi-popups", "HaGeZi pop-up ads",
+                "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/popupads.txt",
+            ),
+            FilterList(
                 "pgl", "Peter Lowe's ad & tracking servers",
                 "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext",
                 enabled = false,

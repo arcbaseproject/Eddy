@@ -49,7 +49,7 @@ class EddyWebViewClient(
         when (scheme) {
             "http", "https" -> {
                 val url = uri.toString()
-                if (request.isForMainFrame && closeAdPopup(view, url)) return true
+                if (request.isForMainFrame && blockAdNavigation(view, url, request.hasGesture() && !request.isRedirect)) return true
                 val upgraded = factory.upgrade(url)
                 // The upgraded page redirects straight back to http: upgrading again would loop forever.
                 if (request.isForMainFrame && request.isRedirect && upgraded != url &&
@@ -96,20 +96,29 @@ class EddyWebViewClient(
 
     /**
      * Popunder ads open a window and send it to an ad server, often on a real tap, so the popup gesture
-     * check lets them through. Main-frame loads skip [shouldInterceptRequest], so check the popup's host here.
+     * check lets them through; tab-under and redirect ads send the current tab there instead. Main-frame
+     * loads skip [shouldInterceptRequest], so check the destination here: a popup closes, any other tab
+     * stays on its page. A tap the user made shows a warning they can click through instead.
+     * Same-site navigations pass so a blocked vendor's own site still works.
      */
-    private fun closeAdPopup(view: WebView, url: String): Boolean {
-        if (!tab.popup) return false
+    private fun blockAdNavigation(view: WebView, url: String, userTap: Boolean = false): Boolean {
         val h = UrlUtils.host(url)
-        if (h.isEmpty() || !host.blocker.isBlocked(h, tab.blockingActive, tab.trackerBlockingActive)) return false
-        Log.d("ContentBlocker", "Closed popup to $h")
-        view.stopLoading()
-        view.post { (view as? EddyWebView)?.let(host::closeWindow) }
+        if (h.isEmpty() || (!tab.popup && !ContentBlocker.isThirdParty(h, tab.pageHost))) return false
+        if (!host.blocker.isBlocked(h, tab.blockingActive, tab.trackerBlockingActive)) return false
+        Log.d("ContentBlocker", "Stopped navigation to $h")
+        tab.blockedRaw++
+        tab.publishBlocked()
+        if (tab.popup) {
+            view.stopLoading()
+            view.post { (view as? EddyWebView)?.let(host::closeWindow) }
+        } else if (userTap) {
+            tab.error = PageError(ErrorKind.BLOCKED, url, "")
+        }
         return true
     }
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-        if (url.startsWith(ERROR_SCHEME) || closeAdPopup(view, url)) return
+        if (url.startsWith(ERROR_SCHEME) || (tab.popup && blockAdNavigation(view, url))) return
         tab.pageHost = UrlUtils.host(url)
         val newPage = tab.url != url
         tab.url = url

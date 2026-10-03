@@ -1,0 +1,3 @@
+* Ad redirects in the current tab are stopped, not just in popups
+* Tapping a link to a blocked ad domain shows a warning page with an Open anyway button
+* New default list: HaGeZi pop-up ads, for popup ad networks other lists miss

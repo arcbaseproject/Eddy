@@ -12,7 +12,7 @@ import java.util.UUID
 
 enum class Security { NONE, SECURE, INSECURE, ERROR }
 
-enum class ErrorKind { OFFLINE, DNS, SSL, TIMEOUT, UNAVAILABLE, INSECURE }
+enum class ErrorKind { OFFLINE, DNS, SSL, TIMEOUT, UNAVAILABLE, INSECURE, BLOCKED }
 
 class PageError(
     val kind: ErrorKind,

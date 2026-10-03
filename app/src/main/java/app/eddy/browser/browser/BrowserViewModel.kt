@@ -306,6 +306,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val tab = tabs.selected ?: return
         val view = tab.webView
         when {
+            // The blocked link never loaded, so the page underneath is still the one to go back to.
+            tab.error?.kind == ErrorKind.BLOCKED -> tab.error = null
             view != null && view.canGoBack() -> { tab.error?.sslHandler?.cancel(); tab.error = null; view.goBack() }
             // A tab opened from another one goes back to it, like closing a popup, instead of to the start page.
             tab.openerId != null && tabs.tabs.any { it.id == tab.openerId } -> tabs.close(tab, remember = false)

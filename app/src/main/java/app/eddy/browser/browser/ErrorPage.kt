@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.GppBad
@@ -63,10 +64,15 @@ fun ErrorPage(
             Icons.Rounded.NoEncryption, "This site doesn't support HTTPS",
             "${UrlUtils.displayHost(error.url)} did not answer over a secure connection. HTTPS-only mode blocked the plain http version.",
         )
+        ErrorKind.BLOCKED -> Triple(
+            Icons.Rounded.Block, "Eddy blocked this page",
+            "${UrlUtils.displayHost(error.url)} is on your ad or tracker blocklist.",
+        )
     }
     val isSsl = error.kind == ErrorKind.SSL
     val isInsecure = error.kind == ErrorKind.INSECURE
-    val warn = isSsl || isInsecure
+    val isBlocked = error.kind == ErrorKind.BLOCKED
+    val warn = isSsl || isInsecure || isBlocked
     var confirmProceed by remember { mutableStateOf(false) }
     var confirmInsecure by remember { mutableStateOf(false) }
 
@@ -99,6 +105,9 @@ fun ErrorPage(
                     onClick = { confirmInsecure = true }, Modifier.entrance(3),
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) { Text("Continue without HTTPS") }
+            } else if (isBlocked) {
+                Button(onClick = onBack, Modifier.entrance(3)) { Text("Go back") }
+                TextButton(onClick = onRetry, Modifier.entrance(3)) { Text("Open anyway") }
             } else if (isSsl) {
                 Button(onClick = onBack, Modifier.entrance(3)) { Text("Back to safety") }
                 if (error.sslHandler != null) {
