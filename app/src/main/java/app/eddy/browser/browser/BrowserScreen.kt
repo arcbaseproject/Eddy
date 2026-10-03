@@ -7,6 +7,8 @@ import android.view.WindowManager
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,7 +40,6 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -334,6 +335,8 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                 onSubmit = vm::submit,
                 onPick = { vm.submit(it.text) },
                 onFill = { vm.onOmniboxText(it.text) },
+                dictate = vm.dictateOnOpen,
+                onDictateStarted = vm::dictateStarted,
             )
         }
     }
@@ -395,23 +398,34 @@ private fun WebContent(tab: BrowserTab, visible: Boolean, modifier: Modifier = M
     }
 }
 
+/** Like Firefox: the spinner follows the finger, then parks and spins until the reload finishes. */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.PullIndicator(tab: BrowserTab) {
+    LaunchedEffect(tab.isLoading) { if (!tab.isLoading) tab.refreshing = false }
     val pull = tab.pullDistance
-    if (pull <= 0) return
-    val density = LocalDensity.current
-    val threshold = with(density) { 72.dp.toPx() }
-    val progress = (pull / threshold).coerceIn(0f, 1f)
+    val threshold = with(LocalDensity.current) { 72.dp.toPx() }
+    val target = when {
+        pull > 0 -> pull.coerceAtMost((threshold * 1.4f).toInt()).toFloat()
+        tab.refreshing -> threshold
+        else -> 0f
+    }
+    // The drag tracks the finger exactly; only the settle and the snap back animate.
+    val y by animateFloatAsState(target, if (pull > 0) snap() else spatialSpring(), label = "pull")
+    if (y < 1f) return
+    val progress = (y / threshold).coerceIn(0f, 1f)
     Surface(
         Modifier.align(Alignment.TopCenter).statusBarsPadding()
-            .offset { IntOffset(0, (pull.coerceAtMost((threshold * 1.4f).toInt()) - 48.dp.roundToPx())) }
+            .offset { IntOffset(0, y.toInt() - 48.dp.roundToPx()) }
             .size(40.dp).alpha(progress),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         shadowElevation = 4.dp,
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Refresh, "Pull to refresh", Modifier.rotate(progress * 270f), tint = MaterialTheme.colorScheme.primary)
+        val spinner = Modifier.padding(9.dp).semantics { contentDescription = if (tab.refreshing) "Refreshing" else "Pull to refresh" }
+        if (tab.refreshing && pull == 0) {
+            CircularProgressIndicator(spinner, strokeWidth = 2.5.dp)
+        } else {
+            CircularProgressIndicator({ progress * 0.8f }, spinner.rotate(progress * 180f), strokeWidth = 2.5.dp)
         }
     }
 }

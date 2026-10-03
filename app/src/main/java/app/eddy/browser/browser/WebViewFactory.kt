@@ -130,7 +130,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         view.setOnLongClickListener { longPress(tab, view) }
         view.onScrolled = { dy, y -> host.onScrolled(tab, dy, y) }
         view.onPull = { tab.pullDistance = it }
-        view.onPullRelease = { if (it) view.reload() }
+        view.onPullRelease = { if (it) { tab.refreshing = true; view.reload() } }
 
         registerAutofill(tab, view)
         applyGlobal(view, host.settings)

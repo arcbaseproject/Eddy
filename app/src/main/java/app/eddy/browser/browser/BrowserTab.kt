@@ -55,6 +55,8 @@ class BrowserTab(
     @Volatile var httpsUpgradedFrom: String? = null
     var webView by mutableStateOf<EddyWebView?>(null)
     var pullDistance by mutableIntStateOf(0)
+    /** A pull-to-refresh reload is running; the spinner stays parked until it finishes. */
+    var refreshing by mutableStateOf(false)
 
     /** Incremented on WebView's request thread for every blocked subresource. */
     @Volatile var blockedRaw: Int = 0

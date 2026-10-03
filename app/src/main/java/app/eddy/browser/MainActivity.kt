@@ -41,6 +41,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.withStarted
 import app.eddy.browser.browser.BrowserRoot
 import app.eddy.browser.privacy.ExitCleanupService
+import app.eddy.browser.settings.AppIcon
 import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.browser.MediaService
 import app.eddy.browser.browser.UiEffect
@@ -135,6 +136,7 @@ class MainActivity : ComponentActivity() {
         // pauseTimers is process-wide: reopening on a home or dormant tab cannot resume it.
         // Pause only this view, and keep background playback running.
         if (!MediaService.isPlaying(this)) vm.tabs.selected?.webView?.onPause()
+        if (!isChangingConfigurations) AppIcon.applyPending(this)
     }
 
     override fun onResume() {

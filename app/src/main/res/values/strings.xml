@@ -12,4 +12,5 @@
         <item quantity="one">Downloading %d file</item>
         <item quantity="other">Downloading %d files</item>
     </plurals>
+    <string name="widget_search_description">Search, dictate or open an incognito tab</string>
 </resources>

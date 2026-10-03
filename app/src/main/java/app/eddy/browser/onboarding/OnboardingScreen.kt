@@ -2,6 +2,8 @@ package app.eddy.browser.onboarding
 
 import android.app.Activity
 import android.app.role.RoleManager
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -47,6 +49,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -54,10 +57,12 @@ import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -65,7 +70,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -107,6 +111,7 @@ import app.eddy.browser.ui.shapes.MorphShape
 import app.eddy.browser.ui.theme.Dimens
 import app.eddy.browser.ui.theme.LocalReducedMotion
 import app.eddy.browser.ui.theme.Palette
+import app.eddy.browser.widget.SearchWidget
 import androidx.compose.material3.toShape
 import kotlinx.coroutines.launch
 import kotlin.math.floor
@@ -218,8 +223,9 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
                             LookPicker(vm, settings)
                         }
                         else -> {
-                            PageText("You're ready", "Make Eddy your default browser and links from other apps open here.")
+                            PageText("You're ready", "Two optional extras before you start.")
                             DefaultBrowserButton()
+                            WidgetButton()
                         }
                     }
                 }
@@ -392,14 +398,42 @@ private fun DefaultBrowserButton() {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isDefault = held() }
     val request = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { isDefault = held() }
 
-    Column(Modifier.padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (isDefault) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
-                Text("Eddy is your default browser", Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleSmall)
+    when {
+        isDefault -> SetupCard(Icons.Rounded.CheckCircle, "Eddy is your default browser", "Links from other apps open here", Modifier.padding(top = 24.dp), done = true)
+        roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) -> SetupCard(
+            Icons.Rounded.Public, "Make Eddy the default", "Open links from other apps here", Modifier.padding(top = 24.dp),
+        ) { request.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_BROWSER)) }
+    }
+}
+
+/** A full-width tappable row for an optional setup step; [done] swaps the chevron for a settled, non-tappable state. */
+@Composable
+private fun SetupCard(icon: ImageVector, title: String, subtitle: String, modifier: Modifier = Modifier, done: Boolean = false, onClick: () -> Unit = {}) {
+    Surface(
+        onClick = onClick, enabled = !done,
+        modifier = modifier.fillMaxWidth().widthIn(max = 360.dp),
+        shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
             }
-        } else if (roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER)) {
-            OutlinedButton(onClick = { request.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_BROWSER)) }) { Text("Make Eddy the default") }
+            Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (!done) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/** Asks the launcher to pin the search widget; hidden when the launcher cannot pin widgets. */
+@Composable
+private fun WidgetButton() {
+    val context = LocalContext.current
+    val manager = remember { AppWidgetManager.getInstance(context) }
+    if (!remember { manager.isRequestPinAppWidgetSupported }) return
+    SetupCard(Icons.Rounded.Widgets, "Add search widget", "Search from your home screen", Modifier.padding(top = 10.dp)) {
+        manager.requestPinAppWidget(ComponentName(context, SearchWidget::class.java), null, null)
     }
 }

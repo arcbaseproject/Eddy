@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/widget_pill"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingEnd="4dp">
+
+        <LinearLayout
+            android:id="@+id/widget_search"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="Search"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:importantForAccessibility="no"
+                android:src="@mipmap/ic_launcher" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Search"
+                android:textColor="@color/widget_hint"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/widget_voice"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Voice search"
+            android:padding="11dp"
+            android:src="@drawable/ic_widget_mic" />
+
+        <ImageView
+            android:id="@+id/widget_incognito"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="New incognito tab"
+            android:padding="11dp"
+            android:src="@drawable/ic_widget_incognito" />
+    </LinearLayout>
+</LinearLayout>

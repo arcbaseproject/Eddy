@@ -69,6 +69,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import app.eddy.browser.MainActivity
 import app.eddy.browser.R
+import app.eddy.browser.widget.SearchWidget
 import java.util.UUID
 
 enum class Screen { BROWSER, TABS, BOOKMARKS, HISTORY, DOWNLOADS, PASSWORDS, SETTINGS, PDF, SOURCE }
@@ -139,6 +140,9 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     var editing by mutableStateOf(false)
         private set
     var omniboxText by mutableStateOf("")
+        private set
+    /** The home-screen widget's mic opened the omnibox: start dictating as soon as it shows. */
+    var dictateOnOpen by mutableStateOf(false)
         private set
     var chromeVisible by mutableStateOf(true)
         private set
@@ -282,8 +286,10 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     fun handleIntent(intent: Intent) {
-        if (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_WEB_SEARCH ||
-            intent.action == Intent.ACTION_PROCESS_TEXT) onboardingSuppressed = true
+        if (intent.action in setOf(
+                Intent.ACTION_VIEW, Intent.ACTION_SEND, Intent.ACTION_WEB_SEARCH, Intent.ACTION_PROCESS_TEXT,
+                SearchWidget.ACTION_SEARCH, SearchWidget.ACTION_VOICE, SearchWidget.ACTION_INCOGNITO,
+            )) onboardingSuppressed = true
         viewModelScope.launch {
             ready.await()
             val text = when (intent.action) {
@@ -293,6 +299,15 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                 Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let { t -> t.split(Regex("\\s+")).firstOrNull(UrlUtils::isWebUrl) ?: t }
                 Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
                 MAIN_OPEN_DOWNLOADS -> { screen = Screen.DOWNLOADS; null }
+                SearchWidget.ACTION_SEARCH, SearchWidget.ACTION_VOICE, SearchWidget.ACTION_INCOGNITO -> {
+                    val incognito = intent.action == SearchWidget.ACTION_INCOGNITO
+                    // Reuse an empty start page of the same kind rather than piling up blank tabs.
+                    val current = tabs.selected
+                    if (current == null || !current.isHome || current.incognito != incognito) newTab(incognito) else screen = Screen.BROWSER
+                    startEditing()
+                    dictateOnOpen = intent.action == SearchWidget.ACTION_VOICE
+                    null
+                }
                 else -> null
             }?.trim().orEmpty()
             if (text.isEmpty()) return@launch
@@ -406,8 +421,11 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         loadClipboardSuggestion()
     }
 
+    fun dictateStarted() { dictateOnOpen = false }
+
     fun stopEditing() {
         editing = false
+        dictateOnOpen = false
         suggestJob?.cancel()
         suggestions.value = emptyList()
     }

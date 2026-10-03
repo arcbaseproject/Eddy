@@ -17,8 +17,8 @@ android {
         applicationId = "app.eddy.browser"
         minSdk = 29
         targetSdk = 37
-        versionCode = 21
-        versionName = "0.6.11-beta"
+        versionCode = 22
+        versionName = "0.6.12-beta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

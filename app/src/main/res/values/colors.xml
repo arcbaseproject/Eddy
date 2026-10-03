@@ -1,4 +1,17 @@
 <resources>
     <color name="window_bg">#FFFBFF</color>
     <color name="icon_bg">#062C47</color>
+    <color name="icon_bg_forest">#024A07</color>
+    <color name="icon_bg_violet">#420547</color>
+    <color name="icon_bg_ember">#4E0024</color>
+    <color name="icon_bg_sunset">#512C00</color>
+    <color name="icon_bg_paper">#F4F1EA</color>
+    <color name="icon_bg_midnight">#0B0B0B</color>
+    <color name="icon_bg_neon">#0B0B0B</color>
+    <color name="icon_bg_mono">#0D0D0D</color>
+    <color name="icon_bg_inverse">#FAD4B8</color>
+    <color name="icon_bg_pixel">#062C47</color>
+    <color name="widget_pill">#FFFFFF</color>
+    <color name="widget_fg">#1D1B20</color>
+    <color name="widget_hint">#49454F</color>
 </resources>

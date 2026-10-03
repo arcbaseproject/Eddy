@@ -68,7 +68,7 @@ fun rememberVoiceState(): VoiceState = remember { VoiceState() }
  * Renders nothing when the device has no recognition service, so there is no dead button.
  */
 @Composable
-fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoiceState(), modifier: Modifier = Modifier) {
+fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoiceState(), autoStart: Boolean = false, onAutoStarted: () -> Unit = {}, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     // A package-manager query; the omnibox recomposes on every keystroke, so ask once.
     if (!remember { SpeechRecognizer.isRecognitionAvailable(context) }) return
@@ -104,6 +104,40 @@ fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoice
     }
     DisposableEffect(recognizer) { onDispose { recognizer.destroy() } }
 
+    val toggle: () -> Unit = {
+        when {
+            !granted -> askPermission.launch(Manifest.permission.RECORD_AUDIO)
+            // stopListening keeps whatever was said; cancel would throw it away.
+            state.listening -> { recognizer.stopListening(); stop(state); haptics.tick() }
+            else -> {
+                state.listening = true
+                state.level = 0f
+                finished.set(false)
+                haptics.confirm()
+                recognizer.startListening(
+                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                        // A web-search model is tuned for short queries and site names, which is what
+                        // an address bar gets; free-form dictation mishears them as ordinary prose.
+                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
+                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale)
+                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locale)
+                        // The server-side recogniser is markedly better than the on-device fallback.
+                        .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
+                        .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                        .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName),
+                )
+                // A recogniser that never reports back would hold the microphone open, so drop
+                // the session if nothing has arrived long after the last word.
+                scope.launch {
+                    delay(30_000)
+                    if (!finished.get()) { recognizer.cancel(); stop(state) }
+                }
+            }
+        }
+    }
+    // Keyed on the request, not Unit: the editor may already be open when the widget's mic asks again.
+    LaunchedEffect(autoStart) { if (autoStart) { onAutoStarted(); if (!state.listening) toggle() } }
+
     val held = MaterialTheme.colorScheme.primary
     // The trace beside the omnibox carries the feedback; the button only needs to read as pressed.
     val fill by animateFloatAsState(if (state.listening) 1f else 0f, spring(dampingRatio = 0.7f), label = "voiceFill")
@@ -124,37 +158,7 @@ fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoice
             .clickable(
                 role = Role.Button,
                 onClickLabel = if (state.listening) "Stop dictation" else "Start dictation",
-            ) {
-                when {
-                    !granted -> askPermission.launch(Manifest.permission.RECORD_AUDIO)
-                    // stopListening keeps whatever was said; cancel would throw it away.
-                    state.listening -> { recognizer.stopListening(); stop(state); haptics.tick() }
-                    else -> {
-                        state.listening = true
-                        state.level = 0f
-                        finished.set(false)
-                        haptics.confirm()
-                        recognizer.startListening(
-                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                // A web-search model is tuned for short queries and site names, which is what
-                                // an address bar gets; free-form dictation mishears them as ordinary prose.
-                                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
-                                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale)
-                                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locale)
-                                // The server-side recogniser is markedly better than the on-device fallback.
-                                .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
-                                .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                                .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName),
-                        )
-                        // A recogniser that never reports back would hold the microphone open, so drop
-                        // the session if nothing has arrived long after the last word.
-                        scope.launch {
-                            delay(30_000)
-                            if (!finished.get()) { recognizer.cancel(); stop(state) }
-                        }
-                    }
-                }
-            },
+            ) { toggle() },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

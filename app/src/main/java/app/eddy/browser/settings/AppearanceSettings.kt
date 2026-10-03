@@ -1,15 +1,20 @@
 package app.eddy.browser.settings
 
 import android.os.Build
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
@@ -23,6 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -33,6 +42,7 @@ import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.ShortcutStyle
 import app.eddy.browser.data.models.ThemeMode
 import app.eddy.browser.data.models.ToolbarPosition
+import app.eddy.browser.ui.animation.rememberSystemReducedMotion
 import app.eddy.browser.ui.theme.Dimens
 import app.eddy.browser.ui.theme.Palette
 
@@ -63,13 +73,21 @@ fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
             }
         }
     }
+    SettingsGroup("App icon") { AppIconPicker() }
+    SettingsFootnote("The new icon appears after you leave Eddy.")
     SettingsGroup("Layout") {
         NavRow("Start page", { vm.settingsStack.add(SettingsPage.START_PAGE) }, "Title, sections, shortcut columns")
         GroupDivider()
         ChoiceRow("Toolbar position", ToolbarPosition.entries, s.toolbarPosition, { if (it == ToolbarPosition.BOTTOM) "Bottom" else "Top" }, { v -> vm.launchSettings { it.copy(toolbarPosition = v) } })
     }
     SettingsGroup("Motion and feedback") {
-        ChoiceRow("Animations", MotionPref.entries, s.motion, { if (it == MotionPref.FULL) "Full" else "Reduced" }, { v -> vm.launchSettings { it.copy(motion = v) } })
+        // System "Remove animations" wins over this setting, so say so instead of showing "Full".
+        val systemOff = rememberSystemReducedMotion()
+        ChoiceRow(
+            "Animations", MotionPref.entries, s.motion,
+            { if (systemOff) "Off in system settings" else if (it == MotionPref.FULL) "Full" else "Reduced" },
+            { v -> vm.launchSettings { it.copy(motion = v) } }, enabled = !systemOff,
+        )
         GroupDivider()
         SwitchRow("Haptic feedback", s.hapticsEnabled, { v -> vm.launchSettings { it.copy(hapticsEnabled = v) } })
     }
@@ -115,6 +133,31 @@ fun StartPageSettings(vm: BrowserViewModel, s: Settings) {
         ChoiceRow("Homepage layout", HomeDensity.entries, s.homeDensity, { if (it == HomeDensity.COMFORTABLE) "Comfortable" else "Compact" }, { v -> vm.launchSettings { it.copy(homeDensity = v) } })
     }
     SettingsFootnote("Shortcuts themselves are added and reordered on the start page.")
+}
+
+@Composable
+private fun AppIconPicker() {
+    val context = LocalContext.current
+    var current by remember { mutableStateOf(AppIcon.current(context)) }
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AppIcon.entries.forEach { icon ->
+            val selected = icon == current
+            val shape = RoundedCornerShape(16.dp)
+            Box(
+                // A 0.dp border still draws a hairline, which shows on the light Paper tile.
+                Modifier.size(56.dp).clip(shape).background(colorResource(icon.background))
+                    .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, shape) else Modifier)
+                    .clickable { AppIcon.set(icon); current = icon }
+                    .semantics { contentDescription = "${icon.label} icon" + if (selected) ", selected" else "" },
+            ) {
+                // The foreground art sits inside the adaptive-icon safe zone; scale it to fill the tile.
+                Image(painterResource(icon.foreground), null, Modifier.fillMaxSize().scale(1.4f))
+            }
+        }
+    }
 }
 
 @Composable

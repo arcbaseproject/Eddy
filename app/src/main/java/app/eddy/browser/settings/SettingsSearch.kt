@@ -21,6 +21,7 @@ internal val settingsIndex = listOf(
 
     SettingEntry("Theme", listOf(APPEARANCE), "dark light system mode night"),
     SettingEntry("AMOLED black", listOf(APPEARANCE), "true black dark oled"),
+    SettingEntry("App icon", listOf(APPEARANCE), "launcher logo home screen pixel"),
     SettingEntry("Dynamic colors", listOf(APPEARANCE), "wallpaper material you"),
     SettingEntry("Toolbar position", listOf(APPEARANCE), "address bar top bottom"),
     SettingEntry("Start page", listOf(APPEARANCE), "new tab home customize sections"),

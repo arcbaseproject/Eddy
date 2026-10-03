@@ -1,4 +1,7 @@
 <resources>
     <color name="window_bg">#141218</color>
     <color name="icon_bg">#062C47</color>
+    <color name="widget_pill">#2B2930</color>
+    <color name="widget_fg">#E6E0E9</color>
+    <color name="widget_hint">#CAC4D0</color>
 </resources>

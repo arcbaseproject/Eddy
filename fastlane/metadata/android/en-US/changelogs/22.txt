@@ -1,0 +1,5 @@
+* Home-screen search widget with voice and incognito buttons
+* Pick a different app icon in Appearance settings
+* Pull to refresh shows a spinner until the page has reloaded
+* View source is indented, colored and numbered
+* Read aloud works with speech engines Android 11+ hid from the app

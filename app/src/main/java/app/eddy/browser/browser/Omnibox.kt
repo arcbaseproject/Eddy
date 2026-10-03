@@ -256,6 +256,8 @@ fun OmniboxEditor(
     onSubmit: (String) -> Unit,
     onPick: (Suggestion) -> Unit,
     onFill: (Suggestion) -> Unit,
+    dictate: Boolean = false,
+    onDictateStarted: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var value by remember { mutableStateOf(TextFieldValue(initialText, TextRange(0, initialText.length))) }
@@ -303,7 +305,7 @@ fun OmniboxEditor(
                     }
                 },
             )
-            VoiceInputButton({ spoken -> value = TextFieldValue(spoken, TextRange(spoken.length)); onTextChange(spoken) }, voice)
+            VoiceInputButton({ spoken -> value = TextFieldValue(spoken, TextRange(spoken.length)); onTextChange(spoken) }, voice, autoStart = dictate, onAutoStarted = onDictateStarted)
             // The slot stays put while dictating: a button appearing beside the mic would shift it too.
             if (value.text.isNotEmpty() || voice.listening) {
                 EddyIconButton(Icons.Rounded.Close, "Clear text", { value = TextFieldValue(""); onTextChange("") })
