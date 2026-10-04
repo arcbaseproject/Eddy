@@ -109,6 +109,12 @@ fun HomeScreen(
                         onRemove = { s -> vm.launchSettings { it.copy(shortcuts = it.shortcuts.filterNot { x -> x.id == s.id }) } },
                         onReorder = { list -> vm.launchSettings { it.copy(shortcuts = list) } },
                         onAdd = { editing = Shortcut(UUID.randomUUID().toString(), "", "https://", settings.shortcuts.size, settings.shortcuts.size) },
+                        onHide = {
+                            vm.launchSettings { it.copy(homeShowShortcuts = false) }
+                            vm.snackbar("Shortcuts hidden. Show them again in Settings > Appearance > Start page", "Undo") {
+                                vm.launchSettings { it.copy(homeShowShortcuts = true) }
+                            }
+                        },
                         modifier = Modifier.entrance(2),
                     )
                     Spacer(Modifier.height(32.dp))

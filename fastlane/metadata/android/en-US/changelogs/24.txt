@@ -1,0 +1,2 @@
+* Opening a downloaded app (APK) from Downloads now starts the installer instead of doing nothing
+* Long-press the Add tile or any shortcut to hide the shortcuts on the start page

@@ -39,6 +39,7 @@ Eddy shows web pages with Android System WebView, a Google component built on Ch
 - Notifications: show download progress.
 - Clipboard: when you open the address bar, Eddy reads the clipboard once to offer a “paste link” suggestion. Eddy does not store or send it. Android may show a notice when this happens.
 - Network state: lets Eddy show offline pages and retry when you reconnect.
+- Install apps: lets you open an app (APK) you downloaded. Android still asks you to allow it and to confirm each install.
 
 ## Passwords
 

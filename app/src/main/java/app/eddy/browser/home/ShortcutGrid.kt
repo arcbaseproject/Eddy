@@ -3,7 +3,9 @@ package app.eddy.browser.home
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -65,7 +68,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 
 /**
  * Shortcut grid with long-press-to-drag reordering. Releasing a long-press without moving opens the
- * edit/remove menu instead. Positions are tracked in root coordinates so the dragged tile keeps
+ * edit/remove/hide menu instead; long-pressing the add tile offers hide too. Positions are tracked in root coordinates so the dragged tile keeps
  * following the finger even while neighbouring tiles swap places under it.
  */
 @Composable
@@ -79,6 +82,7 @@ fun ShortcutGrid(
     onRemove: (Shortcut) -> Unit,
     onReorder: (List<Shortcut>) -> Unit,
     onAdd: () -> Unit,
+    onHide: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberHaptics()
@@ -100,7 +104,7 @@ fun ShortcutGrid(
                     // With no shortcuts the lone add tile takes the full row so it sits in the centre.
                     Box(if (order.isEmpty()) Modifier.fillMaxWidth() else Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                         if (item == null) {
-                            AddTile(tileSize, onAdd)
+                            AddTile(tileSize, onAdd, onHide)
                         } else {
                             val index = order.indexOfFirst { it.id == item.id }
                             val isDragging = draggingId == item.id
@@ -167,6 +171,7 @@ fun ShortcutGrid(
                                         leadingIcon = { Icon(Icons.Rounded.Delete, null) },
                                         onClick = { menuFor = null; onRemove(item) },
                                     )
+                                    HideItem { menuFor = null; onHide() }
                                 }
                             }
                         }
@@ -236,15 +241,28 @@ private fun ShortcutTile(
 }
 
 @Composable
-private fun AddTile(tileSize: Dp, onClick: () -> Unit) {
+private fun HideItem(onClick: () -> Unit) = DropdownMenuItem(
+    text = { Text("Hide shortcuts") },
+    leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) },
+    onClick = onClick,
+)
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AddTile(tileSize: Dp, onClick: () -> Unit, onHide: () -> Unit) {
+    var menu by remember { mutableStateOf(false) }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.size(tileSize).clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .clickable(role = Role.Button, onClickLabel = "Add shortcut", onClick = onClick),
+                .combinedClickable(
+                    role = Role.Button, onClickLabel = "Add shortcut", onClick = onClick,
+                    onLongClickLabel = "Shortcut options", onLongClick = { menu = true },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Rounded.Add, contentDescription = "Add shortcut", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) { HideItem { menu = false; onHide() } }
         }
         Text("Add", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
     }
