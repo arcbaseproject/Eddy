@@ -13,7 +13,7 @@ import app.eddy.browser.ui.theme.Dimens
 private class Section(val heading: String, val body: String)
 
 @Composable
-fun PrivacyPolicyPage() = LegalPage("Last updated September 2026", PrivacySections)
+fun PrivacyPolicyPage() = LegalPage("Last updated October 2026", PrivacySections)
 
 @Composable
 fun TermsPage() = LegalPage("Last updated September 2026", TermsSections)
@@ -54,6 +54,7 @@ private val PrivacySections = listOf(
             "• Site icons: Eddy may request /favicon.ico from a site on your home page.\n" +
             "• Filter lists: Eddy downloads the ad and tracker lists you enable from their publishers about once a day.\n" +
             "• Downloads you start.\n" +
+            "• Translation: when you choose Translate in the menu, Eddy opens the page through Google Translate, so Google receives the page address.\n" +
             "• Support messages: see below.\n\n" +
             "Each site, search engine and list host you contact can see your IP address and the usual information a browser sends, and applies its own privacy policy.",
     ),

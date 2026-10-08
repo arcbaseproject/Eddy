@@ -137,6 +137,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     var switcherIncognito by mutableStateOf(false)
     var menuVisible by mutableStateOf(false)
     var siteInfoVisible by mutableStateOf(false)
+    var translateVisible by mutableStateOf(false)
     var editing by mutableStateOf(false)
         private set
     var omniboxText by mutableStateOf("")
@@ -578,6 +579,11 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val view = tab.webView ?: return
         tab.devToolsActive = !tab.devToolsActive
         if (tab.devToolsActive) DevTools.show(app, view) else DevTools.hide(view)
+    }
+
+    fun translate(lang: String) {
+        val tab = tabs.selected?.takeIf { UrlUtils.isWebUrl(it.url) } ?: return
+        navigate(Translate.url(tab.url, lang))
     }
 
     fun toggleReader() {

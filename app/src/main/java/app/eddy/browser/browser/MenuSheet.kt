@@ -35,6 +35,7 @@ import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -109,6 +110,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
             if (webPage) {
                 Group {
                     SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
+                    if (tab?.webView != null) Row(Icons.Rounded.Translate, "Translate", act { vm.translateVisible = true })
                     Row(Icons.Rounded.Home, "Add to start page", act { tab?.let(vm::addShortcut) })
                     if (tab?.webView != null && tab.error == null) Row(Icons.Rounded.Code, "View source", act { vm.viewPageSource() })
                     if (tab?.incognito == false) Row(Icons.AutoMirrored.Rounded.AddToHomeScreen, "Add to home screen", act { vm.addToLauncher(tab) })

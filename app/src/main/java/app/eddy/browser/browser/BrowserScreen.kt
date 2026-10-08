@@ -105,6 +105,7 @@ import app.eddy.browser.tabs.TabSwitcher
 import app.eddy.browser.ui.animation.effectSpring
 import app.eddy.browser.ui.animation.rememberHaptics
 import app.eddy.browser.ui.animation.spatialSpring
+import app.eddy.browser.ui.components.ChoiceDialog
 import app.eddy.browser.ui.components.LocalFavicons
 import app.eddy.browser.ui.theme.Dimens
 import app.eddy.browser.ui.theme.EddyTheme
@@ -206,6 +207,10 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 PromptHost(vm)
                 if (vm.menuVisible) MenuSheet(vm, selected, vm.isBookmarked.collectAsStateWithLifecycle().value) { vm.menuVisible = false }
                 if (vm.siteInfoVisible && selected != null) SiteInfoSheet(vm, selected) { vm.siteInfoVisible = false }
+                if (vm.translateVisible) {
+                    val langs = remember { Translate.languages() }
+                    ChoiceDialog("Translate to", langs, langs.first(), Translate::label, { vm.translateVisible = false }, vm::translate)
+                }
                 vm.linkTarget?.let { LinkSheet(vm, it) { vm.linkTarget = null } }
             }
         }

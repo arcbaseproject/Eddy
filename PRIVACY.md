@@ -1,6 +1,6 @@
 # Eddy Privacy Policy
 
-_Last updated September 2026_
+_Last updated October 2026_
 
 ## The short version
 
@@ -25,6 +25,7 @@ Besides loading the pages you ask for, Eddy makes these requests:
 - Site icons: Eddy may request /favicon.ico from a site on your home page.
 - Filter lists: Eddy downloads the ad and tracker lists you enable from their publishers about once a day.
 - Downloads you start.
+- Translation: when you choose Translate in the menu, Eddy opens the page through Google Translate, so Google receives the page address.
 - Support messages: see below.
 
 Each site, search engine and list host you contact can see your IP address and the usual information a browser sends, and applies its own privacy policy.
