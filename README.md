@@ -1,3 +1,17 @@
+> [!CAUTION]
+> **Eddy 0.6.15 and later need a one-time reinstall.**
+>
+> The key that signed Eddy 0.6.14 and earlier was lost, so new versions are signed with a new key.
+> Android will not update an older Eddy to them: it shows **"App not installed"**. To switch:
+>
+> 1. **Save your passwords.** In Eddy, open **Menu > Passwords**, tap **⋮** and choose **Export to CSV**.
+> 2. **Uninstall Eddy.** This deletes your tabs, history and bookmarks.
+> 3. **Install the new version** from the [releases page](https://github.com/arcbaseproject/Eddy/releases/latest).
+> 4. **Restore your passwords.** Open **Menu > Passwords**, tap **⋮**, choose **Import from CSV** and
+>    pick the file you exported. Then delete that file: it is not encrypted.
+>
+> You only need to do this once. Later updates install normally.
+
 <p align="center"><img src="logo.png" alt="Eddy logo" width="112"></p>
 
 # Eddy
