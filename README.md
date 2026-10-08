@@ -6,7 +6,7 @@
 >
 > 1. **Save your passwords.** In Eddy, open **Menu > Passwords**, tap **⋮** and choose **Export to CSV**.
 > 2. **Uninstall Eddy.** This deletes your tabs, history and bookmarks.
-> 3. **Install the new version** from the [releases page](https://github.com/arcbaseproject/Eddy/releases/latest).
+> 3. **Install the new version** from the [releases page](https://github.com/arcbaseproject/Eddy/releases).
 > 4. **Restore your passwords.** Open **Menu > Passwords**, tap **⋮**, choose **Import from CSV** and
 >    pick the file you exported. Then delete that file: it is not encrypted.
 >

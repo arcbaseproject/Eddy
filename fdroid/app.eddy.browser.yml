@@ -153,9 +153,17 @@ Builds:
       - yes
     prebuild: rm -f src/main/assets/eruda.min.js
 
-AllowedAPKSigningKeys: 6b6dbcd2ff731c4697385c73b95811cbb1272de796e4440afab0c9aa7b2fcc57
+  - versionName: 0.6.15-beta
+    versionCode: 25
+    commit: cab1e2ce7c8a62c7867986efd47b4b2528df553c
+    subdir: app
+    gradle:
+      - yes
+    prebuild: rm -f src/main/assets/eruda.min.js
+
+AllowedAPKSigningKeys: c7fd454755ba0f1cba99cabaf627cd2b6626db9c4166861fb1a0a9ac514c69e8
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+(-beta)?$
-CurrentVersion: 0.6.14-beta
-CurrentVersionCode: 24
+CurrentVersion: 0.6.15-beta
+CurrentVersionCode: 25
