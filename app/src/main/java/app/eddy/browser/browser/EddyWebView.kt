@@ -21,6 +21,7 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
     var dntScript: ScriptHandler? = null
     var desktopScript: ScriptHandler? = null
     var cosmeticScript: ScriptHandler? = null
+    var youtubeScript: ScriptHandler? = null
     var incognito = false
     /** Cancels the in-flight prerender, if any, when a new one starts or the omnibox closes. */
     var prerender: android.os.CancellationSignal? = null

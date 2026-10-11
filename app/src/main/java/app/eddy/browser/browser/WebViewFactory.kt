@@ -216,9 +216,12 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
         if (active && view.cosmeticScript == null) {
             view.cosmeticScript = WebViewCompat.addDocumentStartJavaScript(view, COSMETIC_SCRIPT, setOf("*"))
+            view.youtubeScript = WebViewCompat.addDocumentStartJavaScript(view, YOUTUBE_SCRIPT, YOUTUBE_ORIGINS)
         } else if (!active) {
             view.cosmeticScript?.remove()
             view.cosmeticScript = null
+            view.youtubeScript?.remove()
+            view.youtubeScript = null
         }
     }
 
@@ -356,6 +359,22 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         private const val COSMETIC_SCRIPT =
             "(function(){var s=document.createElement('style');s.textContent='" + COSMETIC_CSS + "';" +
                 "(document.head||document.documentElement).appendChild(s)})()"
+        private val YOUTUBE_ORIGINS = setOf("https://*.youtube.com", "https://www.youtube-nocookie.com")
+        /**
+         * YouTube streams ads from the same hosts as videos, so request blocking cannot catch them. This strips
+         * the ad fields from player responses before the player reads them. Ads that still get through are
+         * muted and fast-forwarded: seeking past them would skip the video too when the ad is stitched into the stream.
+         */
+        private const val YOUTUBE_SCRIPT =
+            "(function(){var K=['adPlacements','adSlots','playerAds'];" +
+                "function p(o){if(o&&typeof o=='object'){K.forEach(function(k){delete o[k]});if(o.playerResponse)p(o.playerResponse)}return o}" +
+                "var jp=JSON.parse;JSON.parse=function(){return p(jp.apply(this,arguments))};" +
+                "var rj=Response.prototype.json;Response.prototype.json=function(){return rj.apply(this,arguments).then(p)};" +
+                "var r;try{Object.defineProperty(window,'ytInitialPlayerResponse',{configurable:true,get:function(){return r},set:function(v){r=p(v)}})}catch(e){}" +
+                "var s=null;setInterval(function(){var v=document.querySelector('.ad-showing video');" +
+                "if(v){if(!s)s={v:v,m:v.muted,r:v.playbackRate};v.muted=true;v.playbackRate=16;" +
+                "var b=document.querySelector('.ytp-skip-ad-button,.ytp-ad-skip-button-modern,.ytp-ad-skip-button');if(b)b.click()}" +
+                "else if(s){s.v.muted=s.m;s.v.playbackRate=s.r;s=null}},300)})()"
         private const val DNT_SCRIPT =
             "try{Object.defineProperty(navigator,'doNotTrack',{get:function(){return '1'}});" +
                 "Object.defineProperty(navigator,'globalPrivacyControl',{get:function(){return true}})}catch(e){}"

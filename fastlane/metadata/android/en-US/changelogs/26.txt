@@ -1,0 +1,1 @@
+* YouTube: video ads are blocked when ad blocking is on
