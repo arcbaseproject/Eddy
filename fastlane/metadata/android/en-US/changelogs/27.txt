@@ -1,0 +1,1 @@
+* Video and audio keep playing in the background and with the screen off

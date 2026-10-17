@@ -38,6 +38,12 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
     fun attachTo(context: Context) { ctx.baseContext = context }
     fun detachFromActivity(appContext: Context) { ctx.baseContext = appContext }
 
+    // Leaving the app or turning the screen off hides the window, and sites like YouTube pause on the
+    // resulting visibilitychange. While media plays, keep the page believing it is still on screen.
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(if (MediaService.isPlaying(context)) VISIBLE else visibility)
+    }
+
     override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
         super.onScrollChanged(l, t, oldl, oldt)
         onScrolled?.invoke(t - oldt, t)
