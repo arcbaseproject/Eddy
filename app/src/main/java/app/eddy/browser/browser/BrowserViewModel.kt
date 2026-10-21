@@ -313,8 +313,9 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             }?.trim().orEmpty()
             if (text.isEmpty()) return@launch
             val url = UrlUtils.resolve(text, settings.searchEngine)
+            val incognito = intent.component?.className == INCOGNITO_TARGET
             val current = tabs.selected
-            if (current != null && current.isHome && !current.incognito) navigate(url) else openInNewTab(url)
+            if (current != null && current.isHome && current.incognito == incognito) navigate(url) else openInNewTab(url, incognito)
         }
     }
 
@@ -1136,6 +1137,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     companion object {
         private const val SUGGEST_DEBOUNCE_MS = 200L
         const val MAIN_OPEN_DOWNLOADS = "app.eddy.browser.OPEN_DOWNLOADS"
+        /** The manifest's "Eddy Incognito" alias that other apps open links with. */
+        private const val INCOGNITO_TARGET = "app.eddy.browser.IncognitoTarget"
         private const val SCROLL_THRESHOLD = 36
         private const val PENDING_CHECK_MS = 2500L
         private const val PENDING_EXPIRY_MS = 30_000L
