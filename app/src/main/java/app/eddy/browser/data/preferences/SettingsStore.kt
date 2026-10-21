@@ -74,7 +74,8 @@ class SettingsStore(private val context: Context) {
         val savePasswords = booleanPreferencesKey("save_passwords")
         val autofillPasswords = booleanPreferencesKey("autofill_passwords")
         val restore = booleanPreferencesKey("restore_tabs")
-        val alwaysIncognito = booleanPreferencesKey("always_incognito")
+        // Renamed from "always_incognito": 0.6.19 saved it on by default, so this resets everyone to off.
+        val alwaysIncognito = booleanPreferencesKey("always_incognito_v2")
         val switchToNew = booleanPreferencesKey("switch_to_new_tabs")
         val tabLayout = stringPreferencesKey("tab_layout")
         val closeBehavior = stringPreferencesKey("close_behavior")
