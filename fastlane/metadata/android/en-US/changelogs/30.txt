@@ -1,0 +1,1 @@
+* Incognito is off by default again. To keep it, turn on "Always open incognito" in Settings > Privacy and security
