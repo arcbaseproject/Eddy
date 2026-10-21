@@ -2,7 +2,9 @@ package app.eddy.browser.browser
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.net.http.SslError
+import android.os.Build
 import android.os.Message
 import android.util.Log
 import android.webkit.HttpAuthHandler
@@ -13,6 +15,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import app.eddy.browser.data.models.ExternalLinks
 import app.eddy.browser.privacy.ContentBlocker
 import app.eddy.browser.util.UrlUtils
 import java.io.ByteArrayInputStream
@@ -50,6 +53,7 @@ class EddyWebViewClient(
             "http", "https" -> {
                 val url = uri.toString()
                 if (request.isForMainFrame && blockAdNavigation(view, url, request.hasGesture() && !request.isRedirect)) return true
+                if (request.isForMainFrame && request.hasGesture() && openInApp(view, uri)) return true
                 val upgraded = factory.upgrade(url)
                 // The upgraded page redirects straight back to http: upgrading again would loop forever.
                 if (request.isForMainFrame && request.isRedirect && upgraded != url &&
@@ -92,6 +96,20 @@ class EddyWebViewClient(
                 return true
             }
         }
+    }
+
+    /**
+     * A tapped link to another site that an app claims (TikTok, WhatsApp, Telegram, Play Store…) opens in that app,
+     * like Chrome does. Links within the current site stay here, so browsing tiktok.com in Eddy keeps working.
+     * shortcut: Android 11+ only (FLAG_ACTIVITY_REQUIRE_NON_BROWSER); Android 10 would need QUERY_ALL_PACKAGES.
+     */
+    private fun openInApp(view: WebView, uri: Uri): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || host.settings.externalLinks == ExternalLinks.NEVER) return false
+        if (UrlUtils.host(uri.toString()) == UrlUtils.host(tab.url)) return false
+        val intent = Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)
+            .addFlags(Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER or Intent.FLAG_ACTIVITY_NEW_TASK)
+        // Throws ActivityNotFoundException when only browsers handle the link.
+        return runCatching { view.context.startActivity(intent) }.isSuccess
     }
 
     /**

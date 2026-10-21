@@ -84,28 +84,6 @@
             </intent-filter>
         </activity>
 
-        <!-- "Eddy Incognito" in other apps' open-with and share menus: the link opens in an incognito tab (see BrowserViewModel.handleIntent). -->
-        <activity-alias
-            android:name=".IncognitoTarget"
-            android:exported="true"
-            android:label="@string/incognito_target"
-            android:icon="@mipmap/ic_launcher"
-            android:roundIcon="@mipmap/ic_launcher"
-            android:targetActivity=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" />
-                <data android:scheme="https" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-        </activity-alias>
-
         <!-- One launcher entry per app icon; settings enables exactly one (see AppIcon.kt). -->
         <activity-alias
             android:name=".Launcher"

@@ -84,6 +84,8 @@ data class Settings(
     val savePasswords: Boolean = true,
     val autofillPasswords: Boolean = true,
     val restoreTabs: Boolean = true,
+    /** Opens new tabs, links from other apps, the widget's search and each app start in an incognito tab, like Cromite. */
+    val alwaysIncognito: Boolean = true,
     /** Whether a tab a page opens (target=_blank, window.open) comes to the front. */
     val switchToNewTabs: Boolean = true,
     val tabLayout: TabLayout = TabLayout.GRID,

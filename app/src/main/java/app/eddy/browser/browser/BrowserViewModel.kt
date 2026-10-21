@@ -197,7 +197,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         viewModelScope.launch {
             // The last session ended without the swipe cleanup running (the system had stopped its service).
             if (settings.clearOnExit && ExitCleanup.pending(app)) runCatching { ExitCleanup.run(app, container) }
-            if (!(settings.restoreTabs && tabs.restore())) openHomeTab()
+            val restored = settings.restoreTabs && tabs.restore()
+            if (!restored || settings.alwaysIncognito) openHomeTab(settings.alwaysIncognito)
             // Leftovers from a session that could not be deleted while the app was running.
             tabs.sweepIncognitoProfiles()
             ready.complete(Unit)
@@ -257,7 +258,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         return tabs.newTab(url = if (custom) UrlUtils.resolve(s.homepageUrl, s.searchEngine) else "", incognito = incognito)
     }
 
-    fun newTab(incognito: Boolean = false) {
+    fun newTab(incognito: Boolean = settings.alwaysIncognito) {
         openHomeTab(incognito)
         screen = Screen.BROWSER
         stopEditing()
@@ -301,7 +302,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                 Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
                 MAIN_OPEN_DOWNLOADS -> { screen = Screen.DOWNLOADS; null }
                 SearchWidget.ACTION_SEARCH, SearchWidget.ACTION_VOICE, SearchWidget.ACTION_INCOGNITO -> {
-                    val incognito = intent.action == SearchWidget.ACTION_INCOGNITO
+                    val incognito = intent.action == SearchWidget.ACTION_INCOGNITO || settings.alwaysIncognito
                     // Reuse an empty start page of the same kind rather than piling up blank tabs.
                     val current = tabs.selected
                     if (current == null || !current.isHome || current.incognito != incognito) newTab(incognito) else screen = Screen.BROWSER
@@ -313,7 +314,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             }?.trim().orEmpty()
             if (text.isEmpty()) return@launch
             val url = UrlUtils.resolve(text, settings.searchEngine)
-            val incognito = intent.component?.className == INCOGNITO_TARGET
+            val incognito = settings.alwaysIncognito
             val current = tabs.selected
             if (current != null && current.isHome && current.incognito == incognito) navigate(url) else openInNewTab(url, incognito)
         }
@@ -1137,8 +1138,6 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     companion object {
         private const val SUGGEST_DEBOUNCE_MS = 200L
         const val MAIN_OPEN_DOWNLOADS = "app.eddy.browser.OPEN_DOWNLOADS"
-        /** The manifest's "Eddy Incognito" alias that other apps open links with. */
-        private const val INCOGNITO_TARGET = "app.eddy.browser.IncognitoTarget"
         private const val SCROLL_THRESHOLD = 36
         private const val PENDING_CHECK_MS = 2500L
         private const val PENDING_EXPIRY_MS = 30_000L

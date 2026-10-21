@@ -74,6 +74,8 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
         SwitchRow("Do Not Track and Global Privacy Control", s.doNotTrack, { v -> vm.launchSettings { it.copy(doNotTrack = v) } }, "Asks sites not to sell or share your data", Icons.Rounded.Lock)
         GroupDivider()
         SwitchRow("HTTPS-only mode", s.httpsOnly, { v -> vm.launchSettings { it.copy(httpsOnly = v) } }, "Loads sites over HTTPS and warns before any plain http page", Icons.Rounded.Https)
+        GroupDivider()
+        SwitchRow("Always open incognito", s.alwaysIncognito, { v -> vm.launchSettings { it.copy(alwaysIncognito = v) } }, "New tabs, links from other apps and widget searches open in an incognito tab", Icons.Rounded.VisibilityOff)
     }
     SettingsGroup("Passwords") {
         SwitchRow("Offer to save passwords", s.savePasswords, { v -> vm.launchSettings { it.copy(savePasswords = v) } }, if (vm.pageBridgeSupported) "Asks after you sign in or sign up" else "Needs a newer Android System WebView", Icons.Rounded.Key, enabled = vm.pageBridgeSupported)

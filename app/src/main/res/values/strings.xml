@@ -13,6 +13,5 @@
         <item quantity="other">Downloading %d files</item>
     </plurals>
     <string name="shortcut_incognito">Incognito tab</string>
-    <string name="incognito_target">Eddy Incognito</string>
     <string name="widget_search_description">Search, dictate or open an incognito tab</string>
 </resources>
