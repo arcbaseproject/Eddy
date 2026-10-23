@@ -19,13 +19,14 @@ import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPInputStream
 
 /**
- * Host-based request blocker. Rules are parsed once, cached on disk as plain domain lists and held
- * in two immutable hash sets; [isBlocked] is a handful of hash lookups so it is safe to call from
- * WebView's request-interception thread for every subresource.
+ * Request blocker with domain hash sets and domain-indexed URL rules. Subscriptions retain scoped
+ * rules and exceptions on disk; legacy domain caches remain usable until the next update.
  */
 class ContentBlocker(private val context: Context, private val scope: CoroutineScope) {
 
-    private class Rules(val ads: Set<String>, val trackers: Set<String>)
+    private class Rules(val ads: Set<String>, val trackers: Set<String>,
+        val adUrls: NetworkRules = NetworkRules(emptyList()),
+        val trackerUrls: NetworkRules = NetworkRules(emptyList()))
 
     @Volatile private var rules = Rules(emptySet(), emptySet())
     private val firstLoad = CountDownLatch(1)
@@ -52,6 +53,19 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
         }
     }
 
+    /** URL rules can block same-site resources; domain-only lists retain their third-party safeguard. */
+    fun isRequestBlocked(url: String, host: String, pageHost: String, ads: Boolean, trackers: Boolean): Boolean {
+        if (!ads && !trackers) return false
+        awaitFirstLoad()
+        val current = rules
+        val thirdParty = isThirdParty(host, pageHost)
+        val adDecision = if (ads) current.adUrls.decision(url, host, pageHost, thirdParty) else null
+        val trackerDecision = if (trackers) current.trackerUrls.decision(url, host, pageHost, thirdParty) else null
+        if (adDecision == false || trackerDecision == false) return false
+        return adDecision == true || trackerDecision == true ||
+            (thirdParty && isBlocked(host, ads, trackers))
+    }
+
     /** Called on WebView's IO thread; only blocks until the very first rule load ends. */
     private fun awaitFirstLoad() {
         if (firstLoad.count > 0L) firstLoad.await(500, TimeUnit.MILLISECONDS)
@@ -64,24 +78,34 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
     private suspend fun loadFromCache(lists: List<FilterList>) = mutex.withLock {
         val ads = HashSet<String>()
         val trackers = HashSet<String>()
+        val adUrls = ArrayList<String>()
+        val trackerUrls = ArrayList<String>()
         for (list in lists) {
             if (!list.enabled) continue
             val target = if (list.tracker) trackers else ads
+            val urls = if (list.tracker) trackerUrls else adUrls
+            fun read(lines: Sequence<String>) {
+                lines.forEach { line ->
+                    val domain = parseLine(line)
+                    if (domain != null) target.add(domain)
+                    else if (NetworkRule.parse(line) != null) urls.add(line)
+                }
+            }
             runCatching {
                 if (list.url.startsWith(ASSET_PREFIX)) {
-                    context.assets.open(list.url.removePrefix(ASSET_PREFIX)).bufferedReader().useLines { collect(it, target) }
+                    context.assets.open(list.url.removePrefix(ASSET_PREFIX)).bufferedReader().useLines { read(it) }
                 } else {
-                    val f = cacheFile(list)
-                    if (f.exists()) f.bufferedReader().useLines { seq -> seq.forEach { target.add(it) } }
+                    val f = cacheFile(list).takeIf { it.exists() } ?: legacyCacheFile(list)
+                    if (f.exists()) f.bufferedReader().useLines { read(it) }
                 }
             }
         }
-        rules = Rules(ads, trackers)
+        rules = Rules(ads, trackers, NetworkRules(adUrls), NetworkRules(trackerUrls))
         _ruleCount.value = ads.size + trackers.size
         firstLoad.countDown()
     }
 
-    /** Downloads remote lists, stores the parsed domains, then reloads. Returns the number of failures. */
+    /** Downloads remote lists, stores supported rules, then reloads. Returns the number of failures. */
     suspend fun update(lists: List<FilterList>): Int = withContext(Dispatchers.IO) {
         _updating.value = true
         var failures = 0
@@ -104,9 +128,11 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
 
     fun deleteCache(list: FilterList) {
         cacheFile(list).delete()
+        legacyCacheFile(list).delete()
     }
 
-    private fun cacheFile(list: FilterList) = File(cacheDir, "${list.id.filter { it.isLetterOrDigit() || it == '-' }}.dom")
+    private fun cacheFile(list: FilterList) = File(cacheDir, "${list.id.filter { it.isLetterOrDigit() || it == '-' }}.rules")
+    private fun legacyCacheFile(list: FilterList) = File(cacheDir, "${list.id.filter { it.isLetterOrDigit() || it == '-' }}.dom")
 
     private fun download(list: FilterList) {
         val conn = URL(list.url).openConnection() as HttpURLConnection
@@ -117,7 +143,14 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
             check(conn.responseCode == 200) { "HTTP ${conn.responseCode}" }
             val raw = if (conn.contentEncoding == "gzip") GZIPInputStream(conn.inputStream) else conn.inputStream
             val domains = LinkedHashSet<String>()
-            raw.bufferedReader().useLines { collect(it, domains) }
+            raw.bufferedReader().useLines { lines ->
+                lines.forEach { line ->
+                    val trimmed = line.trim()
+                    val domain = parseLine(trimmed)
+                    if (domain != null) domains.add(domain)
+                    else if (NetworkRule.parse(trimmed) != null) domains.add(trimmed)
+                }
+            }
             check(domains.isNotEmpty()) { "empty list" }
             val tmp = File(cacheDir, cacheFile(list).name + ".tmp")
             tmp.bufferedWriter().use { w -> domains.forEach { w.write(it); w.newLine() } }
@@ -125,10 +158,6 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
         } finally {
             conn.disconnect()
         }
-    }
-
-    private fun collect(lines: Sequence<String>, out: MutableSet<String>) {
-        for (line in lines) parseLine(line)?.let(out::add)
     }
 
     companion object {
@@ -147,7 +176,8 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
                 l.startsWith("||") -> {
                     val end = l.indexOfAny(charArrayOf('^', '/', '$', '*', ':'), 2)
                     val rest = if (end < 0) "" else l.substring(end)
-                    if (rest.isNotEmpty() && rest[0] != '^' && rest[0] != '$') return null
+                    // Never flatten paths or scoped options into an unconditional domain block.
+                    if (rest != "" && rest != "^" && rest != "^\$third-party" && rest != "\$third-party") return null
                     l.substring(2, if (end < 0) l.length else end)
                 }
                 else -> {

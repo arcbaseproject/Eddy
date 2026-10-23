@@ -221,8 +221,7 @@ class EddyWebViewClient(
         if (request.isForMainFrame || (!tab.blockingActive && !tab.trackerBlockingActive)) return null
         val reqHost = request.url.host?.lowercase() ?: return null
         val pageHost = tab.pageHost
-        if (!ContentBlocker.isThirdParty(reqHost, pageHost)) return null
-        if (!host.blocker.isBlocked(reqHost, tab.blockingActive, tab.trackerBlockingActive)) return null
+        if (!host.blocker.isRequestBlocked(request.url.toString(), reqHost, pageHost, tab.blockingActive, tab.trackerBlockingActive)) return null
         tab.blockedRaw++
         Log.d("ContentBlocker", "Blocked $reqHost on $pageHost")
         return blocked(request)

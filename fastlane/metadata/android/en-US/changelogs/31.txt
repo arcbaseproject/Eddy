@@ -1,0 +1,3 @@
+* Improved ad blocking with URL path rules, including same-site ad scripts
+* Respect filter exceptions and site restrictions to reduce broken pages
+* Preserve existing filter caches and ignore unsupported rule options safely

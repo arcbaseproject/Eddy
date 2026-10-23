@@ -158,3 +158,8 @@ yieldmo.com
 yldbt.com
 zedo.com
 zemanta.com
+
+! URL rules also catch ad scripts proxied through the publisher's own domain.
+/pagead/*
+/adsbygoogle.js
+/gpt/pubads_impl*
