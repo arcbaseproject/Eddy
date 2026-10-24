@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -77,24 +79,24 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
         ) {
             if (webPage) {
                 val quick = listOf(
-                    Quick(Icons.AutoMirrored.Rounded.ArrowForward, "Forward", tab?.canGoForward == true, false, act { vm.goForward() }),
-                    Quick(Icons.Rounded.Refresh, "Reload", tab?.webView != null, false, act { vm.reload() }),
+                    Quick(Icons.AutoMirrored.Rounded.ArrowForward, str(R.string.forward), tab?.canGoForward == true, false, act { vm.goForward() }),
+                    Quick(Icons.Rounded.Refresh, str(R.string.reload), tab?.webView != null, false, act { vm.reload() }),
                     Quick(
                         if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
-                        if (bookmarked) "Saved" else "Bookmark", true, bookmarked, act { vm.toggleBookmark() },
+                        if (bookmarked) str(R.string.saved_2) else str(R.string.bookmark), true, bookmarked, act { vm.toggleBookmark() },
                     ),
-                    Quick(Icons.Rounded.Share, "Share", true, false, act { vm.share() }),
-                    Quick(Icons.Rounded.Search, "Find", tab?.webView != null && tab.error == null, false, { vm.openFind() }),
+                    Quick(Icons.Rounded.Share, str(R.string.share_2), true, false, act { vm.share() }),
+                    Quick(Icons.Rounded.Search, str(R.string.find), tab?.webView != null && tab.error == null, false, { vm.openFind() }),
                     Quick(
-                        Icons.AutoMirrored.Rounded.ChromeReaderMode, "Reader", tab?.webView != null, tab?.readerActive == true,
+                        Icons.AutoMirrored.Rounded.ChromeReaderMode, str(R.string.reader), tab?.webView != null, tab?.readerActive == true,
                         act { vm.toggleReader() },
                     ),
                     Quick(
                         if (vm.readingAloud) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.VolumeUp,
-                        if (vm.readingAloud) "Stop" else "Read aloud",
+                        if (vm.readingAloud) str(R.string.stop) else str(R.string.read_aloud),
                         tab?.webView != null && tab.error == null, vm.readingAloud, act { vm.toggleReadAloud() },
                     ),
-                    Quick(Icons.Rounded.Print, "Print", tab?.webView != null && tab.error == null, false, act { vm.printPage() }),
+                    Quick(Icons.Rounded.Print, str(R.string.print), tab?.webView != null && tab.error == null, false, act { vm.printPage() }),
                 )
                 quick.chunked(perRow).forEach { row ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { QuickButton(it, Modifier.weight(1f)) } }
@@ -102,35 +104,35 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
             }
 
             Group {
-                Row(Icons.Rounded.Add, "New tab", act { vm.newTab() })
-                Row(Icons.Rounded.VisibilityOff, "New incognito tab", act { vm.newTab(incognito = true) })
-                if (vm.tabs.closedCount > 0) Row(Icons.Rounded.Restore, "Reopen closed tab", act { vm.restoreClosedTab() })
+                Row(Icons.Rounded.Add, str(R.string.new_tab), act { vm.newTab() })
+                Row(Icons.Rounded.VisibilityOff, str(R.string.new_incognito_tab), act { vm.newTab(incognito = true) })
+                if (vm.tabs.closedCount > 0) Row(Icons.Rounded.Restore, str(R.string.reopen_closed_tab), act { vm.restoreClosedTab() })
             }
 
             if (webPage) {
                 Group {
-                    SwitchRow(Icons.Rounded.DesktopWindows, "Desktop site", tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
-                    if (tab?.webView != null) Row(Icons.Rounded.Translate, "Translate", act { vm.translateVisible = true })
-                    Row(Icons.Rounded.Home, "Add to start page", act { tab?.let(vm::addShortcut) })
-                    if (tab?.webView != null && tab.error == null) Row(Icons.Rounded.Code, "View source", act { vm.viewPageSource() })
-                    if (tab?.incognito == false) Row(Icons.AutoMirrored.Rounded.AddToHomeScreen, "Add to home screen", act { vm.addToLauncher(tab) })
+                    SwitchRow(Icons.Rounded.DesktopWindows, str(R.string.desktop_site), tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
+                    if (tab?.webView != null) Row(Icons.Rounded.Translate, str(R.string.translate), act { vm.translateVisible = true })
+                    Row(Icons.Rounded.Home, str(R.string.add_to_start_page), act { tab?.let(vm::addShortcut) })
+                    if (tab?.webView != null && tab.error == null) Row(Icons.Rounded.Code, str(R.string.view_source), act { vm.viewPageSource() })
+                    if (tab?.incognito == false) Row(Icons.AutoMirrored.Rounded.AddToHomeScreen, str(R.string.add_to_home_screen), act { vm.addToLauncher(tab) })
                     if (DevTools.available(LocalContext.current)) {
-                        SwitchRow(Icons.Rounded.Code, "Developer tools", tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
+                        SwitchRow(Icons.Rounded.Code, str(R.string.developer_tools), tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
                     }
                 }
             }
 
             val library = listOf(
-                Quick(Icons.Rounded.Download, "Downloads", true, false, act { vm.screen = Screen.DOWNLOADS }),
-                Quick(Icons.Rounded.History, "History", true, false, act { vm.screen = Screen.HISTORY }),
-                Quick(Icons.Rounded.Bookmarks, "Bookmarks", true, false, act { vm.screen = Screen.BOOKMARKS }),
-                Quick(Icons.Rounded.Key, "Passwords", true, false, act { vm.screen = Screen.PASSWORDS }),
+                Quick(Icons.Rounded.Download, str(R.string.downloads), true, false, act { vm.screen = Screen.DOWNLOADS }),
+                Quick(Icons.Rounded.History, str(R.string.history), true, false, act { vm.screen = Screen.HISTORY }),
+                Quick(Icons.Rounded.Bookmarks, str(R.string.bookmarks), true, false, act { vm.screen = Screen.BOOKMARKS }),
+                Quick(Icons.Rounded.Key, str(R.string.passwords), true, false, act { vm.screen = Screen.PASSWORDS }),
             )
             library.chunked(perRow).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { QuickButton(it, Modifier.weight(1f)) } }
             }
 
-            Group { Row(Icons.Rounded.Settings, "Settings", act { vm.screen = Screen.SETTINGS }) }
+            Group { Row(Icons.Rounded.Settings, str(R.string.settings), act { vm.screen = Screen.SETTINGS }) }
         }
     }
 }

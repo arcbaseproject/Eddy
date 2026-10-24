@@ -1,5 +1,8 @@
 package app.eddy.browser.bookmarks
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
+import androidx.activity.compose.BackHandler
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -65,6 +68,7 @@ import app.eddy.browser.ui.components.TextInputDialog
 import app.eddy.browser.ui.components.EddyIconButton
 import app.eddy.browser.ui.theme.Dimens
 import app.eddy.browser.util.UrlUtils
+import app.eddy.browser.util.readTextCapped
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -89,14 +93,14 @@ fun BookmarksScreen(vm: BrowserViewModel) {
         scope.launch {
             val html = vm.bookmarks.exportHtml()
             runCatching { withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(html.toByteArray()) } } }
-                .onSuccess { vm.snackbar("Bookmarks exported") }.onFailure { vm.snackbar("Export failed") }
+                .onSuccess { vm.snackbar(str(R.string.bookmarks_exported)) }.onFailure { vm.snackbar(str(R.string.export_failed)) }
         }
     }
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         scope.launch {
-            val text = runCatching { withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText().orEmpty() } }.getOrNull()
-            if (text == null) vm.snackbar("Could not read file") else vm.snackbar("Imported ${vm.bookmarks.importHtml(text)} bookmarks")
+            val text = runCatching { withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.readTextCapped() ?: error("too big") } }.getOrNull()
+            if (text == null) vm.snackbar(str(R.string.could_not_read_the_file_files_over_16_mb)) else vm.snackbar(str(R.string.imported_bookmarks, vm.bookmarks.importHtml(text)))
         }
     }
 
@@ -107,24 +111,27 @@ fun BookmarksScreen(vm: BrowserViewModel) {
     }
     val shownFolders = if (searching || folder != null) emptyList() else folders
 
+    // System Back leaves a folder the same way the toolbar arrow does, before leaving Bookmarks.
+    BackHandler(enabled = folder != null) { folder = null }
+
     ScreenScaffold(
-        title = folder?.name ?: "Bookmarks",
+        title = folder?.name ?: str(R.string.bookmarks),
         onBack = { if (folder != null) folder = null else vm.screen = Screen.BROWSER },
         actions = {
-            EddyIconButton(Icons.Rounded.CreateNewFolder, "New folder", { addingFolder = true })
+            EddyIconButton(Icons.Rounded.CreateNewFolder, str(R.string.new_folder), { addingFolder = true })
             Box {
-                EddyIconButton(Icons.Rounded.MoreVert, "More", { overflow = true })
+                EddyIconButton(Icons.Rounded.MoreVert, str(R.string.more), { overflow = true })
                 DropdownMenu(overflow, { overflow = false }) {
-                    DropdownMenuItem(text = { Text("Import from HTML file") }, onClick = { overflow = false; import.launch(arrayOf("text/html", "*/*")) })
-                    DropdownMenuItem(text = { Text("Export to HTML file") }, onClick = { overflow = false; export.launch("eddy-bookmarks.html") })
+                    DropdownMenuItem(text = { Text(str(R.string.import_from_html_file)) }, onClick = { overflow = false; import.launch(arrayOf("text/html", "*/*")) })
+                    DropdownMenuItem(text = { Text(str(R.string.export_to_html_file)) }, onClick = { overflow = false; export.launch("eddy-bookmarks.html") })
                 }
             }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            SearchField(query, { query = it }, "Search bookmarks")
+            SearchField(query, { query = it }, str(R.string.search_bookmarks))
             if (visible.isEmpty() && shownFolders.isEmpty()) {
-                EmptyState(Icons.Rounded.Bookmarks, if (searching) "No matches" else "No bookmarks here", if (searching) "Try a different search." else "Tap Bookmark in the page menu to save a page.")
+                EmptyState(Icons.Rounded.Bookmarks, if (searching) str(R.string.no_matches) else str(R.string.no_bookmarks_here), if (searching) str(R.string.try_a_different_search) else str(R.string.tap_bookmark_in_the_page_menu_to_save_a))
             } else {
                 LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
                     items(shownFolders, key = { "f${it.id}" }) { f ->
@@ -138,10 +145,10 @@ fun BookmarksScreen(vm: BrowserViewModel) {
         }
     }
 
-    if (addingFolder) TextInputDialog("New folder", "", "Folder name", "Create", onDismiss = { addingFolder = false }) { vm.bookmarks.addFolder(it); addingFolder = false }
-    renaming?.let { f -> TextInputDialog("Rename folder", f.name, "Folder name", onDismiss = { renaming = null }) { vm.bookmarks.renameFolder(f, it); renaming = null } }
+    if (addingFolder) TextInputDialog(str(R.string.new_folder), "", str(R.string.folder_name), str(R.string.create), onDismiss = { addingFolder = false }) { vm.bookmarks.addFolder(it); addingFolder = false }
+    renaming?.let { f -> TextInputDialog(str(R.string.rename_folder), f.name, str(R.string.folder_name), onDismiss = { renaming = null }) { vm.bookmarks.renameFolder(f, it); renaming = null } }
     deletingFolder?.let { f ->
-        ConfirmDialog("Delete “${f.name}”?", "This also deletes the bookmarks inside it.", "Delete", { deletingFolder = null }) {
+        ConfirmDialog(str(R.string.delete_3, f.name), str(R.string.this_also_deletes_the_bookmarks_inside_i), str(R.string.delete_4), { deletingFolder = null }) {
             vm.bookmarks.deleteFolder(f)
             deletingFolder = null
         }
@@ -158,7 +165,7 @@ private fun BookmarkRow(vm: BrowserViewModel, b: Bookmark, onEdit: () -> Unit) {
     Box {
         Row(
             Modifier.fillMaxWidth().heightIn(min = 64.dp)
-                .combinedClickable(role = Role.Button, onClickLabel = "Open", onLongClickLabel = "More actions", onClick = { vm.navigate(b.url) }, onLongClick = { haptics.longPress(); menu = true })
+                .combinedClickable(role = Role.Button, onClickLabel = str(R.string.open), onLongClickLabel = str(R.string.more_actions), onClick = { vm.navigate(b.url) }, onLongClick = { haptics.longPress(); menu = true })
                 .padding(start = Dimens.gutter, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -167,18 +174,18 @@ private fun BookmarkRow(vm: BrowserViewModel, b: Bookmark, onEdit: () -> Unit) {
                 Text(b.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(b.url, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            EddyIconButton(Icons.Rounded.MoreVert, "Actions for ${b.title}", { menu = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            EddyIconButton(Icons.Rounded.MoreVert, str(R.string.actions_for, b.title), { menu = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(menu, { menu = false }) {
-            DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onEdit() })
-            DropdownMenuItem(text = { Text("Open in new tab") }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(b.url) })
-            DropdownMenuItem(text = { Text("Open in incognito tab") }, leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) }, onClick = { menu = false; vm.openInNewTab(b.url, incognito = true) })
-            DropdownMenuItem(text = { Text("Copy link") }, leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) }, onClick = {
+            DropdownMenuItem(text = { Text(str(R.string.edit)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onEdit() })
+            DropdownMenuItem(text = { Text(str(R.string.open_in_new_tab)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(b.url) })
+            DropdownMenuItem(text = { Text(str(R.string.open_in_incognito_tab)) }, leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) }, onClick = { menu = false; vm.openInNewTab(b.url, incognito = true) })
+            DropdownMenuItem(text = { Text(str(R.string.copy_link)) }, leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) }, onClick = {
                 menu = false
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("url", b.url))
-                vm.snackbar("Copied")
+                vm.snackbar(str(R.string.copied))
             })
-            DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; vm.bookmarks.delete(b); vm.snackbar("Bookmark removed") })
+            DropdownMenuItem(text = { Text(str(R.string.delete_4)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; vm.bookmarks.delete(b); vm.snackbar(str(R.string.bookmark_removed)) })
         }
     }
 }
@@ -198,11 +205,11 @@ private fun FolderRow(f: BookmarkFolder, count: Int, onOpen: () -> Unit, onRenam
                 Text(f.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(if (count == 1) "1 bookmark" else "$count bookmarks", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            EddyIconButton(Icons.Rounded.MoreVert, "Actions for folder ${f.name}", { menu = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            EddyIconButton(Icons.Rounded.MoreVert, str(R.string.actions_for_folder, f.name), { menu = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(menu, { menu = false }) {
-            DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onRename() })
-            DropdownMenuItem(text = { Text("Delete folder") }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; onDelete() })
+            DropdownMenuItem(text = { Text(str(R.string.rename)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onRename() })
+            DropdownMenuItem(text = { Text(str(R.string.delete_folder)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; onDelete() })
         }
     }
 }
@@ -219,23 +226,23 @@ private fun BookmarkEditor(b: Bookmark, folders: List<BookmarkFolder>, onDismiss
     val valid = title.isNotBlank() && UrlUtils.isUrl(url)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit bookmark") },
+        title = { Text(str(R.string.edit_bookmark)) },
         text = {
             Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text("Title") }, singleLine = true)
-                OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text("Address") }, singleLine = true, isError = !UrlUtils.isUrl(url))
+                OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.title)) }, singleLine = true)
+                OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.address)) }, singleLine = true, isError = !UrlUtils.isUrl(url))
                 Box {
                     TextButton(onClick = { pick = true }) { Text("Folder: ${folders.firstOrNull { it.id == folderId }?.name ?: "None"}") }
                     DropdownMenu(pick, { pick = false }) {
-                        DropdownMenuItem(text = { Text("None") }, onClick = { folderId = Bookmark.ROOT_FOLDER; pick = false })
+                        DropdownMenuItem(text = { Text(str(R.string.none)) }, onClick = { folderId = Bookmark.ROOT_FOLDER; pick = false })
                         folders.forEach { f -> DropdownMenuItem(text = { Text(f.name) }, onClick = { folderId = f.id; pick = false }) }
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(enabled = valid, onClick = { onSave(b.copy(title = title.trim(), url = UrlUtils.resolve(url.trim(), app.eddy.browser.data.models.SearchEngine("", "", "%s")), folderId = folderId)) }) { Text("Save") }
+            TextButton(enabled = valid, onClick = { onSave(b.copy(title = title.trim(), url = UrlUtils.resolve(url.trim(), app.eddy.browser.data.models.SearchEngine("", "", "%s")), folderId = folderId)) }) { Text(str(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }

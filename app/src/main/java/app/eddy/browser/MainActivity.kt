@@ -1,5 +1,6 @@
 package app.eddy.browser
 
+import app.eddy.browser.util.str
 import android.Manifest
 import android.app.PictureInPictureParams
 import android.content.ActivityNotFoundException
@@ -71,8 +72,18 @@ class MainActivity : ComponentActivity() {
         if (uris == null && result.resultCode == RESULT_OK) {
             cameraUri?.takeIf { uri -> uri.path?.let { File(cacheDir, "capture/" + File(it).name).length() > 0 } == true }?.let { uris = arrayOf(it) }
         }
+        // The picker is another app: pass only content it shares, never one of Eddy's own files, except the capture we handed out.
+        val capture = cameraUri
+        uris = uris?.filter { it == capture || isForeignContent(it) }?.toTypedArray()?.takeIf { it.isNotEmpty() }
         cameraUri = null
         callback.onReceiveValue(uris)
+    }
+
+    private fun isForeignContent(uri: Uri): Boolean {
+        if (uri.scheme != android.content.ContentResolver.SCHEME_CONTENT) return false
+        val authority = uri.authority ?: return false
+        if (authority.startsWith(packageName)) return false
+        return packageManager.resolveContentProvider(authority, 0)?.packageName != packageName
     }
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -188,15 +199,15 @@ class MainActivity : ComponentActivity() {
             is UiEffect.Launch -> try {
                 startActivity(effect.intent)
             } catch (_: ActivityNotFoundException) {
-                effect.onFailure?.invoke() ?: vm.snackbar("No app can open this")
+                effect.onFailure?.invoke() ?: vm.snackbar(str(R.string.no_app_can_open_this))
             } catch (_: SecurityException) {
-                effect.onFailure?.invoke() ?: vm.snackbar("Could not open this")
+                effect.onFailure?.invoke() ?: vm.snackbar(str(R.string.could_not_open_this))
             }
             is UiEffect.Print -> try {
                 getSystemService(PrintManager::class.java)
                     .print(effect.jobName, effect.adapter, PrintAttributes.Builder().build())
             } catch (_: Exception) {
-                vm.snackbar("Could not print this page")
+                vm.snackbar(str(R.string.could_not_print_this_page))
             }
             is UiEffect.OpenFile -> try {
                 startActivity(
@@ -204,7 +215,7 @@ class MainActivity : ComponentActivity() {
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
                 )
             } catch (_: Exception) {
-                vm.snackbar("No app can open this file, or it was moved")
+                vm.snackbar(str(R.string.no_app_can_open_this_file_or_it_was_move))
             }
         }
     }
@@ -237,7 +248,7 @@ class MainActivity : ComponentActivity() {
         }
         if (cameraAllowed && wantsVideo) extra += Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         val intent = if (params.isCaptureEnabled && extra.isNotEmpty()) extra.first()
-        else Intent.createChooser(documentPickerIntent(params), params.title ?: "Choose file")
+        else Intent.createChooser(documentPickerIntent(params), params.title ?: str(R.string.choose_file))
             .putExtra(Intent.EXTRA_INITIAL_INTENTS, extra.toTypedArray())
         try {
             fileLauncher.launch(intent)

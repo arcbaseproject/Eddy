@@ -1,5 +1,7 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,44 +66,44 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
     var clearing by remember { mutableStateOf(false) }
     val rules by vm.blockerRules.collectAsStateWithLifecycle()
 
-    SettingsGroup("Protection") {
-        SwitchRow("Ad blocking", s.adBlock, { v -> vm.launchSettings { it.copy(adBlock = v) } }, "Blocks requests to known ad servers · $rules domains loaded", Icons.Rounded.Shield)
+    SettingsGroup(str(R.string.protection)) {
+        SwitchRow(str(R.string.ad_blocking), s.adBlock, { v -> vm.launchSettings { it.copy(adBlock = v) } }, str(R.string.blocks_requests_to_known_ad_servers_doma, rules), Icons.Rounded.Shield)
         GroupDivider()
-        SwitchRow("Tracker protection", s.trackerProtection, { v -> vm.launchSettings { it.copy(trackerProtection = v) } }, "Blocks analytics and tracking domains", Icons.Rounded.VisibilityOff)
+        SwitchRow(str(R.string.tracker_protection), s.trackerProtection, { v -> vm.launchSettings { it.copy(trackerProtection = v) } }, str(R.string.blocks_analytics_and_tracking_domains), Icons.Rounded.VisibilityOff)
         GroupDivider()
-        NavRow("Filter lists", { vm.settingsStack.add(SettingsPage.FILTER_LISTS) }, "Enable, add and update lists", Icons.Rounded.Tune)
+        NavRow(str(R.string.filter_lists), { vm.settingsStack.add(SettingsPage.FILTER_LISTS) }, str(R.string.enable_add_and_update_lists), Icons.Rounded.Tune)
         GroupDivider()
-        SwitchRow("Do Not Track and Global Privacy Control", s.doNotTrack, { v -> vm.launchSettings { it.copy(doNotTrack = v) } }, "Asks sites not to sell or share your data", Icons.Rounded.Lock)
+        SwitchRow(str(R.string.do_not_track_and_global_privacy_control), s.doNotTrack, { v -> vm.launchSettings { it.copy(doNotTrack = v) } }, str(R.string.asks_sites_not_to_sell_or_share_your_dat), Icons.Rounded.Lock)
         GroupDivider()
-        SwitchRow("HTTPS-only mode", s.httpsOnly, { v -> vm.launchSettings { it.copy(httpsOnly = v) } }, "Loads sites over HTTPS and warns before any plain http page", Icons.Rounded.Https)
+        SwitchRow(str(R.string.https_only_mode), s.httpsOnly, { v -> vm.launchSettings { it.copy(httpsOnly = v) } }, str(R.string.loads_sites_over_https_and_warns_before), Icons.Rounded.Https)
         GroupDivider()
-        SwitchRow("Always open incognito", s.alwaysIncognito, { v -> vm.launchSettings { it.copy(alwaysIncognito = v) } }, "New tabs, links from other apps and widget searches open in an incognito tab", Icons.Rounded.VisibilityOff)
+        SwitchRow(str(R.string.always_open_incognito), s.alwaysIncognito, { v -> vm.launchSettings { it.copy(alwaysIncognito = v) } }, str(R.string.new_tabs_links_from_other_apps_and_widge), Icons.Rounded.VisibilityOff)
     }
-    SettingsGroup("Passwords") {
-        SwitchRow("Offer to save passwords", s.savePasswords, { v -> vm.launchSettings { it.copy(savePasswords = v) } }, if (vm.pageBridgeSupported) "Asks after you sign in or sign up" else "Needs a newer Android System WebView", Icons.Rounded.Key, enabled = vm.pageBridgeSupported)
+    SettingsGroup(str(R.string.passwords)) {
+        SwitchRow(str(R.string.offer_to_save_passwords), s.savePasswords, { v -> vm.launchSettings { it.copy(savePasswords = v) } }, if (vm.pageBridgeSupported) str(R.string.asks_after_you_sign_in_or_sign_up) else str(R.string.needs_a_newer_android_system_webview), Icons.Rounded.Key, enabled = vm.pageBridgeSupported)
         GroupDivider()
-        SwitchRow("Autofill passwords", s.autofillPasswords, { v -> vm.launchSettings { it.copy(autofillPasswords = v) } }, if (vm.pageBridgeSupported) "Suggests a saved login when you tap a sign-in field" else "Needs a newer Android System WebView", Icons.Rounded.Lock, enabled = vm.pageBridgeSupported)
+        SwitchRow(str(R.string.autofill_passwords), s.autofillPasswords, { v -> vm.launchSettings { it.copy(autofillPasswords = v) } }, if (vm.pageBridgeSupported) str(R.string.suggests_a_saved_login_when_you_tap_a_si) else str(R.string.needs_a_newer_android_system_webview), Icons.Rounded.Lock, enabled = vm.pageBridgeSupported)
         GroupDivider()
-        ActionRow("Saved passwords", { vm.screen = Screen.PASSWORDS }, "Needs your screen lock", Icons.Rounded.Key)
+        ActionRow(str(R.string.saved_passwords), { vm.screen = Screen.PASSWORDS }, str(R.string.needs_your_screen_lock), Icons.Rounded.Key)
     }
-    SettingsGroup("Site data") {
+    SettingsGroup(str(R.string.site_data)) {
         ChoiceRow(
-            "Cookies", CookieMode.entries, s.cookieMode,
-            { when (it) { CookieMode.ALLOW_ALL -> "Allow all"; CookieMode.BLOCK_THIRD_PARTY -> "Block third-party"; CookieMode.BLOCK_ALL -> "Block all (may break sites)" } },
+            str(R.string.cookies), CookieMode.entries, s.cookieMode,
+            { when (it) { CookieMode.ALLOW_ALL -> str(R.string.allow_all); CookieMode.BLOCK_THIRD_PARTY -> str(R.string.block_third_party); CookieMode.BLOCK_ALL -> str(R.string.block_all_may_break_sites) } },
             { v -> vm.launchSettings { it.copy(cookieMode = v) } }, Icons.Rounded.Cookie,
         )
         GroupDivider()
-        SwitchRow("JavaScript", s.javascript, { v -> vm.launchSettings { it.copy(javascript = v) } }, "Turning this off breaks most modern sites", Icons.Rounded.Code)
+        SwitchRow(str(R.string.javascript), s.javascript, { v -> vm.launchSettings { it.copy(javascript = v) } }, str(R.string.turning_this_off_breaks_most_modern_site), Icons.Rounded.Code)
         GroupDivider()
-        NavRow("Site permissions", { vm.settingsStack.add(SettingsPage.SITE_PERMISSIONS) }, "Per-site choices for location, camera and more", Icons.Rounded.Language)
+        NavRow(str(R.string.site_permissions), { vm.settingsStack.add(SettingsPage.SITE_PERMISSIONS) }, str(R.string.per_site_choices_for_location_camera_and), Icons.Rounded.Language)
         GroupDivider()
-        ActionRow("Clear browsing data", { clearing = true }, "History, cookies, cache and more", Icons.Rounded.DeleteSweep)
+        ActionRow(str(R.string.clear_browsing_data), { clearing = true }, str(R.string.history_cookies_cache_and_more), Icons.Rounded.DeleteSweep)
         GroupDivider()
-        SwitchRow("Clear when I leave", s.clearOnExit, { v -> vm.launchSettings { it.copy(clearOnExit = v) } }, "Deletes history, open tabs, cookies, site data and cache when you swipe Eddy away or it closes", Icons.Rounded.Delete)
+        SwitchRow(str(R.string.clear_when_i_leave), s.clearOnExit, { v -> vm.launchSettings { it.copy(clearOnExit = v) } }, str(R.string.deletes_history_open_tabs_cookies_site_d), Icons.Rounded.Delete)
     }
     SettingsFootnote(
-        if (vm.incognitoIsolated) "Incognito tabs use a separate storage profile. Eddy deletes it when the last incognito tab closes."
-        else "This device's WebView cannot isolate incognito storage. Incognito tabs skip history and cache but share cookies with normal tabs.",
+        if (vm.incognitoIsolated) str(R.string.incognito_tabs_use_a_separate_storage_pr)
+        else str(R.string.this_device_s_webview_cannot_isolate_inc),
     )
     if (clearing) ClearDataDialog(vm) { clearing = false }
 }
@@ -112,34 +114,34 @@ private fun ClearDataDialog(vm: BrowserViewModel, onDismiss: () -> Unit) {
     var range by remember { mutableStateOf<Long?>(null) }
     var picking by remember { mutableStateOf(false) }
     val ranges = listOf<Long?>(TimeUnit.HOURS.toMillis(1), TimeUnit.DAYS.toMillis(1), TimeUnit.DAYS.toMillis(7), null)
-    fun rangeLabel(r: Long?) = when (r) { TimeUnit.HOURS.toMillis(1) -> "Last hour"; TimeUnit.DAYS.toMillis(1) -> "Last 24 hours"; TimeUnit.DAYS.toMillis(7) -> "Last 7 days"; else -> "All time" }
+    fun rangeLabel(r: Long?) = when (r) { TimeUnit.HOURS.toMillis(1) -> str(R.string.last_hour); TimeUnit.DAYS.toMillis(1) -> str(R.string.last_24_hours); TimeUnit.DAYS.toMillis(7) -> str(R.string.last_7_days); else -> str(R.string.all_time) }
     fun toggle(t: DataType, on: Boolean) { types = if (on) types + t else types - t }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Clear browsing data") },
+        title = { Text(str(R.string.clear_browsing_data)) },
         text = {
             Column {
-                TextButton(onClick = { picking = true }) { Text("Browsing history range: ${rangeLabel(range)}") }
-                CheckRow("Browsing history", DataType.HISTORY in types) { toggle(DataType.HISTORY, it) }
-                CheckRow("Cookies and site data", DataType.COOKIES in types) { toggle(DataType.COOKIES, it) }
-                CheckRow("Cached images and files", DataType.CACHE in types) { toggle(DataType.CACHE, it) }
-                CheckRow("Download list", DataType.DOWNLOADS in types) { toggle(DataType.DOWNLOADS, it) }
-                CheckRow("Site permissions", DataType.SITE_SETTINGS in types) { toggle(DataType.SITE_SETTINGS, it) }
-                CheckRow("Saved passwords", DataType.PASSWORDS in types) { toggle(DataType.PASSWORDS, it) }
+                TextButton(onClick = { picking = true }) { Text(str(R.string.browsing_history_range, rangeLabel(range))) }
+                CheckRow(str(R.string.browsing_history), DataType.HISTORY in types) { toggle(DataType.HISTORY, it) }
+                CheckRow(str(R.string.cookies_and_site_data), DataType.COOKIES in types) { toggle(DataType.COOKIES, it) }
+                CheckRow(str(R.string.cached_images_and_files), DataType.CACHE in types) { toggle(DataType.CACHE, it) }
+                CheckRow(str(R.string.download_list), DataType.DOWNLOADS in types) { toggle(DataType.DOWNLOADS, it) }
+                CheckRow(str(R.string.site_permissions), DataType.SITE_SETTINGS in types) { toggle(DataType.SITE_SETTINGS, it) }
+                CheckRow(str(R.string.saved_passwords), DataType.PASSWORDS in types) { toggle(DataType.PASSWORDS, it) }
             }
         },
-        confirmButton = { TextButton(enabled = types.isNotEmpty(), onClick = { vm.clearBrowsingData(types, range); onDismiss() }) { Text("Clear") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(enabled = types.isNotEmpty(), onClick = { vm.clearBrowsingData(types, range); onDismiss() }) { Text(str(R.string.clear)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
-    if (picking) ChoiceDialog("Time range", ranges, range, ::rangeLabel, { picking = false }) { range = it }
+    if (picking) ChoiceDialog(str(R.string.time_range), ranges, range, ::rangeLabel, { picking = false }) { range = it }
 }
 
 @Composable
 fun SitePermissionsSettings(vm: BrowserViewModel) {
     val rows by remember { vm.sites.all() }.collectAsStateWithLifecycle(emptyList())
     if (rows.isEmpty()) {
-        EmptyState(Icons.Rounded.Language, "No site exceptions", "Site choices you set in the site information panel appear here.")
+        EmptyState(Icons.Rounded.Language, str(R.string.no_site_exceptions), str(R.string.site_choices_you_set_in_the_site_informa))
         return
     }
     SettingsGroup {
@@ -157,18 +159,18 @@ fun SitePermissionsSettings(vm: BrowserViewModel) {
                     Text(site.host, style = MaterialTheme.typography.bodyLarge)
                     Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                EddyIconButton(Icons.Rounded.Delete, "Reset ${site.host}", { vm.sites.reset(site.host) })
+                EddyIconButton(Icons.Rounded.Delete, str(R.string.reset, site.host), { vm.sites.reset(site.host) })
             }
         }
     }
-    OutlinedButton(onClick = vm.sites::resetAll, Modifier.padding(16.dp)) { Text("Reset all site permissions") }
+    OutlinedButton(onClick = vm.sites::resetAll, Modifier.padding(16.dp)) { Text(str(R.string.reset_all_site_permissions)) }
 }
 
 private fun label(f: SiteFeature) = when (f) {
     SiteFeature.LOCATION -> "location"
     SiteFeature.CAMERA -> "camera"
     SiteFeature.MICROPHONE -> "microphone"
-    SiteFeature.JAVASCRIPT -> "JavaScript"
+    SiteFeature.JAVASCRIPT -> str(R.string.javascript)
     SiteFeature.POPUPS -> "pop-ups"
     SiteFeature.THIRD_PARTY_COOKIES -> "3rd-party cookies"
     SiteFeature.DESKTOP -> "desktop site"
@@ -183,18 +185,18 @@ fun FilterListsSettings(vm: BrowserViewModel, s: Settings) {
     val rules by vm.blockerRules.collectAsStateWithLifecycle()
     var adding by remember { mutableStateOf(false) }
 
-    SettingsGroup("Lists") {
+    SettingsGroup(str(R.string.lists)) {
         s.filterLists.forEachIndexed { i, list ->
             if (i > 0) GroupDivider()
             Row(Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(start = 20.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f).padding(vertical = 10.dp)) {
                     Text(list.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        (if (list.tracker) "Trackers" else "Ads") + if (list.builtIn) " · built in" else " · " + list.url.substringAfter("://").substringBefore('/'),
+                        str(if (list.tracker) R.string.trackers else R.string.ads) + if (list.builtIn) str(R.string.built_in_suffix) else " · " + list.url.substringAfter("://").substringBefore('/'),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (!list.builtIn) EddyIconButton(Icons.Rounded.Delete, "Remove ${list.name}", {
+                if (!list.builtIn) EddyIconButton(Icons.Rounded.Delete, str(R.string.remove, list.name), {
                     vm.blocker.deleteCache(list)
                     vm.launchSettings { it.copy(filterLists = it.filterLists.filterNot { l -> l.id == list.id }) }
                 })
@@ -207,16 +209,16 @@ fun FilterListsSettings(vm: BrowserViewModel, s: Settings) {
         }
     }
     SettingsGroup {
-        ActionRow("Add filter list", { adding = true }, "Host or domain lists by URL", Icons.Rounded.Add)
+        ActionRow(str(R.string.add_filter_list), { adding = true }, str(R.string.host_or_domain_lists_by_url), Icons.Rounded.Add)
         GroupDivider()
         ActionRow(
-            if (updating) "Updating…" else "Update now",
-            { scope.launch { val fail = vm.blocker.update(s.filterLists); vm.launchSettings { it.copy(filterListsUpdatedAt = System.currentTimeMillis()) }; vm.snackbar(if (fail == 0) "Filter lists updated" else "$fail lists failed to update") } },
-            (if (s.filterListsUpdatedAt > 0) "Last updated " + DateUtils.getRelativeTimeSpanString(s.filterListsUpdatedAt) else "Never updated") + " · $rules domains active",
+            if (updating) "Updating…" else str(R.string.update_now),
+            { scope.launch { val fail = vm.blocker.update(s.filterLists); vm.launchSettings { it.copy(filterListsUpdatedAt = System.currentTimeMillis()) }; vm.snackbar(if (fail == 0) str(R.string.filter_lists_updated) else "$fail lists failed to update") } },
+            (if (s.filterListsUpdatedAt > 0) str(R.string.last_updated) + DateUtils.getRelativeTimeSpanString(s.filterListsUpdatedAt) else str(R.string.never_updated)) + " · $rules domains active",
             Icons.Rounded.Refresh,
         )
     }
-    SettingsFootnote("Eddy refreshes lists about once a day when you are online. It applies domain rules only.")
+    SettingsFootnote(str(R.string.eddy_refreshes_lists_about_once_a_day_wh))
 
     if (adding) {
         var name by remember { mutableStateOf("") }
@@ -224,12 +226,12 @@ fun FilterListsSettings(vm: BrowserViewModel, s: Settings) {
         var tracker by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { adding = false },
-            title = { Text("Add filter list") },
+            title = { Text(str(R.string.add_filter_list)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true)
-                    OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text("List URL") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                    CheckRow("Treat as tracker list", tracker) { tracker = it }
+                    OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.name)) }, singleLine = true)
+                    OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.list_url)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                    CheckRow(str(R.string.treat_as_tracker_list), tracker) { tracker = it }
                 }
             },
             confirmButton = {
@@ -238,9 +240,9 @@ fun FilterListsSettings(vm: BrowserViewModel, s: Settings) {
                     vm.launchSettings { it.copy(filterLists = it.filterLists + list) }
                     scope.launch { vm.blocker.update(s.filterLists + list) }
                     adding = false
-                }) { Text("Add") }
+                }) { Text(str(R.string.add)) }
             },
-            dismissButton = { TextButton(onClick = { adding = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { adding = false }) { Text(str(R.string.cancel)) } },
         )
     }
 }

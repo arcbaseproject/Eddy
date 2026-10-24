@@ -1,5 +1,7 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.Context
 import android.os.Build
 import android.util.Patterns
@@ -50,7 +52,7 @@ fun SupportSettings() {
     fun send() {
         val wait = prefs.getLong("last_sent", 0) + COOLDOWN_MS - System.currentTimeMillis()
         if (wait > 0) {
-            status = "Please wait ${wait / 60_000 + 1} min before sending another message."
+            status = str(R.string.please_wait_min_before_sending_another_m, wait / 60_000 + 1)
             return
         }
         sending = true
@@ -61,35 +63,35 @@ fun SupportSettings() {
             if (ok) {
                 prefs.edit().putLong("last_sent", System.currentTimeMillis()).apply()
                 message = ""
-                status = "Sent. Thanks for reaching out."
+                status = str(R.string.sent_thanks_for_reaching_out)
             } else {
-                status = "Could not send. Check your connection and try again."
+                status = str(R.string.could_not_send_check_your_connection_and)
             }
         }
     }
 
     Column(Modifier.fillMaxWidth().padding(horizontal = Dimens.gutterLarge, vertical = 8.dp)) {
         Text(
-            "Report a bug, ask a question or suggest a feature. Add your email if you want a reply.",
+            str(R.string.report_a_bug_ask_a_question_or_suggest_a),
             style = MaterialTheme.typography.bodyMedium,
         )
         OutlinedTextField(
             email, { email = it }, Modifier.fillMaxWidth().padding(top = 16.dp),
-            label = { Text("Email (optional)") }, singleLine = true, isError = !emailOk,
+            label = { Text(str(R.string.email_optional)) }, singleLine = true, isError = !emailOk,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         )
         OutlinedTextField(
             message, { message = it.take(MAX_MESSAGE) }, Modifier.fillMaxWidth().heightIn(min = 160.dp).padding(top = 12.dp),
-            label = { Text("Message") },
+            label = { Text(str(R.string.message)) },
         )
         Button(::send, Modifier.padding(top = 16.dp), enabled = !sending && emailOk && message.isNotBlank()) {
-            Text(if (sending) "Sending…" else "Send")
+            Text(if (sending) "Sending…" else str(R.string.send))
         }
         status?.let { Text(it, Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
     SettingsFootnote(
-        "Your message, your email if you add one, and the Eddy and Android versions go to the developer through Web3Forms. " +
-            "See the privacy policy for details.",
+        str(R.string.your_message_your_email_if_you_add_one_a) +
+            str(R.string.see_the_privacy_policy_for_details),
     )
 }
 

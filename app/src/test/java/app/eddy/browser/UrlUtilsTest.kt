@@ -65,6 +65,19 @@ class UrlUtilsTest {
         assertTrue(UrlUtils.isLocalHost("http://printer.local"))
         assertFalse(UrlUtils.isLocalHost("http://example.com"))
         assertFalse(UrlUtils.isLocalHost("http://localhost.example.com"))
+        assertTrue(UrlUtils.isLocalHost("http://[::1]:8080/"))
+        assertTrue(UrlUtils.isLocalHost("http://[fe80::1]/"))
+        assertTrue(UrlUtils.isLocalHost("http://172.20.0.5/"))
+        // Public addresses get the same HTTPS policy as public names.
+        assertFalse(UrlUtils.isLocalHost("http://8.8.8.8/path"))
+        assertFalse(UrlUtils.isLocalHost("http://[2606:4700:4700::1111]/path"))
+        assertFalse(UrlUtils.isLocalHost("http://172.32.0.1/"))
+    }
+
+    @Test fun sharedHostTenantsAreSeparateSites() {
+        assertFalse(UrlUtils.sameSite("attacker.github.io", "victim.github.io"))
+        assertTrue(UrlUtils.sameSite("a.victim.github.io", "victim.github.io"))
+        assertFalse(UrlUtils.sameSite("one.s3.amazonaws.com", "two.s3.amazonaws.com"))
     }
     @Test fun permissionsUseExactOrigins() {
         assertEquals("https://www.example.com", UrlUtils.origin("https://WWW.example.com:443/path"))

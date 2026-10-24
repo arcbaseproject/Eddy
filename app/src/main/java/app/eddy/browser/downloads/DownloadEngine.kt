@@ -1,5 +1,7 @@
 package app.eddy.browser.downloads
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
@@ -58,6 +60,8 @@ class DownloadEngine(
     private val scope: CoroutineScope,
     private val dao: DownloadDao,
     private val settings: () -> Settings,
+    /** Cookie header for a normal-profile URL, so a download resumed after a restart still signs in. */
+    private val profileCookie: (String) -> String = { "" },
 ) {
     private val partDir = File(context.filesDir, "downloads").apply { mkdirs() }
     private val jobs = ConcurrentHashMap<Long, Job>()
@@ -129,7 +133,11 @@ class DownloadEngine(
         dao.delete(id)
     }
 
-    fun clearFinished() { scope.launch { dao.clearFinished() } }
+    /** Drops finished entries together with the partial file and cookie a failed one kept for retrying. */
+    fun clearFinished() { scope.launch { dao.finishedIds().forEach { deleteNow(it, deleteFile = false) } } }
+
+    /** The system ran out of background time: stop every transfer where it is, so each can resume later. */
+    fun pauseAll() { jobs.keys.forEach(::pause) }
 
     private suspend fun Job.cancelAndJoin() { cancel(); join() }
 
@@ -184,7 +192,8 @@ class DownloadEngine(
 
     private suspend fun transfer(start: DownloadEntity, part: File): DownloadEntity {
         var d = start
-        var offset = if (d.resumable && part.exists()) part.length() else 0L
+        // Without a validator the server could send a newer file's tail, so start again instead of splicing.
+        var offset = if (d.resumable && d.etag.isNotEmpty() && part.exists()) part.length() else 0L
         if (offset == 0L) part.delete()
         var conn = open(d, offset)
         var redirects = 0
@@ -202,7 +211,7 @@ class DownloadEngine(
             when {
                 code == 206 -> Unit
                 code == 200 -> if (offset > 0) { part.delete(); offset = 0 }
-                code == 416 -> { part.delete(); throw IOException("Server rejected resume, retry to restart") }
+                code == 416 -> { part.delete(); throw IOException(str(R.string.server_rejected_resume_retry_to_restart)) }
                 else -> throw IOException("HTTP $code")
             }
             val total = when {
@@ -211,6 +220,12 @@ class DownloadEngine(
             }
             val disposition = conn.getHeaderField("Content-Disposition").orEmpty()
             val served = conn.contentType?.substringBefore(';')?.trim().orEmpty().ifBlank { d.mimeType }
+            // A resumed download that gets a web page back was most likely sent to a sign-in page.
+            if (offset > 0 || start.downloadedBytes > 0) {
+                if (served.equals("text/html", true) && !d.mimeType.equals("text/html", true)) {
+                    throw IOException(str(R.string.the_site_sent_a_web_page_instead_of_the))
+                }
+            }
             val name = if (disposition.isNotEmpty() || d.fileName.startsWith("downloadfile")) {
                 sanitize(DownloadNames.forDownload(d.url, disposition, served))
                     // The user was only asked about installers under the first name; a later response cannot turn it into one.
@@ -219,7 +234,7 @@ class DownloadEngine(
             val mime = DownloadNames.typeFor(name, served)
             d = d.copy(
                 totalBytes = total, mimeType = mime, fileName = name, downloadedBytes = offset,
-                etag = conn.getHeaderField("ETag").orEmpty(), resumable = code == 206 || conn.getHeaderField("Accept-Ranges") == "bytes",
+                etag = validator(conn), resumable = code == 206 || conn.getHeaderField("Accept-Ranges") == "bytes",
             )
             dao.update(d)
             copyStream(conn, d, part, offset)
@@ -261,7 +276,7 @@ class DownloadEngine(
                 }
             }
         }
-        if (d.totalBytes > 0 && downloaded < d.totalBytes) throw IOException("Connection closed early")
+        if (d.totalBytes > 0 && downloaded < d.totalBytes) throw IOException(str(R.string.connection_closed_early))
     }
 
     private fun open(d: DownloadEntity, offset: Long): HttpURLConnection {
@@ -271,11 +286,14 @@ class DownloadEngine(
         conn.instanceFollowRedirects = false
         conn.setRequestProperty("Accept-Encoding", "identity")
         if (d.userAgent.isNotBlank()) conn.setRequestProperty("User-Agent", d.userAgent)
-        if (d.referer.isNotBlank()) conn.setRequestProperty("Referer", d.referer)
-        cookies[d.id]?.takeIf { it.first == hostOf(d.url) }?.second?.let { conn.setRequestProperty("Cookie", it) }
+        DownloadPolicy.referrerFor(d.referer, d.url)?.let { conn.setRequestProperty("Referer", it) }
+        val cookie = cookies[d.id]?.takeIf { it.first == hostOf(d.url) }?.second
+            ?: if (!d.incognito && !cookies.containsKey(d.id)) runCatching { profileCookie(d.url) }.getOrNull().orEmpty() else ""
+        if (cookie.isNotEmpty()) conn.setRequestProperty("Cookie", cookie)
         if (offset > 0) {
             conn.setRequestProperty("Range", "bytes=$offset-")
-            if (d.etag.isNotEmpty() && !d.etag.startsWith("W/")) conn.setRequestProperty("If-Range", d.etag)
+            // If-Range takes a strong ETag or an HTTP date; a changed file then comes back whole, as a 200.
+            conn.setRequestProperty("If-Range", d.etag)
         }
         return conn
     }
@@ -290,7 +308,7 @@ class DownloadEngine(
             put(MediaStore.Downloads.RELATIVE_PATH, folder)
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw IOException("Cannot create file")
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw IOException(str(R.string.cannot_create_file))
         try {
             resolver.openOutputStream(uri)!!.use { out -> part.inputStream().use { it.copyTo(out, BUFFER) } }
             resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
@@ -324,7 +342,8 @@ class DownloadEngine(
     private suspend fun saveDataUri(request: DownloadRequest): Long = withContext(Dispatchers.IO) {
         val header = request.url.substringBefore(',')
         val payload = request.url.substringAfter(',')
-        val bytes = if (header.endsWith(";base64")) Base64.decode(payload, Base64.DEFAULT) else Uri.decode(payload).toByteArray()
+        if (payload.length > MAX_DATA_URI) throw IOException(str(R.string.data_download_too_large))
+        val bytes = if (header.endsWith(";base64")) Base64.decode(payload, Base64.DEFAULT) else DownloadPolicy.percentDecode(payload)
         val mime = header.removePrefix("data:").substringBefore(';').ifBlank { request.mimeType.ifBlank { "application/octet-stream" } }
         val name = sanitize(DownloadNames.forResponse(request.contentDisposition, mime))
         val id = dao.insert(DownloadEntity(url = "data-uri", fileName = name, mimeType = mime, totalBytes = bytes.size.toLong(), downloadedBytes = bytes.size.toLong(), incognito = request.incognito))
@@ -344,12 +363,21 @@ class DownloadEngine(
         dao.get(id)?.let { dao.update(it.copy(status = DownloadStatus.CANCELED, downloadedBytes = 0)) }
     }
 
+    /** What proves the next range belongs to the same file: a strong ETag, else Last-Modified. Stored in the etag column. */
+    private fun validator(conn: HttpURLConnection): String {
+        val etag = conn.getHeaderField("ETag").orEmpty()
+        if (etag.isNotEmpty() && !etag.startsWith("W/")) return etag
+        return conn.getHeaderField("Last-Modified").orEmpty()
+    }
+
     private fun hostOf(url: String) = runCatching { URL(url).host.lowercase() }.getOrDefault("")
 
     private fun sanitize(name: String) = name.replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001f]"), "_").trim().ifEmpty { "download" }
 
     private companion object {
         const val MAX_PARALLEL = 3
+        /** Data URIs arrive whole from the page; anything bigger is refused before it is decoded a second time. */
+        const val MAX_DATA_URI = 64 * 1024 * 1024
         const val MAX_REDIRECTS = 8
         const val BUFFER = 64 * 1024
         const val EMIT_NANOS = 400_000_000L

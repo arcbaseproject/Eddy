@@ -46,6 +46,13 @@ class DownloadService : Service() {
         return START_NOT_STICKY
     }
 
+    /** Android 15+ caps data-sync services at about six hours a day; stop in time or the app is killed. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        (application as EddyApp).container.downloads.pauseAll()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
     override fun onDestroy() {
         job?.cancel()
         super.onDestroy()

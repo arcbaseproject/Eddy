@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -37,15 +39,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import app.eddy.browser.ui.components.EddyIconButton
 import app.eddy.browser.ui.components.ScreenScaffold
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 
 /** Plain-text view of a page's markup or a downloaded text file. One item per line keeps big files scrolling smoothly. */
 @Composable
 fun SourceScreen(vm: BrowserViewModel) {
     val open = vm.openSource ?: return
     ScreenScaffold(
-        title = open.name.ifBlank { "Source" },
+        title = open.name.ifBlank { str(R.string.source) },
         onBack = { vm.closeSource() },
-        actions = { EddyIconButton(Icons.Rounded.ContentCopy, "Copy source", { vm.copySource() }) },
+        actions = { EddyIconButton(Icons.Rounded.ContentCopy, str(R.string.copy_source), { vm.copySource() }) },
     ) { padding ->
         SelectionContainer(Modifier.fillMaxSize().padding(padding)) {
             if (open.isLog) {
@@ -55,7 +61,9 @@ fun SourceScreen(vm: BrowserViewModel) {
                 }
             } else {
                 val html = remember(open) { open.text.trimStart().startsWith("<") }
-                val lines = remember(open) { (if (html) HtmlPretty.format(open.text) else open.text).lines() }
+                val lines by produceState<List<String>>(emptyList(), open) {
+                    value = withContext(Dispatchers.Default) { (if (html) HtmlPretty.format(open.text) else open.text).lines() }
+                }
                 val colors = MaterialTheme.colorScheme
                 val dark = colors.background.luminance() < 0.5f
                 // Fixed hues (GitHub's), because a tonal theme makes tag, attribute and value all the same colour.
@@ -92,10 +100,10 @@ fun SourceScreen(vm: BrowserViewModel) {
 private fun LogRow(e: LogEntry) {
     val colors = MaterialTheme.colorScheme
     val (label, color) = when (e.level) {
-        'E', 'F' -> "Error" to colors.error
-        'W' -> "Warning" to colors.tertiary
-        'I' -> "Info" to colors.primary
-        else -> (if (e.level == 'D') "Debug" else "Verbose") to colors.onSurfaceVariant
+        'E', 'F' -> str(R.string.error) to colors.error
+        'W' -> str(R.string.warning) to colors.tertiary
+        'I' -> str(R.string.info) to colors.primary
+        else -> (if (e.level == 'D') str(R.string.debug) else str(R.string.verbose)) to colors.onSurfaceVariant
     }
     Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -140,6 +148,7 @@ object HtmlPretty {
     private val RAW = setOf("script", "style", "pre", "textarea")
     private val NAME = Regex("""^</?([A-Za-z][\w:-]*)""")
     private val TAG_NAME = Regex("""^</?[!A-Za-z][\w:-]*""")
+    private const val MAX_INDENT = 24
     private val ATTR = Regex("""([^\s=<>/"']+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?""")
 
     // ponytail: a '>' inside an attribute value ends the tag early; only the layout suffers, not the text.
@@ -148,7 +157,8 @@ object HtmlPretty {
         var depth = 0
         var i = 0
         fun emit(s: String) = s.lineSequence().map(String::trim).filter(String::isNotEmpty).forEach {
-            repeat(depth) { out.append("  ") }
+            // Capped so deep nesting grows the output linearly, not with depth times lines.
+            repeat(depth.coerceAtMost(MAX_INDENT)) { out.append("  ") }
             out.append(it).append('\n')
         }
         fun until(token: String, from: Int, past: Boolean) =

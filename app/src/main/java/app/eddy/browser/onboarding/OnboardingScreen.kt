@@ -1,5 +1,6 @@
 package app.eddy.browser.onboarding
 
+import app.eddy.browser.util.str
 import android.app.Activity
 import android.app.role.RoleManager
 import android.appwidget.AppWidgetManager
@@ -160,7 +161,7 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
             Row(Modifier.fillMaxWidth().height(Dimens.touchTarget + 8.dp).padding(horizontal = Dimens.gutter), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 // Every slide except the last can be skipped; the last one has its own "Start browsing" button.
                 AnimatedVisibility(pager.currentPage < PAGE_COUNT - 1, enter = fadeIn(), exit = fadeOut()) {
-                    FilledTonalButton(onClick = ::finish, Modifier.heightIn(min = Dimens.touchTarget)) { Text("Skip") }
+                    FilledTonalButton(onClick = ::finish, Modifier.heightIn(min = Dimens.touchTarget)) { Text(str(R.string.skip)) }
                 }
             }
 
@@ -203,27 +204,27 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     when (page) {
-                        0 -> PageText("Welcome to Eddy", "A fast browser that keeps your data on your device.")
+                        0 -> PageText(str(R.string.welcome_to_eddy), "A fast browser that keeps your data on your device.")
                         1 -> {
-                            PageText("Private by default", "Eddy blocks ads and trackers and sends no telemetry. Your history, bookmarks and passwords never leave your phone.")
+                            PageText(str(R.string.private_by_default), str(R.string.eddy_blocks_ads_and_trackers_and_sends_n))
                             FlowRow(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Feature(Icons.Rounded.Block, "Ad blocking")
-                                Feature(Icons.Rounded.Shield, "Tracker protection")
-                                Feature(Icons.Rounded.VisibilityOff, "Incognito tabs")
-                                Feature(Icons.Rounded.Key, "Password manager")
+                                Feature(Icons.Rounded.Block, str(R.string.ad_blocking))
+                                Feature(Icons.Rounded.Shield, str(R.string.tracker_protection))
+                                Feature(Icons.Rounded.VisibilityOff, str(R.string.incognito_tabs))
+                                Feature(Icons.Rounded.Key, str(R.string.password_manager))
                             }
                         }
                         2 -> {
-                            PageText("Built for one hand", "Address bar, tabs and menu sit within thumb reach. The bar shrinks as you scroll, so pages get the space.")
+                            PageText(str(R.string.built_for_one_hand), str(R.string.address_bar_tabs_and_menu_sit_within_thu))
                             BarDemo(Modifier.padding(top = 20.dp))
                             ToolbarChoice(settings.toolbarPosition) { v -> vm.launchSettings { it.copy(toolbarPosition = v) } }
                         }
                         3 -> {
-                            PageText("Make it yours", "Pick a look and a search engine. You can change both later in Settings.")
+                            PageText(str(R.string.make_it_yours), str(R.string.pick_a_look_and_a_search_engine_you_can))
                             LookPicker(vm, settings)
                         }
                         else -> {
-                            PageText("You're ready", "Two optional extras before you start.")
+                            PageText(str(R.string.you_re_ready), str(R.string.two_optional_extras_before_you_start))
                             DefaultBrowserButton()
                             WidgetButton()
                         }
@@ -241,7 +242,7 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
                     FilledTonalIconButton(
                         onClick = { haptics.tick(); scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
                         Modifier.padding(end = 16.dp).size(56.dp),
-                    ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+                    ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.back)) }
                 }
                 Indicators(pager.currentPage, Modifier.weight(1f))
                 val last = pager.currentPage == PAGE_COUNT - 1
@@ -250,7 +251,7 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
                     Modifier.heightIn(min = 56.dp).animateContentSize(spatialSpring()),
                     shape = CircleShape,
                 ) {
-                    Text(if (last) "Start browsing" else "Next", style = MaterialTheme.typography.titleMedium)
+                    Text(if (last) str(R.string.start_browsing) else str(R.string.next), style = MaterialTheme.typography.titleMedium)
                     if (!last) Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, Modifier.padding(start = 8.dp).size(20.dp))
                 }
             }
@@ -323,7 +324,7 @@ private fun BarDemo(modifier: Modifier = Modifier) {
     )
     val t = if (reduced) 0f else ((phase - 0.25f) / 0.5f).coerceIn(0f, 1f) // hold at both ends
     Surface(
-        modifier.fillMaxWidth().widthIn(max = 320.dp).height((52 - 20 * t).dp).semantics { contentDescription = "Preview of the bottom bar shrinking while you scroll" },
+        modifier.fillMaxWidth().widthIn(max = 320.dp).height((52 - 20 * t).dp).semantics { contentDescription = str(R.string.preview_of_the_bottom_bar_shrinking_whil) },
         shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, tonalElevation = 2.dp,
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -343,7 +344,7 @@ private fun BarDemo(modifier: Modifier = Modifier) {
 @Composable
 private fun ToolbarChoice(selected: ToolbarPosition, onSelect: (ToolbarPosition) -> Unit) {
     SingleChoiceSegmentedButtonRow(Modifier.padding(top = 20.dp)) {
-        listOf(ToolbarPosition.BOTTOM to "Bottom", ToolbarPosition.TOP to "Top").forEachIndexed { i, (pos, label) ->
+        listOf(ToolbarPosition.BOTTOM to str(R.string.bottom), ToolbarPosition.TOP to str(R.string.top)).forEachIndexed { i, (pos, label) ->
             SegmentedButton(selected == pos, { onSelect(pos) }, SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
         }
     }
@@ -353,7 +354,7 @@ private fun ToolbarChoice(selected: ToolbarPosition, onSelect: (ToolbarPosition)
 private fun LookPicker(vm: BrowserViewModel, s: Settings) {
     Column(Modifier.padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SingleChoiceSegmentedButtonRow {
-            listOf(ThemeMode.SYSTEM to "Auto", ThemeMode.LIGHT to "Light", ThemeMode.DARK to "Dark").forEachIndexed { i, (mode, label) ->
+            listOf(ThemeMode.SYSTEM to str(R.string.auto), ThemeMode.LIGHT to str(R.string.light), ThemeMode.DARK to str(R.string.dark)).forEachIndexed { i, (mode, label) ->
                 SegmentedButton(s.themeMode == mode, { vm.launchSettings { it.copy(themeMode = mode) } }, SegmentedButtonDefaults.itemShape(i, 3)) { Text(label) }
             }
         }
@@ -399,9 +400,9 @@ private fun DefaultBrowserButton() {
     val request = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { isDefault = held() }
 
     when {
-        isDefault -> SetupCard(Icons.Rounded.CheckCircle, "Eddy is your default browser", "Links from other apps open here", Modifier.padding(top = 24.dp), done = true)
+        isDefault -> SetupCard(Icons.Rounded.CheckCircle, str(R.string.eddy_is_your_default_browser), str(R.string.links_from_other_apps_open_here), Modifier.padding(top = 24.dp), done = true)
         roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER) -> SetupCard(
-            Icons.Rounded.Public, "Make Eddy the default", "Open links from other apps here", Modifier.padding(top = 24.dp),
+            Icons.Rounded.Public, str(R.string.make_eddy_the_default), str(R.string.open_links_from_other_apps_here), Modifier.padding(top = 24.dp),
         ) { request.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_BROWSER)) }
     }
 }
@@ -433,7 +434,7 @@ private fun WidgetButton() {
     val context = LocalContext.current
     val manager = remember { AppWidgetManager.getInstance(context) }
     if (!remember { manager.isRequestPinAppWidgetSupported }) return
-    SetupCard(Icons.Rounded.Widgets, "Add search widget", "Search from your home screen", Modifier.padding(top = 10.dp)) {
+    SetupCard(Icons.Rounded.Widgets, str(R.string.add_search_widget), str(R.string.search_from_your_home_screen), Modifier.padding(top = 10.dp)) {
         manager.requestPinAppWidget(ComponentName(context, SearchWidget::class.java), null, null)
     }
 }

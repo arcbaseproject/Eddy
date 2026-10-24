@@ -46,7 +46,7 @@ interface BrowserHost {
     fun onScrolled(tab: BrowserTab, dy: Int, scrollY: Int)
     /** Message from the in-page autofill script; [origin] comes from the WebView, never from the message body. */
     /** Chunk or status message from a blob download the browser started in [tab]. */
-    fun onBlobMessage(tab: BrowserTab, origin: String, data: String)
+    fun onBlobMessage(tab: BrowserTab, origin: String, data: String, reply: JavaScriptReplyProxy)
     fun onAutofillMessage(tab: BrowserTab, origin: String, data: String, reply: JavaScriptReplyProxy)
     /** The page called navigator.clipboard.readText(); answer through [reply] once the user decides. */
     fun onClipboardRead(tab: BrowserTab, origin: String, reply: JavaScriptReplyProxy)

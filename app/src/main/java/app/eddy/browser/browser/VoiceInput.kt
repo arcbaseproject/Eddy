@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -78,10 +80,14 @@ fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoice
     val locale = remember { java.util.Locale.getDefault().toLanguageTag() }
     // Set when the recogniser reports back, so the watchdog below can tell a finished session from a stuck one.
     val finished = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+    // Each session's watchdog only acts while its own session is the current one.
+    val session = remember { java.util.concurrent.atomic.AtomicInteger() }
+    // The mic tap that asked for permission still wants to dictate once it is granted.
+    var startAfterGrant by remember { mutableStateOf(false) }
     var granted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
-    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it; if (!it) startAfterGrant = false }
 
     val recognizer = remember {
         SpeechRecognizer.createSpeechRecognizer(context).apply {
@@ -106,13 +112,14 @@ fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoice
 
     val toggle: () -> Unit = {
         when {
-            !granted -> askPermission.launch(Manifest.permission.RECORD_AUDIO)
+            !granted -> { startAfterGrant = true; askPermission.launch(Manifest.permission.RECORD_AUDIO) }
             // stopListening keeps whatever was said; cancel would throw it away.
             state.listening -> { recognizer.stopListening(); stop(state); haptics.tick() }
             else -> {
                 state.listening = true
                 state.level = 0f
                 finished.set(false)
+                val mine = session.incrementAndGet()
                 haptics.confirm()
                 recognizer.startListening(
                     Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
@@ -130,11 +137,12 @@ fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoice
                 // the session if nothing has arrived long after the last word.
                 scope.launch {
                     delay(30_000)
-                    if (!finished.get()) { recognizer.cancel(); stop(state) }
+                    if (session.get() == mine && !finished.get()) { recognizer.cancel(); stop(state) }
                 }
             }
         }
     }
+    LaunchedEffect(granted) { if (granted && startAfterGrant) { startAfterGrant = false; if (!state.listening) toggle() } }
     // Keyed on the request, not Unit: the editor may already be open when the widget's mic asks again.
     LaunchedEffect(autoStart) { if (autoStart) { onAutoStarted(); if (!state.listening) toggle() } }
 
@@ -157,13 +165,13 @@ fun VoiceInputButton(onText: (String) -> Unit, state: VoiceState = rememberVoice
             }
             .clickable(
                 role = Role.Button,
-                onClickLabel = if (state.listening) "Stop dictation" else "Start dictation",
+                onClickLabel = if (state.listening) str(R.string.stop_dictation) else str(R.string.start_dictation),
             ) { toggle() },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             Icons.Rounded.Mic,
-            if (state.listening) "Listening, tap to stop" else "Dictate",
+            if (state.listening) str(R.string.listening_tap_to_stop) else str(R.string.dictate),
             tint = if (state.listening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
         )
     }

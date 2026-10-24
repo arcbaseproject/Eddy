@@ -1,0 +1,5 @@
+* Security: safer file uploads, passwords relock fully, HTTPS-only covers public IP addresses
+* Privacy: incognito site settings and logs are no longer kept; safer download referrers
+* Downloads: reliable resume, intact binary data, cleanup of failed and abandoned files
+* Fixes for PDF viewer, view source, bookmark import, find in page, dictation and Back
+* App text moved to resources, ready for translation

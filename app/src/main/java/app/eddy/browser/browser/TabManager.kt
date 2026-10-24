@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.os.Bundle
@@ -42,6 +44,8 @@ class TabManager(
     private val thumbnails: TabThumbnailManager,
     private val factory: () -> WebViewFactory,
     private val settings: () -> Settings,
+    private val onPrivateSessionEnd: () -> Unit = {},
+    private val onClosed: (BrowserTab) -> Unit = {},
 ) {
     val tabs = mutableStateListOf<BrowserTab>()
     var selectedId by mutableStateOf<String?>(null)
@@ -162,7 +166,11 @@ class TabManager(
         tab.webView = view
         transport.webView = view
         resultMsg.sendToTarget()
-        if (settings().switchToNewTabs) select(tab) else view.onPause()
+        if (settings().switchToNewTabs) select(tab) else {
+            view.onPause()
+            // The popup is the newest tab, so the budget evicts older views, never the one WebView is about to fill.
+            evictInactive(MAX_LIVE)
+        }
         requestPersist()
         return true
     }
@@ -171,7 +179,7 @@ class TabManager(
     fun discardView(tab: BrowserTab) {
         destroyView(tab)
         tab.isLoading = false
-        tab.error = PageError(ErrorKind.UNAVAILABLE, tab.url, "The page stopped responding.")
+        tab.error = PageError(ErrorKind.UNAVAILABLE, tab.url, str(R.string.the_page_stopped_responding))
     }
 
     /** Moves [tab] into [target]'s place; tabs in between shift by one. */
@@ -196,13 +204,17 @@ class TabManager(
         val wasSelected = tab.id == selectedId
         tabs.removeAt(index)
         destroyView(tab)
+        onClosed(tab)
         tab.error?.sslHandler?.cancel()
         thumbnails.remove(tab.id)
         // Queued behind the read rememberClosed may have started: stateIo runs one file operation at a time.
         val stateFile = File(stateDir, "${tab.id}.bin")
         scope.launch(stateIo) { stateFile.delete() }
         if (wasSelected) selectAfterClose(index, tab)
-        if (tab.incognito && tabs.none { it.incognito }) sweepIncognitoProfiles()
+        if (tab.incognito && tabs.none { it.incognito }) {
+            sweepIncognitoProfiles()
+            onPrivateSessionEnd()
+        }
         // There is always at least one normal tab; when the last one goes, a fresh new-tab page takes its place.
         if (tabs.none { !it.incognito }) newTab(select = wasSelected || selected == null || selected?.incognito != true)
         requestPersist()

@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.clickable
@@ -44,7 +46,7 @@ fun LinkSheet(vm: BrowserViewModel, target: HitTarget, onDismiss: () -> Unit) {
     fun run(block: () -> Unit): () -> Unit = { onDismiss(); block() }
     fun copy(text: String) {
         context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("url", text))
-        vm.snackbar("Copied")
+        vm.snackbar(str(R.string.copied))
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -52,17 +54,17 @@ fun LinkSheet(vm: BrowserViewModel, target: HitTarget, onDismiss: () -> Unit) {
             Text(primary, Modifier.padding(horizontal = Dimens.gutterLarge, vertical = 8.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             HorizontalDivider()
             if (link != null) {
-                Action(Icons.Rounded.Tab, "Open in new tab", run { vm.openInNewTab(link, select = false) })
-                Action(Icons.Rounded.VisibilityOff, "Open in incognito tab", run { vm.openInNewTab(link, incognito = true) })
-                Action(Icons.Rounded.ContentCopy, "Copy link address", run { copy(link) })
-                Action(Icons.Rounded.Share, "Share link", run { vm.share(link) })
+                Action(Icons.Rounded.Tab, str(R.string.open_in_new_tab), run { vm.openInNewTab(link, select = false) })
+                Action(Icons.Rounded.VisibilityOff, str(R.string.open_in_incognito_tab), run { vm.openInNewTab(link, incognito = true) })
+                Action(Icons.Rounded.ContentCopy, str(R.string.copy_link_address), run { copy(link) })
+                Action(Icons.Rounded.Share, str(R.string.share_link), run { vm.share(link) })
             }
             if (image != null) {
-                Action(Icons.AutoMirrored.Rounded.OpenInNew, "Open image in new tab", run { vm.openInNewTab(image, select = false) })
-                Action(Icons.Rounded.Download, "Download image", run {
+                Action(Icons.AutoMirrored.Rounded.OpenInNew, str(R.string.open_image_in_new_tab), run { vm.openInNewTab(image, select = false) })
+                Action(Icons.Rounded.Download, str(R.string.download_image), run {
                     vm.tabs.selected?.let { vm.startDownload(it, image, it.webView?.settings?.userAgentString.orEmpty(), "", "", -1) }
                 })
-                if (link == null) Action(Icons.Rounded.ContentCopy, "Copy image address", run { copy(image) })
+                if (link == null) Action(Icons.Rounded.ContentCopy, str(R.string.copy_image_address), run { copy(image) })
             }
         }
     }

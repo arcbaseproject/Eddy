@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.MutableContextWrapper
@@ -149,8 +151,8 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             if (isMainFrame) message.data?.let { host.onAutofillMessage(tab, sourceOrigin.toString(), it, reply) }
         }
         WebViewCompat.addDocumentStartJavaScript(view, AutofillScript.SOURCE, setOf("*"))
-        WebViewCompat.addWebMessageListener(view, BlobDownloader.NAME, setOf("*")) { _, message, sourceOrigin, isMainFrame, _ ->
-            if (isMainFrame) message.data?.let { host.onBlobMessage(tab, sourceOrigin.toString(), it) }
+        WebViewCompat.addWebMessageListener(view, BlobDownloader.NAME, setOf("*")) { _, message, sourceOrigin, isMainFrame, reply ->
+            if (isMainFrame) message.data?.let { host.onBlobMessage(tab, sourceOrigin.toString(), it, reply) }
         }
         WebViewCompat.addWebMessageListener(view, ClipboardBridge.NAME, setOf("*")) { _, _, sourceOrigin, isMainFrame, reply ->
             if (isMainFrame) host.onClipboardRead(tab, sourceOrigin.toString(), reply)
@@ -181,7 +183,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     /** Resolves site overrides for [url] and pushes them into the WebView. Cheap; safe to call per navigation. */
     fun prepare(tab: BrowserTab, view: EddyWebView, url: String) {
         val s = host.settings
-        val site = host.sites.peek(UrlUtils.displayHost(url))
+        val site = host.sites.peek(UrlUtils.displayHost(url), tab.incognito)
         view.settings.textZoom = site?.textZoom ?: s.textZoom
         view.settings.javaScriptEnabled = site?.javascript?.let { it == SiteSettings.ALLOW } ?: s.javascript
         val desktop = tab.desktopOverride
@@ -313,6 +315,14 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     fun warmUp() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WARM_UP_RENDERER_PROCESS)) return
         runCatching { profile(false).warmUpRendererProcess() }
+    }
+
+    /** Web storage for the tab's profile; null for incognito sharing the normal profile, which must not be touched. */
+    @SuppressLint("RequiresFeature")
+    fun webStorage(incognito: Boolean): android.webkit.WebStorage? = when {
+        !incognito -> android.webkit.WebStorage.getInstance()
+        incognitoIsolated -> profile(true).webStorage
+        else -> null
     }
 
     private fun profile(incognito: Boolean): Profile = ProfileStore.getInstance().getOrCreateProfile(

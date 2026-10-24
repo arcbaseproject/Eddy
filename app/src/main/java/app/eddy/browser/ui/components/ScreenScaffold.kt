@@ -1,5 +1,7 @@
 package app.eddy.browser.ui.components
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,7 +52,7 @@ fun ScreenScaffold(
         topBar = {
             TopAppBar(
                 title = { Text(title, style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = { EddyIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack) },
+                navigationIcon = { EddyIconButton(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.back), onBack) },
                 actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -81,7 +83,7 @@ fun SearchField(query: String, onChange: (String) -> Unit, placeholder: String, 
                     }
                 },
             )
-            if (query.isNotEmpty()) EddyIconButton(Icons.Rounded.Close, "Clear search", { onChange("") })
+            if (query.isNotEmpty()) EddyIconButton(Icons.Rounded.Close, str(R.string.clear_search), { onChange("") })
         }
     }
 }

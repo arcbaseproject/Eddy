@@ -18,6 +18,11 @@ import java.io.File
  */
 class TabThumbnailManager(context: Context, private val scope: CoroutineScope) {
     private val dir = File(context.filesDir, "thumbs").apply { mkdirs() }
+    /** Bumped by [clear]; a capture taken before it is not written afterwards. */
+    @Volatile private var generation = 0
+    /** One file operation at a time, so a clear cannot interleave with a write still in flight. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val io = Dispatchers.IO.limitedParallelism(1)
     private val cache = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 24).toInt()) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
@@ -40,8 +45,9 @@ class TabThumbnailManager(context: Context, private val scope: CoroutineScope) {
         }.onFailure { return }
         cache.put(tab.id, bmp)
         tab.thumbVersion++
-        if (!tab.incognito) scope.launch(Dispatchers.IO) {
-            runCatching { File(dir, "${tab.id}.jpg").outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 70, it) } }
+        val gen = generation
+        if (!tab.incognito) scope.launch(io) {
+            if (gen == generation) runCatching { File(dir, "${tab.id}.jpg").outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 70, it) } }
         }
     }
 
@@ -56,14 +62,21 @@ class TabThumbnailManager(context: Context, private val scope: CoroutineScope) {
 
     fun remove(tabId: String) {
         cache.remove(tabId)
-        scope.launch(Dispatchers.IO) { File(dir, "$tabId.jpg").delete() }
+        scope.launch(io) { File(dir, "$tabId.jpg").delete() }
     }
 
     fun trim() = cache.evictAll()
 
+    /** Forgets every preview, on disk too, for "Clear cached images and files". */
+    fun clear() {
+        generation++
+        cache.evictAll()
+        scope.launch(io) { dir.listFiles()?.forEach { it.delete() } }
+    }
+
     /** Drops files for tabs that no longer exist. */
     fun prune(liveIds: Set<String>) {
-        scope.launch(Dispatchers.IO) {
+        scope.launch(io) {
             dir.listFiles()?.filter { it.nameWithoutExtension !in liveIds }?.forEach { it.delete() }
         }
     }

@@ -1,5 +1,7 @@
 package app.eddy.browser.home
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -111,7 +113,7 @@ fun HomeScreen(
                         onAdd = { editing = Shortcut(UUID.randomUUID().toString(), "", "https://", settings.shortcuts.size, settings.shortcuts.size) },
                         onHide = {
                             vm.launchSettings { it.copy(homeShowShortcuts = false) }
-                            vm.snackbar("Shortcuts hidden. Show them again in Settings > Appearance > Start page", "Undo") {
+                            vm.snackbar(str(R.string.shortcuts_hidden_show_them_again_in_sett), str(R.string.undo)) {
                                 vm.launchSettings { it.copy(homeShowShortcuts = true) }
                             }
                         },
@@ -120,7 +122,7 @@ fun HomeScreen(
                     Spacer(Modifier.height(32.dp))
                     VisitedSections(vm, settings.homeShowFrequent, settings.homeShowRecent)
                 } else {
-                    IncognitoNote(Modifier.entrance(2))
+                    IncognitoNote(vm.incognitoIsolated, Modifier.entrance(2))
                 }
                 Spacer(Modifier.height(32.dp))
             }
@@ -148,7 +150,7 @@ fun HomeScreen(
 private fun Wordmark(incognito: Boolean, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            if (incognito) "Incognito" else "Eddy",
+            if (incognito) str(R.string.incognito_2) else str(R.string.app_name),
             style = MaterialTheme.typography.displayMedium,
             textAlign = TextAlign.Center,
             color = if (incognito) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
@@ -169,7 +171,7 @@ private fun HomeSearchBar(engineName: String, incognito: Boolean, onClick: () ->
         Row(Modifier.padding(horizontal = 22.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(if (incognito) Icons.Rounded.VisibilityOff else Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.primary)
             Text(
-                "Search or type a URL",
+                str(R.string.search_or_type_a_url),
                 Modifier.weight(1f).padding(start = 14.dp),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -190,7 +192,7 @@ private fun VisitedSections(vm: BrowserViewModel, showFrequent: Boolean, showRec
     val recent by if (showRecent) remember { vm.history.recentSites(5) }.collectAsStateWithLifecycle(emptyList())
         else remember { mutableStateOf(emptyList<SiteVisit>()) }
     if (frequent.isNotEmpty()) {
-        SectionTitle("Frequently visited", Modifier.entrance(3))
+        SectionTitle(str(R.string.frequently_visited), Modifier.entrance(3))
         LazyRow(
             contentPadding = PaddingValues(horizontal = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -214,7 +216,7 @@ private fun VisitedSections(vm: BrowserViewModel, showFrequent: Boolean, showRec
     }
     val recentShown = recent.filter { r -> frequent.take(3).none { it.host == r.host } }.take(4)
     if (recentShown.isNotEmpty()) {
-        SectionTitle("Recently visited", Modifier.entrance(4))
+        SectionTitle(str(R.string.recently_visited), Modifier.entrance(4))
         Column(Modifier.entrance(4).fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow)) {
             recentShown.forEach { RecentRow(it) { vm.navigate(it.url) } }
         }
@@ -246,15 +248,17 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun IncognitoNote(modifier: Modifier = Modifier) {
+private fun IncognitoNote(isolated: Boolean, modifier: Modifier = Modifier) {
     Column(
         modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("Private browsing", style = MaterialTheme.typography.titleMedium)
+        Text(str(R.string.private_browsing), style = MaterialTheme.typography.titleMedium)
         Text(
-            "Eddy does not save the pages you open here to history. It erases cookies and site data when you close the last incognito tab. " +
-                "Websites and your network can still see what you do.",
+            str(R.string.eddy_does_not_save_the_pages_you_open_he) +
+                (if (isolated) str(R.string.it_erases_cookies_and_site_data_when_you)
+                else str(R.string.this_device_s_webview_shares_cookies_and)) +
+                str(R.string.websites_and_your_network_can_still_see),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

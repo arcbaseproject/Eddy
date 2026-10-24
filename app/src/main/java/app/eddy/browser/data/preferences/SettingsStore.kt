@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import app.eddy.browser.data.models.*
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +65,8 @@ class SettingsStore(private val context: Context) {
         val adBlock = booleanPreferencesKey("ad_block")
         val trackers = booleanPreferencesKey("trackers")
         val filterLists = stringPreferencesKey("filter_lists")
+        /** Ids of the shipped lists the saved list already accounts for, so a removed one stays removed. */
+        val filterDefaultsSeen = stringSetPreferencesKey("filter_defaults_seen")
         val filterUpdated = longPreferencesKey("filter_updated")
         val cookies = stringPreferencesKey("cookies")
         val js = booleanPreferencesKey("javascript")
@@ -119,7 +122,7 @@ class SettingsStore(private val context: Context) {
             downloadLocation = this[K.downloadLocation].toEnum(d.downloadLocation),
             adBlock = this[K.adBlock] ?: d.adBlock,
             trackerProtection = this[K.trackers] ?: d.trackerProtection,
-            filterLists = this[K.filterLists]?.let(::decodeFilterLists) ?: DefaultFilterLists,
+            filterLists = this[K.filterLists]?.let { decodeFilterLists(it, this[K.filterDefaultsSeen]) } ?: DefaultFilterLists,
             filterListsUpdatedAt = this[K.filterUpdated] ?: 0L,
             cookieMode = this[K.cookies].toEnum(d.cookieMode),
             javascript = this[K.js] ?: d.javascript,
@@ -171,6 +174,7 @@ class SettingsStore(private val context: Context) {
         this[K.adBlock] = s.adBlock
         this[K.trackers] = s.trackerProtection
         this[K.filterLists] = encodeFilterLists(s.filterLists)
+        this[K.filterDefaultsSeen] = DefaultFilterLists.map { it.id }.toSet()
         this[K.filterUpdated] = s.filterListsUpdatedAt
         this[K.cookies] = s.cookieMode.name
         this[K.js] = s.javascript
@@ -260,14 +264,16 @@ class SettingsStore(private val context: Context) {
             }
         }.toString()
 
-        private fun decodeFilterLists(json: String): List<FilterList> = runCatching {
+        private fun decodeFilterLists(json: String, seen: Set<String>?): List<FilterList> = runCatching {
             val arr = JSONArray(json)
             val saved = List(arr.length()) {
                 val o = arr.getJSONObject(it)
                 FilterList(o.getString("id"), o.getString("n"), o.getString("u"), o.optBoolean("e", true), o.optBoolean("b"), o.optBoolean("t"))
             }
-            // Lists shipped after the user's settings were written are added, keeping their default state.
-            saved + DefaultFilterLists.filter { d -> saved.none { it.id == d.id } }
+            // Lists shipped after the user's settings were written are added, keeping their default state. Older
+            // settings have no record, but their decoder already re-added every default, so all count as seen.
+            val known = seen ?: DefaultFilterLists.map { it.id }.toSet()
+            saved + DefaultFilterLists.filter { d -> d.id !in known && saved.none { it.id == d.id } }
         }.getOrDefault(DefaultFilterLists)
     }
 }

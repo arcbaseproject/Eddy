@@ -56,8 +56,34 @@ object UrlUtils {
 
     fun isHttp(url: String) = url.startsWith("http://", ignoreCase = true)
 
-    /** Loopback and LAN names have no certificates, so HTTPS-only leaves them alone. */
-    fun isLocalHost(url: String): Boolean = localHost.matches(url.substringAfter("://"))
+    /** Loopback and LAN names have no certificates, so HTTPS-only leaves them alone. Public IP addresses do not count. */
+    fun isLocalHost(url: String): Boolean {
+        if (!localHost.matches(url.substringAfter("://"))) return false
+        val h = host(url).removeSurrounding("[", "]")
+        return when {
+            ':' in h -> isPrivateIpv6(h)
+            h.all { it.isDigit() || it == '.' } -> isPrivateIpv4(h)
+            else -> true
+        }
+    }
+
+    /** Loopback, RFC 1918, link-local and carrier-grade NAT ranges. */
+    private fun isPrivateIpv4(h: String): Boolean {
+        val p = h.split('.').map { it.toIntOrNull() ?: return false }
+        if (p.size != 4 || p.any { it > 255 }) return false
+        return p[0] == 127 || p[0] == 10 || p[0] == 0 ||
+            (p[0] == 172 && p[1] in 16..31) || (p[0] == 192 && p[1] == 168) ||
+            (p[0] == 169 && p[1] == 254) || (p[0] == 100 && p[1] in 64..127)
+    }
+
+    /** Loopback, link-local (fe80::/10) and unique-local (fc00::/7). */
+    private fun isPrivateIpv6(h: String): Boolean {
+        val a = h.lowercase().substringBefore('%')
+        if (a == "::1") return true
+        if (a.startsWith("::")) return false
+        val first = a.substringBefore(':').toIntOrNull(16) ?: return false
+        return first and 0xffc0 == 0xfe80 || first and 0xfe00 == 0xfc00
+    }
 
     /** The https:// form of an http:// URL; anything else is returned unchanged. */
     fun toHttps(url: String): String = if (isHttp(url)) "https://" + url.substring(7) else url
@@ -72,10 +98,22 @@ object UrlUtils {
 
     private val secondLevel = setOf("co", "com", "org", "net", "gov", "edu", "ac", "or", "ne", "go")
 
-    /** Approximates the registrable domain without a full public-suffix list: "a.b.co.uk" -> "b.co.uk". */
+    // shortcut: the shared hosts most often seen in the wild, not the full public-suffix list; bundle the list if tenants on others matter.
+    private val sharedHosts = setOf(
+        "github.io", "gitlab.io", "pages.dev", "workers.dev", "vercel.app", "netlify.app", "herokuapp.com", "web.app",
+        "firebaseapp.com", "appspot.com", "blogspot.com", "wordpress.com", "tumblr.com", "glitch.me", "onrender.com",
+        "fly.dev", "azurewebsites.net", "cloudfront.net", "s3.amazonaws.com", "translate.goog", "ngrok.io", "ngrok-free.app",
+    )
+
+    /** Approximates the registrable domain without a full public-suffix list: "a.b.co.uk" -> "b.co.uk", "me.github.io" stays whole. */
     private fun siteKey(host: String): String {
         val labels = host.split('.')
-        val keep = if (labels.size >= 3 && labels.last().length == 2 && labels[labels.size - 2] in secondLevel) 3 else 2
+        val keep = when {
+            labels.size >= 3 && labels.takeLast(2).joinToString(".") in sharedHosts -> 3
+            labels.size >= 4 && labels.takeLast(3).joinToString(".") in sharedHosts -> 4
+            labels.size >= 3 && labels.last().length == 2 && labels[labels.size - 2] in secondLevel -> 3
+            else -> 2
+        }
         return if (labels.size <= keep) host else labels.takeLast(keep).joinToString(".")
     }
 }

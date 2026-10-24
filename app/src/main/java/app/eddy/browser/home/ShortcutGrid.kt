@@ -1,5 +1,7 @@
 package app.eddy.browser.home
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -162,12 +164,12 @@ fun ShortcutGrid(
                                 )
                                 DropdownMenu(expanded = menuFor == item.id, onDismissRequest = { menuFor = null }) {
                                     DropdownMenuItem(
-                                        text = { Text("Edit") },
+                                        text = { Text(str(R.string.edit)) },
                                         leadingIcon = { Icon(Icons.Rounded.Edit, null) },
                                         onClick = { menuFor = null; onEdit(item) },
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Remove") },
+                                        text = { Text(str(R.string.remove_2)) },
                                         leadingIcon = { Icon(Icons.Rounded.Delete, null) },
                                         onClick = { menuFor = null; onRemove(item) },
                                     )
@@ -218,7 +220,7 @@ private fun ShortcutTile(
                 scaleY = scale
                 shadowElevation = if (lifted) 24f else 0f
             }
-            .clickable(interactionSource = source, indication = null, role = Role.Button, onClickLabel = "Open ${shortcut.title}", onClick = onClick),
+            .clickable(interactionSource = source, indication = null, role = Role.Button, onClickLabel = str(R.string.open_2, shortcut.title), onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -242,7 +244,7 @@ private fun ShortcutTile(
 
 @Composable
 private fun HideItem(onClick: () -> Unit) = DropdownMenuItem(
-    text = { Text("Hide shortcuts") },
+    text = { Text(str(R.string.hide_shortcuts)) },
     leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) },
     onClick = onClick,
 )
@@ -256,15 +258,15 @@ private fun AddTile(tileSize: Dp, onClick: () -> Unit, onHide: () -> Unit) {
             Modifier.size(tileSize).clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .combinedClickable(
-                    role = Role.Button, onClickLabel = "Add shortcut", onClick = onClick,
-                    onLongClickLabel = "Shortcut options", onLongClick = { menu = true },
+                    role = Role.Button, onClickLabel = str(R.string.add_shortcut), onClick = onClick,
+                    onLongClickLabel = str(R.string.shortcut_options), onLongClick = { menu = true },
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Rounded.Add, contentDescription = "Add shortcut", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Rounded.Add, contentDescription = str(R.string.add_shortcut), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) { HideItem { menu = false; onHide() } }
         }
-        Text("Add", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+        Text(str(R.string.add), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
     }
 }
 

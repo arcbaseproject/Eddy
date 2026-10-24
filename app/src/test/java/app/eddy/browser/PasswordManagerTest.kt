@@ -14,6 +14,9 @@ class PasswordManagerTest {
         assertEquals("https://sub.example.co.uk:8443", PasswordManager.normalizeOrigin("sub.example.co.uk:8443/x"))
         assertNull(PasswordManager.normalizeOrigin("not a site"))
         assertNull(PasswordManager.normalizeOrigin("intranet"))
+        // The same key a page on that site gets, so imported logins are offered there.
+        assertEquals("https://example.com", PasswordManager.normalizeOrigin("https://example.com:443/login"))
+        assertEquals("https://example.com", PasswordManager.normalizeOrigin("https://user:pw@example.com/"))
     }
 
     @Test fun generatesDistinctPasswordsOfTheRequestedLength() {

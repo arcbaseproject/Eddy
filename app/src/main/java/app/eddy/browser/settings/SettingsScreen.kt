@@ -1,5 +1,6 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.util.str
 import android.content.Intent
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
@@ -95,12 +96,12 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
     fun closeSearch() { searching = false; query = "" }
     BackHandler(enabled = searching && page == null) { closeSearch() }
     ScreenScaffold(
-        title = page?.title ?: "Settings",
+        title = page?.title ?: str(R.string.settings),
         onBack = { if (searching && page == null) closeSearch() else if (!vm.onBack()) vm.screen = Screen.BROWSER },
         actions = {
             if (page == null) {
-                if (searching) EddyIconButton(Icons.Rounded.Close, "Close search", ::closeSearch)
-                else EddyIconButton(Icons.Rounded.Search, "Search settings", { searching = true })
+                if (searching) EddyIconButton(Icons.Rounded.Close, str(R.string.close_search), ::closeSearch)
+                else EddyIconButton(Icons.Rounded.Search, str(R.string.search_settings), { searching = true })
             }
         },
     ) { padding ->
@@ -141,11 +142,11 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
 private fun RootPage(vm: BrowserViewModel, searching: Boolean, query: String, onQuery: (String) -> Unit) {
     fun open(p: SettingsPage) = vm.settingsStack.add(p)
     BetaBanner()
-    if (searching) SearchField(query, onQuery, "Search settings", Modifier.padding(top = 6.dp), autoFocus = true)
+    if (searching) SearchField(query, onQuery, str(R.string.search_settings), Modifier.padding(top = 6.dp), autoFocus = true)
     if (searching && query.isNotBlank()) {
         val results = searchSettings(query)
         if (results.isEmpty()) {
-            SettingsFootnote("No settings match \"${query.trim()}\".")
+            SettingsFootnote(str(R.string.no_settings_match, query.trim()))
         } else {
             SettingsGroup {
                 results.forEachIndexed { i, entry ->
@@ -157,58 +158,58 @@ private fun RootPage(vm: BrowserViewModel, searching: Boolean, query: String, on
         return
     }
     SettingsGroup {
-        NavRow("General", { open(SettingsPage.GENERAL) }, "Search, homepage, links, downloads", Icons.Rounded.Settings)
+        NavRow(str(R.string.general), { open(SettingsPage.GENERAL) }, str(R.string.search_homepage_links_downloads), Icons.Rounded.Settings)
         GroupDivider()
-        NavRow("Appearance", { open(SettingsPage.APPEARANCE) }, "Theme, colors, toolbar, motion", Icons.Rounded.Palette)
+        NavRow(str(R.string.appearance), { open(SettingsPage.APPEARANCE) }, str(R.string.theme_colors_toolbar_motion), Icons.Rounded.Palette)
         GroupDivider()
-        NavRow("Privacy and security", { open(SettingsPage.PRIVACY) }, "Blocking, cookies, permissions", Icons.Rounded.Security)
+        NavRow(str(R.string.privacy_and_security), { open(SettingsPage.PRIVACY) }, str(R.string.blocking_cookies_permissions), Icons.Rounded.Security)
         GroupDivider()
-        NavRow("Tabs", { open(SettingsPage.TABS) }, "Restore, layout, closing", Icons.Rounded.Tab)
+        NavRow(str(R.string.tabs_2), { open(SettingsPage.TABS) }, str(R.string.restore_layout_closing), Icons.Rounded.Tab)
         GroupDivider()
-        NavRow("Advanced", { open(SettingsPage.ADVANCED) }, "User agent, developer", Icons.Rounded.Build)
+        NavRow(str(R.string.advanced), { open(SettingsPage.ADVANCED) }, str(R.string.user_agent_developer), Icons.Rounded.Build)
     }
     SettingsGroup {
-        NavRow("About Eddy", { open(SettingsPage.ABOUT) }, "Version and default browser", Icons.Rounded.Info)
+        NavRow(str(R.string.about_eddy), { open(SettingsPage.ABOUT) }, str(R.string.version_and_default_browser), Icons.Rounded.Info)
         GroupDivider()
-        NavRow("Support", { open(SettingsPage.SUPPORT) }, "Send feedback or report a bug", Icons.Rounded.Email)
+        NavRow(str(R.string.support), { open(SettingsPage.SUPPORT) }, str(R.string.send_feedback_or_report_a_bug), Icons.Rounded.Email)
     }
-    SettingsGroup("Legal") {
-        NavRow("Privacy policy", { open(SettingsPage.PRIVACY_POLICY) }, "What Eddy stores and what it sends", Icons.Rounded.PrivacyTip)
+    SettingsGroup(str(R.string.legal)) {
+        NavRow(str(R.string.privacy_policy), { open(SettingsPage.PRIVACY_POLICY) }, str(R.string.what_eddy_stores_and_what_it_sends), Icons.Rounded.PrivacyTip)
         GroupDivider()
-        NavRow("Terms of service", { open(SettingsPage.TERMS) }, "Licence and disclaimers", Icons.Rounded.Gavel)
+        NavRow(str(R.string.terms_of_service), { open(SettingsPage.TERMS) }, str(R.string.licence_and_disclaimers), Icons.Rounded.Gavel)
     }
 }
 
 @Composable
 private fun GeneralSettings(vm: BrowserViewModel, s: Settings) {
     var editHome by remember { mutableStateOf(false) }
-    SettingsGroup("Search") {
-        NavRow("Default search engine", { vm.settingsStack.add(SettingsPage.SEARCH_ENGINES) }, s.searchEngine.name, Icons.Rounded.Search)
+    SettingsGroup(str(R.string.search)) {
+        NavRow(str(R.string.default_search_engine), { vm.settingsStack.add(SettingsPage.SEARCH_ENGINES) }, s.searchEngine.name, Icons.Rounded.Search)
         GroupDivider()
-        SwitchRow("Search suggestions", s.searchSuggestions, { v -> vm.launchSettings { it.copy(searchSuggestions = v) } }, "Sends what you type to ${s.searchEngine.name}")
+        SwitchRow(str(R.string.search_suggestions), s.searchSuggestions, { v -> vm.launchSettings { it.copy(searchSuggestions = v) } }, str(R.string.sends_what_you_type_to, s.searchEngine.name))
     }
-    SettingsGroup("Browsing") {
-        ChoiceRow("New tab opens", HomepageMode.entries, s.homepageMode, { if (it == HomepageMode.HOME) "Start page" else "Custom page" }, { v -> vm.launchSettings { it.copy(homepageMode = v) } })
+    SettingsGroup(str(R.string.browsing)) {
+        ChoiceRow(str(R.string.new_tab_opens), HomepageMode.entries, s.homepageMode, { if (it == HomepageMode.HOME) str(R.string.start_page) else str(R.string.custom_page) }, { v -> vm.launchSettings { it.copy(homepageMode = v) } })
         if (s.homepageMode == HomepageMode.CUSTOM) {
             GroupDivider()
-            ActionRow("Custom page", { editHome = true }, s.homepageUrl.ifBlank { "Not set" })
+            ActionRow(str(R.string.custom_page), { editHome = true }, s.homepageUrl.ifBlank { str(R.string.not_set) })
         }
         GroupDivider()
         ChoiceRow(
-            "Open links in other apps", ExternalLinks.entries, s.externalLinks,
-            { when (it) { ExternalLinks.ASK -> "Ask first"; ExternalLinks.ALWAYS -> "Always"; ExternalLinks.NEVER -> "Never" } },
+            str(R.string.open_links_in_other_apps), ExternalLinks.entries, s.externalLinks,
+            { when (it) { ExternalLinks.ASK -> str(R.string.ask_first); ExternalLinks.ALWAYS -> str(R.string.always); ExternalLinks.NEVER -> str(R.string.never) } },
             { v -> vm.launchSettings { it.copy(externalLinks = v) } },
         )
     }
-    SettingsGroup("Downloads") {
+    SettingsGroup(str(R.string.downloads)) {
         ChoiceRow(
-            "Download location", DownloadLocation.entries, s.downloadLocation,
-            { if (it == DownloadLocation.DOWNLOADS) "Downloads" else "Downloads/Eddy" },
+            str(R.string.download_location), DownloadLocation.entries, s.downloadLocation,
+            { if (it == DownloadLocation.DOWNLOADS) str(R.string.downloads) else "Downloads/Eddy" },
             { v -> vm.launchSettings { it.copy(downloadLocation = v) } },
         )
     }
     if (editHome) {
-        TextInputDialog("Custom page", s.homepageUrl, "Address", keyboardType = KeyboardType.Uri, onDismiss = { editHome = false }) { v ->
+        TextInputDialog(str(R.string.custom_page), s.homepageUrl, str(R.string.address), keyboardType = KeyboardType.Uri, onDismiss = { editHome = false }) { v ->
             vm.launchSettings { it.copy(homepageUrl = v) }
             editHome = false
         }
@@ -217,16 +218,16 @@ private fun GeneralSettings(vm: BrowserViewModel, s: Settings) {
 
 @Composable
 private fun TabSettings(vm: BrowserViewModel, s: Settings) {
-    SettingsGroup("Behavior") {
-        SwitchRow("Restore tabs on launch", s.restoreTabs, { v -> vm.launchSettings { it.copy(restoreTabs = v) } }, "Eddy does not restore incognito tabs")
+    SettingsGroup(str(R.string.behavior)) {
+        SwitchRow(str(R.string.restore_tabs_on_launch), s.restoreTabs, { v -> vm.launchSettings { it.copy(restoreTabs = v) } }, str(R.string.eddy_does_not_restore_incognito_tabs))
         GroupDivider()
-        SwitchRow("Switch to tabs opened by links", s.switchToNewTabs, { v -> vm.launchSettings { it.copy(switchToNewTabs = v) } }, "When off, they open in the background")
+        SwitchRow(str(R.string.switch_to_tabs_opened_by_links), s.switchToNewTabs, { v -> vm.launchSettings { it.copy(switchToNewTabs = v) } }, str(R.string.when_off_they_open_in_the_background))
         GroupDivider()
-        ChoiceRow("Tab switcher layout", TabLayout.entries, s.tabLayout, { if (it == TabLayout.GRID) "Grid" else "List" }, { v -> vm.launchSettings { it.copy(tabLayout = v) } })
+        ChoiceRow(str(R.string.tab_switcher_layout), TabLayout.entries, s.tabLayout, { if (it == TabLayout.GRID) str(R.string.grid) else str(R.string.list) }, { v -> vm.launchSettings { it.copy(tabLayout = v) } })
         GroupDivider()
         ChoiceRow(
-            "After closing a tab, show", CloseTabBehavior.entries, s.closeTabBehavior,
-            { if (it == CloseTabBehavior.ADJACENT) "The neighbouring tab" else "The most recently used tab" },
+            str(R.string.after_closing_a_tab_show), CloseTabBehavior.entries, s.closeTabBehavior,
+            { if (it == CloseTabBehavior.ADJACENT) str(R.string.the_neighbouring_tab) else str(R.string.the_most_recently_used_tab) },
             { v -> vm.launchSettings { it.copy(closeTabBehavior = v) } },
         )
     }
@@ -236,27 +237,27 @@ private fun TabSettings(vm: BrowserViewModel, s: Settings) {
 private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
     var editUa by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
-    SettingsGroup("Compatibility") {
+    SettingsGroup(str(R.string.compatibility)) {
         ChoiceRow(
-            "User agent", UserAgentMode.entries, s.userAgentMode,
-            { when (it) { UserAgentMode.DEFAULT -> "Mobile (default)"; UserAgentMode.DESKTOP -> "Desktop site everywhere"; UserAgentMode.CUSTOM -> "Custom" } },
+            str(R.string.user_agent), UserAgentMode.entries, s.userAgentMode,
+            { when (it) { UserAgentMode.DEFAULT -> str(R.string.mobile_default); UserAgentMode.DESKTOP -> str(R.string.desktop_site_everywhere); UserAgentMode.CUSTOM -> str(R.string.custom) } },
             { v -> vm.launchSettings { it.copy(userAgentMode = v) } },
         )
         if (s.userAgentMode == UserAgentMode.CUSTOM) {
             GroupDivider()
-            ActionRow("Custom user agent", { editUa = true }, s.customUserAgent.ifBlank { "Not set (uses mobile default)" })
+            ActionRow(str(R.string.custom_user_agent), { editUa = true }, s.customUserAgent.ifBlank { str(R.string.not_set_uses_mobile_default) })
         }
     }
-    SettingsGroup("Developer") {
-        SwitchRow("Web debugging", s.webDebugging, { v -> vm.launchSettings { it.copy(webDebugging = v) } }, "Lets chrome://inspect attach to pages over USB")
+    SettingsGroup(str(R.string.developer)) {
+        SwitchRow(str(R.string.web_debugging), s.webDebugging, { v -> vm.launchSettings { it.copy(webDebugging = v) } }, str(R.string.web_debugging_hint))
         GroupDivider()
-        ActionRow("App logs", vm::viewAppLogs, "Recent log output from Eddy, for bug reports")
+        ActionRow(str(R.string.app_logs), vm::viewAppLogs, str(R.string.recent_log_output_from_eddy_for_bug_repo))
         GroupDivider()
-        ActionRow("Reset all settings", { confirmReset = true }, "Restores defaults. Bookmarks and history stay.")
+        ActionRow(str(R.string.reset_all_settings), { confirmReset = true }, str(R.string.restores_defaults_bookmarks_and_history))
     }
-    if (editUa) TextInputDialog("Custom user agent", s.customUserAgent, "User agent string", onDismiss = { editUa = false }) { v -> vm.launchSettings { it.copy(customUserAgent = v) }; editUa = false }
+    if (editUa) TextInputDialog(str(R.string.custom_user_agent), s.customUserAgent, str(R.string.user_agent_string), onDismiss = { editUa = false }) { v -> vm.launchSettings { it.copy(customUserAgent = v) }; editUa = false }
     if (confirmReset) {
-        ConfirmDialog("Reset all settings?", "Eddy restores every setting to its default.", "Reset", { confirmReset = false }) {
+        ConfirmDialog(str(R.string.reset_all_settings_2), str(R.string.eddy_restores_every_setting_to_its_defau), str(R.string.reset_2), { confirmReset = false }) {
             confirmReset = false
             vm.launchSettings { Settings(shortcuts = it.shortcuts, onboardingCompleted = it.onboardingCompleted) }
         }
@@ -275,24 +276,22 @@ private fun AboutSettings(vm: BrowserViewModel) {
 
     AboutHeader(vm::openInNewTab)
     SettingsGroup {
-        ActionRow("Replay welcome tour", vm::replayOnboarding, "Walk through Eddy's setup again")
+        ActionRow(str(R.string.replay_welcome_tour), vm::replayOnboarding, str(R.string.walk_through_eddy_s_setup_again))
         GroupDivider()
         if (isDefault) {
-            ActionRow("Default browser", {}, "Eddy is your default browser", Icons.Rounded.CheckCircle)
+            ActionRow(str(R.string.default_browser), {}, str(R.string.eddy_is_your_default_browser), Icons.Rounded.CheckCircle)
         } else {
-            ActionRow("Make Eddy your default browser", {
+            ActionRow(str(R.string.make_eddy_your_default_browser), {
                 if (roleManager.isRoleAvailable(RoleManager.ROLE_BROWSER)) {
                     requestRole.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_BROWSER))
                 } else {
                     context.startActivity(Intent(AndroidSettings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
-            }, "Opens a system prompt")
+            }, str(R.string.opens_a_system_prompt))
         }
     }
     SettingsFootnote(
-        "Eddy has no advertising, analytics or tracking code and sends no telemetry. " +
-            "It contacts the network to load the pages you open, fetch search suggestions (if you enable them), " +
-            "fetch favicons for sites on your home page, update filter lists, and send support messages you write.",
+        str(R.string.eddy_has_no_advertising_analytics_or_tra),
     )
 }
 
@@ -307,9 +306,9 @@ private fun AboutHeader(open: (String) -> Unit) {
         Box(Modifier.size(96.dp).clip(RoundedCornerShape(32.dp)).background(colorResource(R.color.icon_bg)), contentAlignment = Alignment.Center) {
             Image(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.requiredSize(144.dp))
         }
-        Text("Eddy", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.headlineMedium)
+        Text(str(R.string.app_name), Modifier.padding(top = 16.dp), style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Version ${BuildConfig.VERSION_NAME}",
+            str(R.string.version, BuildConfig.VERSION_NAME),
             Modifier.padding(top = 4.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -323,11 +322,11 @@ private fun AboutHeader(open: (String) -> Unit) {
         Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilledTonalButton({ open(SITE_URL) }) {
                 Icon(Icons.Rounded.Language, null, Modifier.size(18.dp))
-                Text("Website", Modifier.padding(start = 8.dp))
+                Text(str(R.string.website), Modifier.padding(start = 8.dp))
             }
             FilledTonalButton({ open(REPO_URL) }) {
                 Icon(painterResource(R.drawable.ic_github), null, Modifier.size(18.dp))
-                Text("GitHub", Modifier.padding(start = 8.dp))
+                Text(str(R.string.github), Modifier.padding(start = 8.dp))
             }
         }
     }
@@ -345,7 +344,7 @@ private fun BetaBanner() {
         Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Science, null, Modifier.size(18.dp))
             Text(
-                "Beta · Eddy is in development. Expect bugs.",
+                str(R.string.beta_eddy_is_in_development_expect_bugs),
                 Modifier.padding(start = 10.dp),
                 style = MaterialTheme.typography.labelMedium,
             )

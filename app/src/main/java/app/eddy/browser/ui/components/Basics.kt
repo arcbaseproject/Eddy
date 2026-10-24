@@ -1,5 +1,7 @@
 package app.eddy.browser.ui.components
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -80,7 +82,7 @@ fun TextInputDialog(
     title: String,
     initial: String,
     label: String,
-    confirmLabel: String = "Save",
+    confirmLabel: String = str(R.string.save),
     keyboardType: KeyboardType = KeyboardType.Text,
     validate: (String) -> Boolean = { it.isNotBlank() },
     onDismiss: () -> Unit,
@@ -102,7 +104,7 @@ fun TextInputDialog(
             )
         },
         confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }, enabled = validate(text)) { Text(confirmLabel) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }
 
@@ -119,7 +121,7 @@ fun ConfirmDialog(
         title = { Text(title) },
         text = { Text(message) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }
 
@@ -151,7 +153,7 @@ fun <T> ChoiceDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }
 

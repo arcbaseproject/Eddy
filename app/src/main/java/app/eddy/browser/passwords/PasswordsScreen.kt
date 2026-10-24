@@ -1,9 +1,12 @@
 package app.eddy.browser.passwords
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.app.KeyguardManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity
+import android.net.Uri
 import android.view.WindowManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -77,6 +80,7 @@ import app.eddy.browser.ui.components.SearchField
 import app.eddy.browser.ui.components.SiteIcon
 import app.eddy.browser.ui.theme.Dimens
 import app.eddy.browser.util.UrlUtils
+import app.eddy.browser.util.readTextCapped
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -91,7 +95,7 @@ fun PasswordsScreen(vm: BrowserViewModel) {
         if (result.resultCode == Activity.RESULT_OK) vm.passwordsUnlocked = true else vm.screen = Screen.BROWSER
     }
     fun requestUnlock() {
-        unlock.launch(keyguard.createConfirmDeviceCredentialIntent("Unlock passwords", "Confirm your screen lock to view saved passwords."))
+        unlock.launch(keyguard.createConfirmDeviceCredentialIntent(str(R.string.unlock_passwords), str(R.string.confirm_screen_lock_passwords)))
     }
 
     DisposableEffect(Unit) {
@@ -103,7 +107,6 @@ fun PasswordsScreen(vm: BrowserViewModel) {
             vm.passwordsUnlocked = false
         }
     }
-    LaunchedEffect(needsUnlock) { if (needsUnlock) requestUnlock() }
 
     val logins by vm.passwords.logins.collectAsStateWithLifecycle(emptyList())
     var query by remember { mutableStateOf("") }
@@ -113,42 +116,58 @@ fun PasswordsScreen(vm: BrowserViewModel) {
     var overflow by remember { mutableStateOf(false) }
     var confirmExport by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
-    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            val (csv, count) = vm.passwords.exportCsv()
-            runCatching { withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(csv.toByteArray()) } } }
-                .onSuccess { vm.snackbar("Exported $count passwords. The file is not encrypted, so delete it when you are done.") }
-                .onFailure { vm.snackbar("Export failed") }
+    // Relocking closes every sheet and dialog that shows or exports a password, and drops their plaintext.
+    LaunchedEffect(needsUnlock) {
+        if (needsUnlock) {
+            selected = null; editing = null; adding = false; confirmExport = false; overflow = false
+            requestUnlock()
         }
     }
-    val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            val text = runCatching { withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() } }.getOrNull()
-            if (text == null) return@launch vm.snackbar("Could not read the file")
+
+    // The file picker stops Eddy, which relocks passwords; a picked file waits here until the user unlocks again.
+    var pendingExport by remember { mutableStateOf<Uri?>(null) }
+    var pendingImport by remember { mutableStateOf<Uri?>(null) }
+    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { pendingExport = it }
+    val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { pendingImport = it }
+    LaunchedEffect(needsUnlock, pendingExport) {
+        val uri = pendingExport ?: return@LaunchedEffect
+        if (needsUnlock) return@LaunchedEffect
+        pendingExport = null
+        run {
+            val (csv, count) = vm.passwords.exportCsv()
+            runCatching { withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(csv.toByteArray()) } } }
+                .onSuccess { vm.snackbar(str(R.string.exported_passwords_the_file_is_not_encry, count)) }
+                .onFailure { vm.snackbar(str(R.string.export_failed)) }
+        }
+    }
+    LaunchedEffect(needsUnlock, pendingImport) {
+        val uri = pendingImport ?: return@LaunchedEffect
+        if (needsUnlock) return@LaunchedEffect
+        pendingImport = null
+        run {
+            val text = runCatching { withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.readTextCapped() ?: error("too big") } }.getOrNull()
+            if (text == null) return@LaunchedEffect vm.snackbar(str(R.string.could_not_read_the_file_files_over_16_mb))
             val r = vm.passwords.importCsv(text)
             vm.snackbar(
-                if (!r.recognised) "This file is not a password CSV"
-                else "Imported ${r.added} new, ${r.updated} updated" + if (r.unchanged + r.skipped > 0) ", ${r.unchanged + r.skipped} skipped" else "",
+                if (!r.recognised) str(R.string.this_file_is_not_a_password_csv)
+                else str(R.string.imported_new_updated, r.added, r.updated) + if (r.unchanged + r.skipped > 0) str(R.string.skipped_suffix, r.unchanged + r.skipped) else "",
             )
         }
     }
 
     ScreenScaffold(
-        "Passwords", onBack = { vm.screen = Screen.BROWSER },
+        str(R.string.passwords), onBack = { vm.screen = Screen.BROWSER },
         actions = {
             if (!needsUnlock) {
-                EddyIconButton(Icons.Rounded.Add, "Add password", { adding = true })
+                EddyIconButton(Icons.Rounded.Add, str(R.string.add_password), { adding = true })
                 Box {
-                    EddyIconButton(Icons.Rounded.MoreVert, "More", { overflow = true })
+                    EddyIconButton(Icons.Rounded.MoreVert, str(R.string.more), { overflow = true })
                     DropdownMenu(overflow, { overflow = false }) {
-                        DropdownMenuItem(text = { Text("Import from CSV") }, onClick = { overflow = false; import.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain", "*/*")) })
-                        DropdownMenuItem(text = { Text("Export to CSV") }, onClick = { overflow = false; confirmExport = true })
+                        DropdownMenuItem(text = { Text(str(R.string.import_from_csv)) }, onClick = { overflow = false; import.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain", "*/*")) })
+                        DropdownMenuItem(text = { Text(str(R.string.export_to_csv)) }, onClick = { overflow = false; confirmExport = true })
                         DropdownMenuItem(
-                            text = { Text("Reset “Never save” sites") },
-                            onClick = { overflow = false; vm.passwords.resetNeverSave(); vm.snackbar("Eddy will offer to save passwords on every site again") },
+                            text = { Text(str(R.string.reset_never_save_sites)) },
+                            onClick = { overflow = false; vm.passwords.resetNeverSave(); vm.snackbar(str(R.string.eddy_will_offer_to_save_passwords_on_eve)) },
                         )
                     }
                 }
@@ -159,18 +178,18 @@ fun PasswordsScreen(vm: BrowserViewModel) {
             if (needsUnlock) {
                 Column(Modifier.fillMaxSize().padding(Dimens.gutterLarge), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Icon(Icons.Rounded.Lock, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
-                    Text("Passwords are locked", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium)
-                    Text("Confirm your screen lock to continue.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = ::requestUnlock, Modifier.padding(top = 16.dp)) { Text("Unlock") }
+                    Text(str(R.string.passwords_are_locked), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.titleMedium)
+                    Text(str(R.string.confirm_your_screen_lock_to_continue), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Button(onClick = ::requestUnlock, Modifier.padding(top = 16.dp)) { Text(str(R.string.unlock)) }
                 }
             } else {
-                SearchField(query, { query = it }, "Search passwords")
+                SearchField(query, { query = it }, str(R.string.search_passwords))
                 val shown = logins.filter { query.isBlank() || it.origin.contains(query, true) || it.username.contains(query, true) }
                 if (shown.isEmpty()) {
                     EmptyState(
                         Icons.Rounded.Key,
-                        if (query.isBlank()) "No saved passwords" else "No matches",
-                        if (query.isBlank()) "When you sign in or sign up on a site, Eddy offers to save the login here." else "Try a different search.",
+                        if (query.isBlank()) str(R.string.no_saved_passwords) else str(R.string.no_matches),
+                        if (query.isBlank()) str(R.string.when_you_sign_in_or_sign_up_on_a_site_ed) else str(R.string.try_a_different_search),
                     )
                 } else {
                     LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
@@ -181,6 +200,7 @@ fun PasswordsScreen(vm: BrowserViewModel) {
         }
     }
 
+    if (needsUnlock) return
     selected?.let { login ->
         LoginSheet(
             vm, login,
@@ -190,9 +210,9 @@ fun PasswordsScreen(vm: BrowserViewModel) {
     }
     if (confirmExport) {
         ConfirmDialog(
-            "Export passwords?",
-            "The file is plain text. Anyone who can open it can read every password in it. Save it somewhere private and delete it after you import it elsewhere.",
-            "Export", { confirmExport = false },
+            str(R.string.export_passwords),
+            str(R.string.the_file_is_plain_text_anyone_who_can_op),
+            str(R.string.export), { confirmExport = false },
         ) { confirmExport = false; export.launch("eddy-passwords.csv") }
     }
     if (adding) LoginEditor(vm, null, onDismiss = { adding = false })
@@ -203,13 +223,13 @@ fun PasswordsScreen(vm: BrowserViewModel) {
 private fun LoginRow(login: LoginEntity, onClick: () -> Unit) {
     val host = UrlUtils.displayHost(login.origin)
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button, onClickLabel = "Open details", onClick = onClick).padding(horizontal = Dimens.gutter, vertical = 8.dp),
+        Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button, onClickLabel = str(R.string.open_details), onClick = onClick).padding(horizontal = Dimens.gutter, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SiteIcon(host, size = Dimens.faviconLarge)
         Column(Modifier.padding(start = 14.dp)) {
             Text(host, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(login.username.ifEmpty { "No username" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(login.username.ifEmpty { str(R.string.no_username) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -232,13 +252,13 @@ private fun LoginSheet(vm: BrowserViewModel, login: LoginEntity, onEdit: () -> U
                 }
             }
             HorizontalDivider()
-            DetailRow("Username", login.username.ifEmpty { "None" }, copyable = login.username.isNotEmpty()) { vm.copySecret("Username", login.username) }
+            DetailRow(str(R.string.username), login.username.ifEmpty { str(R.string.none) }, copyable = login.username.isNotEmpty()) { vm.copySecret(str(R.string.username), login.username) }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Password", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(str(R.string.password), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         when {
-                            password == null -> "Cannot decrypt"
+                            password == null -> str(R.string.cannot_decrypt)
                             reveal -> password.orEmpty()
                             else -> "••••••••••••"
                         },
@@ -247,22 +267,22 @@ private fun LoginSheet(vm: BrowserViewModel, login: LoginEntity, onEdit: () -> U
                 }
                 EddyIconButton(
                     if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    if (reveal) "Hide password" else "Show password", { reveal = !reveal }, enabled = password != null,
+                    if (reveal) str(R.string.hide_password) else str(R.string.show_password), { reveal = !reveal }, enabled = password != null,
                 )
-                EddyIconButton(Icons.Rounded.ContentCopy, "Copy password", { password?.let { vm.copySecret("Password", it) } }, enabled = password != null)
+                EddyIconButton(Icons.Rounded.ContentCopy, str(R.string.copy_password), { password?.let { vm.copySecret(str(R.string.password), it) } }, enabled = password != null)
             }
             HorizontalDivider()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = { onDismiss(); vm.navigate(login.origin) }) {
-                    Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp)); Text("Open site", Modifier.padding(start = 6.dp))
+                    Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp)); Text(str(R.string.open_site), Modifier.padding(start = 6.dp))
                 }
-                OutlinedButton(onClick = onEdit) { Icon(Icons.Rounded.Edit, null, Modifier.size(18.dp)); Text("Edit", Modifier.padding(start = 6.dp)) }
-                TextButton(onClick = { confirmDelete = true }) { Icon(Icons.Rounded.Delete, null, Modifier.size(18.dp)); Text("Delete", Modifier.padding(start = 6.dp)) }
+                OutlinedButton(onClick = onEdit) { Icon(Icons.Rounded.Edit, null, Modifier.size(18.dp)); Text(str(R.string.edit), Modifier.padding(start = 6.dp)) }
+                TextButton(onClick = { confirmDelete = true }) { Icon(Icons.Rounded.Delete, null, Modifier.size(18.dp)); Text(str(R.string.delete_4), Modifier.padding(start = 6.dp)) }
             }
         }
     }
     if (confirmDelete) {
-        ConfirmDialog("Delete this password?", "Eddy will remove the saved login for $host. The account itself stays unchanged.", "Delete", { confirmDelete = false }) {
+        ConfirmDialog(str(R.string.delete_this_password), str(R.string.eddy_will_remove_the_saved_login_for_the, host), str(R.string.delete_4), { confirmDelete = false }) {
             confirmDelete = false
             vm.passwords.delete(login.id)
             onDismiss()
@@ -277,7 +297,7 @@ private fun DetailRow(label: String, value: String, copyable: Boolean, onCopy: (
             Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.bodyLarge)
         }
-        if (copyable) EddyIconButton(Icons.Rounded.ContentCopy, "Copy $label", onCopy)
+        if (copyable) EddyIconButton(Icons.Rounded.ContentCopy, str(R.string.copy, label), onCopy)
     }
 }
 
@@ -295,18 +315,18 @@ private fun LoginEditor(vm: BrowserViewModel, existing: LoginEntity?, onDismiss:
     val origin = PasswordManager.normalizeOrigin(site)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (existing == null) "Add password" else "Edit password") },
+        title = { Text(if (existing == null) str(R.string.add_password) else str(R.string.edit_password)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(site, { site = it }, Modifier.fillMaxWidth(), label = { Text("Website") }, singleLine = true, isError = site.isNotBlank() && origin == null, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(), label = { Text("Username") }, singleLine = true)
+                OutlinedTextField(site, { site = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.website)) }, singleLine = true, isError = site.isNotBlank() && origin == null, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.username)) }, singleLine = true)
                 OutlinedTextField(
-                    password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Password") }, singleLine = true,
+                    password, { password = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.password)) }, singleLine = true,
                     visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         Row {
-                            EddyIconButton(Icons.Rounded.Refresh, "Generate password", { password = PasswordManager.generatePassword(); show = true })
-                            EddyIconButton(if (show) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (show) "Hide password" else "Show password", { show = !show })
+                            EddyIconButton(Icons.Rounded.Refresh, str(R.string.generate_password), { password = PasswordManager.generatePassword(); show = true })
+                            EddyIconButton(if (show) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (show) str(R.string.hide_password) else str(R.string.show_password), { show = !show })
                         }
                     },
                 )
@@ -319,8 +339,8 @@ private fun LoginEditor(vm: BrowserViewModel, existing: LoginEntity?, onDismiss:
                     else vm.passwords.replace(existing.id, origin!!, username.trim(), password)
                     onDismiss()
                 }
-            }) { Text("Save") }
+            }) { Text(str(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }

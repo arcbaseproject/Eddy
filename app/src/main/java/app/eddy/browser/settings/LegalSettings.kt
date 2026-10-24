@@ -1,5 +1,7 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,10 +15,10 @@ import app.eddy.browser.ui.theme.Dimens
 private class Section(val heading: String, val body: String)
 
 @Composable
-fun PrivacyPolicyPage() = LegalPage("Last updated October 2026", PrivacySections)
+fun PrivacyPolicyPage() = LegalPage(str(R.string.last_updated_october_2026), PrivacySections)
 
 @Composable
-fun TermsPage() = LegalPage("Last updated September 2026", TermsSections)
+fun TermsPage() = LegalPage(str(R.string.last_updated_september_2026), TermsSections)
 
 @Composable
 private fun LegalPage(updated: String, sections: List<Section>) {
@@ -31,117 +33,94 @@ private fun LegalPage(updated: String, sections: List<Section>) {
 
 private val PrivacySections = listOf(
     Section(
-        "The short version",
-        "Eddy does not collect, sell or share your personal data. It has no accounts, advertising, analytics or crash reporting. " +
-            "The only thing it sends to the developer is a support message you choose to send. " +
-            "Your history, bookmarks, settings and downloads list stay on your device.",
+        str(R.string.the_short_version),
+        str(R.string.eddy_does_not_collect_sell_or_share_your) +
+            str(R.string.the_only_thing_it_sends_to_the_developer) +
+            str(R.string.your_history_bookmarks_settings_and_down),
     ),
     Section(
-        "What Eddy stores on your device",
-        "• Browsing history. Eddy deletes entries older than 90 days and never saves history for incognito tabs.\n" +
-            "• Bookmarks, folders and home-page shortcuts.\n" +
-            "• Your settings and the choices you make for individual sites, such as camera or location access.\n" +
-            "• Open tabs and their page previews, so Eddy can restore them when you reopen the app. Eddy never saves incognito tabs.\n" +
-            "• Site icons, and the cookies, site data and cache that web pages create through the browser engine.\n" +
-            "• A list of your downloads. The files themselves go to your Downloads folder.\n" +
-            "• Saved logins. Eddy stores the site address and username, and encrypts each password with a key that stays in the Android Keystore.\n\n" +
-            "You can delete all of this at any time in Settings > Privacy and security > Clear browsing data, or by uninstalling the app.",
+        str(R.string.what_eddy_stores_on_your_device),
+        str(R.string.you_can_delete_all_of_this_at_any_time_i),
     ),
     Section(
-        "Network requests Eddy makes",
-        "Besides loading the pages you ask for, Eddy makes these requests:\n" +
-            "• Search suggestions: as you type, Eddy sends your text to your search engine to fetch suggestions. Turn this off in Settings > General.\n" +
-            "• Site icons: Eddy may request /favicon.ico from a site on your home page.\n" +
-            "• Filter lists: Eddy downloads the ad and tracker lists you enable from their publishers about once a day.\n" +
-            "• Downloads you start.\n" +
-            "• Translation: when you choose Translate in the menu, Eddy opens the page through Google Translate, so Google receives the page address.\n" +
-            "• Support messages: see below.\n\n" +
-            "Each site, search engine and list host you contact can see your IP address and the usual information a browser sends, and applies its own privacy policy.",
+        str(R.string.network_requests_eddy_makes),
+        str(R.string.besides_loading_the_pages_you_ask_for_ed),
     ),
     Section(
-        "Components Eddy relies on",
-        "Eddy shows web pages with Android System WebView, a Google component built on Chromium. WebView includes Safe Browsing, which can send " +
-            "partial, anonymised fingerprints of addresses to Google to warn you about dangerous sites. Eddy does not control this and adds no tracking of its own. " +
-            "Google's privacy policy covers that feature.",
+        str(R.string.components_eddy_relies_on),
+        str(R.string.eddy_shows_web_pages_with_android_system),
     ),
     Section(
-        "Permissions",
-        "• Camera, microphone and location: Eddy uses these only when a website asks and you allow it. You can change each choice per site.\n" +
-            "• Notifications: show download progress.\n" +
-            "• Clipboard: when you open the address bar, Eddy reads the clipboard once to offer a “paste link” suggestion. Eddy does not store or send it. " +
-            "Android may show a notice when this happens.\n" +
-            "• Network state: lets Eddy show offline pages and retry when you reconnect.",
+        str(R.string.permissions),
+        str(R.string.android_may_show_a_notice_when_this_happ),
     ),
     Section(
-        "Passwords",
-        "When you sign in or sign up on a site, Eddy asks whether to save or update the login. It asks only after the sign-in works, and never in incognito tabs. " +
-            "Passwords stay on your device: Eddy does not sync, upload or share them. Eddy fills a saved login only after you tap its suggestion, and only on the exact site address where you saved it. " +
-            "If your device has a screen lock, Eddy asks for it before showing the password list, and hides that screen from screenshots and the recent-apps view. " +
-            "Passwords you copy leave the clipboard after a minute. If you export passwords, Eddy writes a plain-text CSV file to the place you choose and cannot protect it afterwards. You can turn saving and autofill off in Settings > Privacy and security, and delete saved logins at any time.",
+        str(R.string.passwords),
+        str(R.string.when_you_sign_in_or_sign_up_on_a_site_ed_2) +
+            str(R.string.passwords_stay_on_your_device_eddy_does) +
+            str(R.string.if_your_device_has_a_screen_lock_eddy_as) +
+            str(R.string.passwords_you_copy_leave_the_clipboard_a),
     ),
     Section(
-        "Support messages",
-        "Settings > Support lets you send a message to the developer. Eddy sends it only when you tap Send. " +
-            "It includes your message, your email address if you enter one, and the Eddy and Android version numbers. " +
-            "Eddy delivers it through Web3Forms (web3forms.com), which forwards it by email and applies its own privacy policy. " +
-            "The developer uses it only to answer you and improve Eddy, and does not share it. " +
-            "To limit abuse, Eddy stores the time of your last message on your device and allows one message every 10 minutes.",
+        str(R.string.support_messages),
+        str(R.string.settings_support_lets_you_send_a_message) +
+            str(R.string.it_includes_your_message_your_email_addr) +
+            str(R.string.eddy_delivers_it_through_web3forms_web3f) +
+            str(R.string.the_developer_uses_it_only_to_answer_you) +
+            str(R.string.to_limit_abuse_eddy_stores_the_time_of_y),
     ),
     Section(
-        "Do Not Track and blocking",
-        "When you enable it, Eddy sends the Do Not Track and Global Privacy Control signals. Sites can ignore them. " +
-            "Ad and tracker blocking is best-effort and cannot stop every form of tracking.",
+        str(R.string.do_not_track_and_blocking),
+        str(R.string.when_you_enable_it_eddy_sends_the_do_not) +
+            str(R.string.ad_and_tracker_blocking_is_best_effort_a),
     ),
     Section(
-        "Incognito tabs",
-        "Incognito tabs save no history, page previews or site choices. Eddy erases their cookies and site data when the last incognito tab closes. " +
-            "On devices whose WebView cannot keep that storage separate, incognito tabs share cookies with normal tabs, and Settings > Privacy and security tells you when that applies. " +
-            "Incognito does not hide your activity from websites, your network, your employer or your internet provider. Eddy keeps files you download and bookmarks you make.",
+        str(R.string.incognito_tabs),
+        str(R.string.incognito_tabs_save_no_history_page_prev) +
+            str(R.string.on_devices_whose_webview_cannot_keep_tha) +
+            str(R.string.incognito_does_not_hide_your_activity_fr),
     ),
     Section(
-        "Children",
-        "Eddy is a general-purpose browser and is not directed at children.",
+        str(R.string.children),
+        str(R.string.eddy_is_a_general_purpose_browser_and_is),
     ),
     Section(
-        "Changes and questions",
-        "When this policy changes, the new version ships with the app and the date above changes. " +
-            "For questions, use Settings > Support or contact the developer through the app's store page.",
+        str(R.string.changes_and_questions),
+        str(R.string.when_this_policy_changes_the_new_version) +
+            str(R.string.for_questions_use_settings_support_or_co),
     ),
 )
 
 private val TermsSections = listOf(
     Section(
-        "Beta software",
-        "Eddy is in beta. It may contain bugs, features may change or disappear, and you could lose tabs, bookmarks or settings. " +
-            "Keep your own copy of anything important, for example by exporting your bookmarks.",
+        str(R.string.beta_software),
+        str(R.string.eddy_is_in_beta_it_may_contain_bugs_feat) +
+            str(R.string.keep_your_own_copy_of_anything_important),
     ),
     Section(
-        "Licence",
-        "Eddy is free software under the Apache License 2.0. You may use, study, share and change it for any purpose under that licence, " +
-            "and nothing on this page limits it. You are responsible for the sites you visit and the content you view or download.",
+        str(R.string.licence),
+        str(R.string.eddy_is_free_software_under_the_apache_l),
     ),
     Section(
-        "Security warnings",
-        "Eddy warns you about connection and certificate problems. If you continue anyway, you accept the risk. " +
-            "Blocking of ads, trackers and dangerous sites is a convenience and does not catch everything.",
+        str(R.string.security_warnings),
+        str(R.string.eddy_warns_you_about_connection_and_cert) +
+            str(R.string.blocking_of_ads_trackers_and_dangerous_s),
     ),
     Section(
-        "Third-party content and software",
-        "Web pages, search engines, filter lists and downloaded files come from third parties. Eddy does not control or endorse them, and their own terms apply. " +
-            "Eddy uses Android System WebView and open-source libraries, which remain under their own licences.",
+        str(R.string.third_party_content_and_software),
+        str(R.string.web_pages_search_engines_filter_lists_an) +
+            str(R.string.eddy_uses_android_system_webview_and_ope),
     ),
     Section(
-        "No warranty",
-        "Eddy is provided “as is” and “as available”, without warranties of any kind, express or implied, including fitness for a particular purpose, " +
-            "reliability or freedom from errors.",
+        str(R.string.no_warranty),
+        str(R.string.eddy_is_provided_as_is_and_as_available),
     ),
     Section(
-        "Limitation of liability",
-        "To the fullest extent permitted by law, the developer is not liable for any indirect, incidental or consequential damages, or for loss of data, " +
-            "arising from your use of Eddy.",
+        str(R.string.limitation_of_liability),
+        str(R.string.to_the_fullest_extent_permitted_by_law_t),
     ),
     Section(
-        "Changes",
-        "New versions of the app may update this page.",
+        str(R.string.changes),
+        str(R.string.new_versions_of_the_app_may_update_this),
     ),
 )

@@ -31,4 +31,10 @@ class HtmlPrettyTest {
             HtmlPretty.format(html),
         )
     }
+
+    @Test fun deepNestingStaysLinear() {
+        val html = "<div>".repeat(1000) + "x" + "</div>".repeat(1000)
+        // Uncapped indentation turned these 11,001 characters into about two million.
+        assert(HtmlPretty.format(html).length < html.length * 10)
+    }
 }

@@ -1,5 +1,7 @@
 package app.eddy.browser.bookmarks
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import app.eddy.browser.data.database.Bookmark
 import app.eddy.browser.data.database.BookmarkDao
 import app.eddy.browser.data.database.BookmarkFolder
@@ -58,22 +60,23 @@ class BookmarkManager(private val dao: BookmarkDao, private val scope: Coroutine
     suspend fun importHtml(html: String): Int {
         val token = Regex("<H3[^>]*>(.*?)</H3>|<A\\s[^>]*?HREF=\"([^\"]*)\"[^>]*>(.*?)</A>|</DL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
         val existingFolders = dao.folders().first().associateBy { it.name }.toMutableMap()
-        var folderId = Bookmark.ROOT_FOLDER
+        // Each folder's own </DL> returns to the folder around it; nested folders become top-level ones.
+        val open = ArrayDeque<Long>()
         var count = 0
         for (m in token.findAll(html)) {
             val (folderName, href, title) = m.destructured
             when {
                 href.isNotEmpty() -> if (href.startsWith("http", true)) {
-                    dao.insert(Bookmark(title = title.unescape().ifBlank { href }, url = href.unescape(), folderId = folderId))
+                    dao.insert(Bookmark(title = title.unescape().ifBlank { href }, url = href.unescape(), folderId = open.lastOrNull() ?: Bookmark.ROOT_FOLDER))
                     count++
                 }
                 m.value.startsWith("<H3", true) -> {
-                    val name = folderName.unescape().trim().ifBlank { "Imported" }
-                    folderId = existingFolders.getOrPut(name) {
+                    val name = folderName.unescape().trim().ifBlank { str(R.string.imported) }
+                    open.addLast(existingFolders.getOrPut(name) {
                         BookmarkFolder(id = dao.insertFolder(BookmarkFolder(name = name)), name = name)
-                    }.id
+                    }.id)
                 }
-                else -> folderId = Bookmark.ROOT_FOLDER
+                else -> open.removeLastOrNull()
             }
         }
         return count

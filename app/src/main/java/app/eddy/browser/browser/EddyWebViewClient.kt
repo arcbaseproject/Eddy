@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -123,7 +125,8 @@ class EddyWebViewClient(
         val h = UrlUtils.host(url)
         if (h.isEmpty() || (!tab.popup && !ContentBlocker.isThirdParty(h, tab.pageHost))) return false
         if (!host.blocker.isBlocked(h, tab.blockingActive, tab.trackerBlockingActive)) return false
-        Log.d("ContentBlocker", "Stopped navigation to $h")
+        // Private browsing leaves no hosts in the app log.
+        if (!tab.incognito) Log.d("ContentBlocker", "Stopped navigation to $h")
         tab.blockedRaw++
         tab.publishBlocked()
         if (tab.popup) {
@@ -201,11 +204,11 @@ class EddyWebViewClient(
         tab.error?.sslHandler?.cancel()
         val reason = when (error.primaryError) {
             SslError.SSL_UNTRUSTED -> "A trusted authority did not issue this certificate."
-            SslError.SSL_EXPIRED -> "The certificate has expired."
-            SslError.SSL_IDMISMATCH -> "The certificate belongs to a different site."
-            SslError.SSL_NOTYETVALID -> "The certificate is not valid yet."
-            SslError.SSL_DATE_INVALID -> "The certificate date is invalid."
-            else -> "The certificate is invalid."
+            SslError.SSL_EXPIRED -> str(R.string.the_certificate_has_expired)
+            SslError.SSL_IDMISMATCH -> str(R.string.the_certificate_belongs_to_a_different_s)
+            SslError.SSL_NOTYETVALID -> str(R.string.the_certificate_is_not_valid_yet)
+            SslError.SSL_DATE_INVALID -> str(R.string.the_certificate_date_is_invalid)
+            else -> str(R.string.the_certificate_is_invalid)
         }
         tab.error = PageError(ErrorKind.SSL, url, reason, handler)
         tab.url = url
@@ -223,7 +226,7 @@ class EddyWebViewClient(
         val pageHost = tab.pageHost
         if (!host.blocker.isRequestBlocked(request.url.toString(), reqHost, pageHost, tab.blockingActive, tab.trackerBlockingActive)) return null
         tab.blockedRaw++
-        Log.d("ContentBlocker", "Blocked $reqHost on $pageHost")
+        if (!tab.incognito) Log.d("ContentBlocker", "Blocked $reqHost on $pageHost")
         return blocked(request)
     }
 

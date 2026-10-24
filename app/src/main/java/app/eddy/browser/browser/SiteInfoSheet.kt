@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,9 +48,9 @@ import java.text.DateFormat
 @Composable
 fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) {
     val host = UrlUtils.displayHost(tab.url)
-    val site = vm.sites.peek(host)
+    val site = vm.sites.peek(host, tab.incognito)
     val origin = UrlUtils.origin(tab.url)
-    val permissions = origin?.let(vm.sites::peek)
+    val permissions = origin?.let { vm.sites.peek(it, tab.incognito) }
     var refresh by remember { mutableStateOf(0) } // sites.peek is not observable, so nudge recomposition after edits
     val cookieCount = remember(tab.url, refresh) { vm.cookieCount(tab) }
     val cert = remember(tab.url) { tab.webView?.certificate }
@@ -64,13 +66,13 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SiteIcon(host, size = Dimens.faviconLarge, live = tab.favicon)
                 Column(Modifier.padding(start = 14.dp)) {
-                    Text(host.ifEmpty { "This page" }, style = MaterialTheme.typography.titleLarge)
+                    Text(host.ifEmpty { str(R.string.this_page) }, style = MaterialTheme.typography.titleLarge)
                     Text(
                         when (tab.security) {
-                            Security.SECURE -> "Connection is secure"
-                            Security.INSECURE -> "Connection is not secure"
-                            Security.ERROR -> "Certificate problem"
-                            Security.NONE -> "No connection information"
+                            Security.SECURE -> str(R.string.connection_is_secure)
+                            Security.INSECURE -> str(R.string.connection_is_not_secure)
+                            Security.ERROR -> str(R.string.certificate_problem)
+                            Security.NONE -> str(R.string.no_connection_information)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (tab.security == Security.SECURE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -79,8 +81,8 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             }
             cert?.let {
                 Text(
-                    "Issued by ${it.issuedBy?.oName ?: it.issuedBy?.cName ?: "unknown"}" +
-                        (it.validNotAfterDate?.let { d -> " · expires ${DateFormat.getDateInstance(DateFormat.MEDIUM).format(d)}" } ?: ""),
+                    str(R.string.issued_by, it.issuedBy?.oName ?: it.issuedBy?.cName ?: str(R.string.unknown)) +
+                        (it.validNotAfterDate?.let { d -> str(R.string.cert_expires, DateFormat.getDateInstance(DateFormat.MEDIUM).format(d)) } ?: ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -89,9 +91,9 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Ad and tracker blocking", style = MaterialTheme.typography.bodyLarge)
+                    Text(str(R.string.ad_and_tracker_blocking), style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        if (!settings.adBlock && !settings.trackerProtection) "Turned off in settings"
+                        if (!settings.adBlock && !settings.trackerProtection) str(R.string.turned_off_in_settings)
                         else "${tab.blockedCount} blocked on this page",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -103,7 +105,7 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
                 )
             }
             Row(Modifier.fillMaxWidth().heightIn(min = Dimens.touchTarget), verticalAlignment = Alignment.CenterVertically) {
-                Text("Page text size", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Text(str(R.string.page_text_size), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                 var zoomOpen by remember { mutableStateOf(false) }
                 val zoom = site?.get(SiteFeature.TEXT_ZOOM)
                 Surface(onClick = { zoomOpen = true }, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
@@ -127,7 +129,7 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Always use desktop site", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Text(str(R.string.always_use_desktop_site), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                 Switch(
                     checked = site?.desktop == SiteSettings.ALLOW,
                     onCheckedChange = { vm.toggleDesktopForSite(); refresh++ },
@@ -135,23 +137,23 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             }
             HorizontalDivider()
 
-            Text("Permissions", style = MaterialTheme.typography.titleSmall)
-            PermissionRow("Location", permissions?.get(SiteFeature.LOCATION), "Ask") { set(SiteFeature.LOCATION, it) }
-            PermissionRow("Camera", permissions?.get(SiteFeature.CAMERA), "Ask") { set(SiteFeature.CAMERA, it) }
-            PermissionRow("Microphone", permissions?.get(SiteFeature.MICROPHONE), "Ask") { set(SiteFeature.MICROPHONE, it) }
-            PermissionRow("JavaScript", site?.get(SiteFeature.JAVASCRIPT), if (settings.javascript) "Allowed (default)" else "Blocked (default)") { set(SiteFeature.JAVASCRIPT, it) }
-            PermissionRow("Pop-ups", site?.get(SiteFeature.POPUPS), "Blocked (default)") { set(SiteFeature.POPUPS, it) }
-            PermissionRow("Third-party cookies", site?.get(SiteFeature.THIRD_PARTY_COOKIES), "Follows settings") { set(SiteFeature.THIRD_PARTY_COOKIES, it) }
+            Text(str(R.string.permissions), style = MaterialTheme.typography.titleSmall)
+            PermissionRow(str(R.string.location), permissions?.get(SiteFeature.LOCATION), str(R.string.ask)) { set(SiteFeature.LOCATION, it) }
+            PermissionRow(str(R.string.camera), permissions?.get(SiteFeature.CAMERA), str(R.string.ask)) { set(SiteFeature.CAMERA, it) }
+            PermissionRow(str(R.string.microphone), permissions?.get(SiteFeature.MICROPHONE), str(R.string.ask)) { set(SiteFeature.MICROPHONE, it) }
+            PermissionRow(str(R.string.javascript), site?.get(SiteFeature.JAVASCRIPT), if (settings.javascript) str(R.string.allowed_default) else str(R.string.blocked_default)) { set(SiteFeature.JAVASCRIPT, it) }
+            PermissionRow("Pop-ups", site?.get(SiteFeature.POPUPS), str(R.string.blocked_default)) { set(SiteFeature.POPUPS, it) }
+            PermissionRow(str(R.string.third_party_cookies), site?.get(SiteFeature.THIRD_PARTY_COOKIES), str(R.string.follows_settings)) { set(SiteFeature.THIRD_PARTY_COOKIES, it) }
             HorizontalDivider()
 
-            Text("Site data", style = MaterialTheme.typography.titleSmall)
+            Text(str(R.string.site_data), style = MaterialTheme.typography.titleSmall)
             Text(
-                if (cookieCount == 0) "No cookies stored for this page" else "$cookieCount cookies stored for this page",
+                if (cookieCount == 0) str(R.string.no_cookies_stored_for_this_page) else "$cookieCount cookies stored for this page",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { vm.clearSiteData(tab); onDismiss() }) { Text("Clear site data") }
-                TextButton(onClick = { vm.sites.reset(host); origin?.let(vm.sites::reset); vm.setSiteSetting(tab, SiteFeature.CONTENT_BLOCKING, null); refresh++ }, enabled = site != null || permissions != null) { Text("Reset permissions") }
+                OutlinedButton(onClick = { vm.clearSiteData(tab); onDismiss() }) { Text(str(R.string.clear_site_data)) }
+                TextButton(onClick = { vm.sites.reset(host); origin?.let(vm.sites::reset); vm.setSiteSetting(tab, SiteFeature.CONTENT_BLOCKING, null); refresh++ }, enabled = site != null || permissions != null) { Text(str(R.string.reset_permissions)) }
             }
         }
     }
@@ -164,14 +166,14 @@ private fun PermissionRow(label: String, value: Int?, defaultLabel: String, onCh
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         Surface(onClick = { open = true }, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
             Text(
-                when (value) { SiteSettings.ALLOW -> "Allow"; SiteSettings.BLOCK -> "Block"; else -> defaultLabel },
+                when (value) { SiteSettings.ALLOW -> str(R.string.allow); SiteSettings.BLOCK -> str(R.string.block); else -> defaultLabel },
                 Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.labelLarge,
             )
             DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
                 DropdownMenuItem(text = { Text(defaultLabel) }, onClick = { open = false; onChange(null) })
-                DropdownMenuItem(text = { Text("Allow") }, onClick = { open = false; onChange(SiteSettings.ALLOW) })
-                DropdownMenuItem(text = { Text("Block") }, onClick = { open = false; onChange(SiteSettings.BLOCK) })
+                DropdownMenuItem(text = { Text(str(R.string.allow)) }, onClick = { open = false; onChange(SiteSettings.ALLOW) })
+                DropdownMenuItem(text = { Text(str(R.string.block)) }, onClick = { open = false; onChange(SiteSettings.BLOCK) })
             }
         }
     }

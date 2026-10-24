@@ -64,7 +64,7 @@ class AppContainer(private val app: Application) {
     val favicons by lazy { FaviconCache(app, scope) }
     val thumbnails by lazy { TabThumbnailManager(app, scope) }
     val blocker by lazy { ContentBlocker(app, scope) }
-    val downloads by lazy { DownloadEngine(app, scope, database.downloads()) { settings.value } }
+    val downloads by lazy { DownloadEngine(app, scope, database.downloads(), { settings.value }) { android.webkit.CookieManager.getInstance().getCookie(it).orEmpty() } }
 
     /** True when the app was installed earlier and has since been updated (first install time and last update differ). */
     private fun isUpdatedInstall(): Boolean = runCatching {

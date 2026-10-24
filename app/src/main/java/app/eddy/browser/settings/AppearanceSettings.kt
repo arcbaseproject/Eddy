@@ -1,5 +1,7 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -49,13 +51,13 @@ import app.eddy.browser.ui.theme.Palette
 @Composable
 fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
     val dynamicAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    SettingsGroup("Theme") {
-        ChoiceRow("Theme", ThemeMode.entries, s.themeMode, { it.name.lowercase().replaceFirstChar(Char::uppercase) }, { v -> vm.launchSettings { it.copy(themeMode = v) } })
+    SettingsGroup(str(R.string.theme)) {
+        ChoiceRow(str(R.string.theme), ThemeMode.entries, s.themeMode, { it.name.lowercase().replaceFirstChar(Char::uppercase) }, { v -> vm.launchSettings { it.copy(themeMode = v) } })
         GroupDivider()
-        SwitchRow("AMOLED black", s.amoled, { v -> vm.launchSettings { it.copy(amoled = v) } }, "True black backgrounds in dark mode")
+        SwitchRow(str(R.string.amoled_black), s.amoled, { v -> vm.launchSettings { it.copy(amoled = v) } }, str(R.string.true_black_backgrounds_in_dark_mode))
         if (dynamicAvailable) {
             GroupDivider()
-            SwitchRow("Dynamic colors", s.dynamicColor, { v -> vm.launchSettings { it.copy(dynamicColor = v) } }, "Use colors from your wallpaper")
+            SwitchRow(str(R.string.dynamic_colors), s.dynamicColor, { v -> vm.launchSettings { it.copy(dynamicColor = v) } }, str(R.string.use_colors_from_your_wallpaper))
         }
         if (!dynamicAvailable || !s.dynamicColor) {
             GroupDivider()
@@ -73,66 +75,66 @@ fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
             }
         }
     }
-    SettingsGroup("App icon") { AppIconPicker() }
-    SettingsFootnote("The new icon appears after you leave Eddy.")
-    SettingsGroup("Layout") {
-        NavRow("Start page", { vm.settingsStack.add(SettingsPage.START_PAGE) }, "Title, sections, shortcut columns")
+    SettingsGroup(str(R.string.app_icon)) { AppIconPicker() }
+    SettingsFootnote(str(R.string.the_new_icon_appears_after_you_leave_edd))
+    SettingsGroup(str(R.string.layout)) {
+        NavRow(str(R.string.start_page), { vm.settingsStack.add(SettingsPage.START_PAGE) }, str(R.string.title_sections_shortcut_columns))
         GroupDivider()
-        ChoiceRow("Toolbar position", ToolbarPosition.entries, s.toolbarPosition, { if (it == ToolbarPosition.BOTTOM) "Bottom" else "Top" }, { v -> vm.launchSettings { it.copy(toolbarPosition = v) } })
+        ChoiceRow(str(R.string.toolbar_position), ToolbarPosition.entries, s.toolbarPosition, { if (it == ToolbarPosition.BOTTOM) str(R.string.bottom) else str(R.string.top) }, { v -> vm.launchSettings { it.copy(toolbarPosition = v) } })
     }
-    SettingsGroup("Motion and feedback") {
+    SettingsGroup(str(R.string.motion_and_feedback)) {
         // System "Remove animations" wins over this setting, so say so instead of showing "Full".
         val systemOff = rememberSystemReducedMotion()
         ChoiceRow(
-            "Animations", MotionPref.entries, s.motion,
-            { if (systemOff) "Off in system settings" else if (it == MotionPref.FULL) "Full" else "Reduced" },
+            str(R.string.animations), MotionPref.entries, s.motion,
+            { if (systemOff) str(R.string.off_in_system_settings) else if (it == MotionPref.FULL) str(R.string.full) else str(R.string.reduced) },
             { v -> vm.launchSettings { it.copy(motion = v) } }, enabled = !systemOff,
         )
         GroupDivider()
-        SwitchRow("Haptic feedback", s.hapticsEnabled, { v -> vm.launchSettings { it.copy(hapticsEnabled = v) } })
+        SwitchRow(str(R.string.haptic_feedback), s.hapticsEnabled, { v -> vm.launchSettings { it.copy(hapticsEnabled = v) } })
     }
-    SettingsFootnote("Eddy also respects the system Remove animations setting.")
-    SettingsGroup("Web content") {
+    SettingsFootnote(str(R.string.eddy_also_respects_the_system_remove_ani))
+    SettingsGroup(str(R.string.web_content)) {
         SliderRowPct(vm, s)
         GroupDivider()
-        SwitchRow("Darken websites", s.darkenPages, { v -> vm.launchSettings { it.copy(darkenPages = v) } }, "Dark colors for sites without a dark theme, when your phone is in dark mode")
+        SwitchRow(str(R.string.darken_websites), s.darkenPages, { v -> vm.launchSettings { it.copy(darkenPages = v) } }, str(R.string.dark_colors_for_sites_without_a_dark_the))
     }
 }
 
 /** Everything on the new-tab page can be switched off or renamed here. */
 @Composable
 fun StartPageSettings(vm: BrowserViewModel, s: Settings) {
-    SettingsGroup("Sections") {
-        SwitchRow("Show title", s.homeShowTitle, { v -> vm.launchSettings { it.copy(homeShowTitle = v) } })
+    SettingsGroup(str(R.string.sections)) {
+        SwitchRow(str(R.string.show_title), s.homeShowTitle, { v -> vm.launchSettings { it.copy(homeShowTitle = v) } })
         GroupDivider()
-        SwitchRow("Search box", s.homeShowSearch, { v -> vm.launchSettings { it.copy(homeShowSearch = v) } })
+        SwitchRow(str(R.string.search_box), s.homeShowSearch, { v -> vm.launchSettings { it.copy(homeShowSearch = v) } })
         GroupDivider()
-        SwitchRow("Shortcuts", s.homeShowShortcuts, { v -> vm.launchSettings { it.copy(homeShowShortcuts = v) } })
+        SwitchRow(str(R.string.shortcuts), s.homeShowShortcuts, { v -> vm.launchSettings { it.copy(homeShowShortcuts = v) } })
         GroupDivider()
-        SwitchRow("Frequently visited", s.homeShowFrequent, { v -> vm.launchSettings { it.copy(homeShowFrequent = v) } })
+        SwitchRow(str(R.string.frequently_visited), s.homeShowFrequent, { v -> vm.launchSettings { it.copy(homeShowFrequent = v) } })
         GroupDivider()
-        SwitchRow("Recently visited", s.homeShowRecent, { v -> vm.launchSettings { it.copy(homeShowRecent = v) } })
+        SwitchRow(str(R.string.recently_visited), s.homeShowRecent, { v -> vm.launchSettings { it.copy(homeShowRecent = v) } })
         GroupDivider()
-        SwitchRow("Background shapes", s.homeShowBackground, { v -> vm.launchSettings { it.copy(homeShowBackground = v) } }, "Drifting silhouettes behind the page")
+        SwitchRow(str(R.string.background_shapes), s.homeShowBackground, { v -> vm.launchSettings { it.copy(homeShowBackground = v) } }, str(R.string.drifting_silhouettes_behind_the_page))
     }
-    SettingsGroup("Shortcuts") {
+    SettingsGroup(str(R.string.shortcuts)) {
         SliderRow(
-            "Shortcut columns", if (s.homeColumns == 0) "Automatic" else "${s.homeColumns}",
+            str(R.string.shortcut_columns), if (s.homeColumns == 0) str(R.string.automatic) else "${s.homeColumns}",
             s.homeColumns.toFloat(), 0f..6f, steps = 5,
             // 0 means automatic; one and two columns are not worth offering, so they land on three.
             onChange = { v -> vm.launchSettings { it.copy(homeColumns = v.toInt().let { n -> if (n in 1..2) 3 else n }) } },
         )
         GroupDivider()
         ChoiceRow(
-            "Shortcut appearance", ShortcutStyle.entries, s.shortcutStyle,
-            { when (it) { ShortcutStyle.MIXED -> "Mixed shapes"; ShortcutStyle.SQUIRCLE -> "Squircles"; ShortcutStyle.CIRCLE -> "Circles"; ShortcutStyle.FLOWER -> "Flowers" } },
+            str(R.string.shortcut_appearance), ShortcutStyle.entries, s.shortcutStyle,
+            { when (it) { ShortcutStyle.MIXED -> str(R.string.mixed_shapes); ShortcutStyle.SQUIRCLE -> str(R.string.squircles); ShortcutStyle.CIRCLE -> str(R.string.circles); ShortcutStyle.FLOWER -> str(R.string.flowers) } },
             { v -> vm.launchSettings { it.copy(shortcutStyle = v) } },
         )
     }
-    SettingsGroup("Layout") {
-        ChoiceRow("Homepage layout", HomeDensity.entries, s.homeDensity, { if (it == HomeDensity.COMFORTABLE) "Comfortable" else "Compact" }, { v -> vm.launchSettings { it.copy(homeDensity = v) } })
+    SettingsGroup(str(R.string.layout)) {
+        ChoiceRow(str(R.string.homepage_layout), HomeDensity.entries, s.homeDensity, { if (it == HomeDensity.COMFORTABLE) str(R.string.comfortable) else str(R.string.compact) }, { v -> vm.launchSettings { it.copy(homeDensity = v) } })
     }
-    SettingsFootnote("Shortcuts themselves are added and reordered on the start page.")
+    SettingsFootnote(str(R.string.shortcuts_themselves_are_added_and_reord))
 }
 
 @Composable
@@ -163,7 +165,7 @@ private fun AppIconPicker() {
 @Composable
 private fun SliderRowPct(vm: BrowserViewModel, s: Settings) {
     SliderRow(
-        "Page text size", "${s.textZoom}%", s.textZoom.toFloat(), 75f..200f, steps = 4,
+        str(R.string.page_text_size), "${s.textZoom}%", s.textZoom.toFloat(), 75f..200f, steps = 4,
         onChange = { v -> vm.launchSettings { it.copy(textZoom = (Math.round(v / 5f) * 5)) } },
     )
 }

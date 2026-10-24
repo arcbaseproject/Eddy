@@ -1,5 +1,7 @@
 package app.eddy.browser.history
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -68,23 +70,23 @@ fun HistoryScreen(vm: BrowserViewModel) {
     val grouped = remember(entries) { entries.groupBy { Instant.ofEpochMilli(it.visitTime).atZone(zone).toLocalDate() } }
 
     ScreenScaffold(
-        "History", onBack = { vm.screen = Screen.BROWSER },
+        str(R.string.history), onBack = { vm.screen = Screen.BROWSER },
         actions = {
             Box {
-                EddyIconButton(Icons.Rounded.DeleteSweep, "Clear history", { clearMenu = true })
+                EddyIconButton(Icons.Rounded.DeleteSweep, str(R.string.clear_history), { clearMenu = true })
                 DropdownMenu(clearMenu, { clearMenu = false }) {
-                    listOf("Last hour" to TimeUnit.HOURS.toMillis(1), "Last 24 hours" to TimeUnit.DAYS.toMillis(1), "Last 7 days" to TimeUnit.DAYS.toMillis(7)).forEach { (label, ms) ->
-                        DropdownMenuItem(text = { Text(label) }, onClick = { clearMenu = false; vm.history.deleteSince(ms); vm.snackbar("History cleared: ${label.lowercase()}") })
+                    listOf(str(R.string.last_hour) to TimeUnit.HOURS.toMillis(1), str(R.string.last_24_hours) to TimeUnit.DAYS.toMillis(1), str(R.string.last_7_days) to TimeUnit.DAYS.toMillis(7)).forEach { (label, ms) ->
+                        DropdownMenuItem(text = { Text(label) }, onClick = { clearMenu = false; vm.history.deleteSince(ms); vm.snackbar(str(R.string.history_cleared, label.lowercase())) })
                     }
-                    DropdownMenuItem(text = { Text("All time") }, onClick = { clearMenu = false; confirmAll = true })
+                    DropdownMenuItem(text = { Text(str(R.string.all_time)) }, onClick = { clearMenu = false; confirmAll = true })
                 }
             }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            SearchField(query, { query = it }, "Search history")
+            SearchField(query, { query = it }, str(R.string.search_history))
             if (entries.isEmpty()) {
-                EmptyState(Icons.Rounded.History, if (query.isBlank()) "No history yet" else "No matches", if (query.isBlank()) "Pages you visit will show up here." else "Try a different search.")
+                EmptyState(Icons.Rounded.History, if (query.isBlank()) str(R.string.no_history_yet) else str(R.string.no_matches), if (query.isBlank()) str(R.string.pages_you_visit_will_show_up_here) else str(R.string.try_a_different_search))
             } else {
                 LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
                     grouped.forEach { (date, list) ->
@@ -97,10 +99,10 @@ fun HistoryScreen(vm: BrowserViewModel) {
     }
 
     if (confirmAll) {
-        ConfirmDialog("Clear all history?", "Eddy will erase every page from your browsing history.", "Clear all", { confirmAll = false }) {
+        ConfirmDialog(str(R.string.clear_all_history), str(R.string.eddy_will_erase_every_page_from_your_bro), str(R.string.clear_all), { confirmAll = false }) {
             confirmAll = false
             vm.history.clear()
-            vm.snackbar("History cleared")
+            vm.snackbar(str(R.string.history_cleared_2))
         }
     }
 }
@@ -109,8 +111,8 @@ fun HistoryScreen(vm: BrowserViewModel) {
 private fun DateHeader(date: LocalDate) {
     val today = LocalDate.now()
     val label = when (date) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
+        today -> str(R.string.today)
+        today.minusDays(1) -> str(R.string.yesterday)
         else -> date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
     }
     Text(
@@ -130,7 +132,7 @@ private fun HistoryRow(vm: BrowserViewModel, entry: HistoryEntry) {
     Box {
         Row(
             Modifier.fillMaxWidth().heightIn(min = 64.dp)
-                .combinedClickable(role = Role.Button, onClickLabel = "Open", onLongClickLabel = "More actions", onClick = { vm.navigate(entry.url) }, onLongClick = { haptics.longPress(); menu = true })
+                .combinedClickable(role = Role.Button, onClickLabel = str(R.string.open), onLongClickLabel = str(R.string.more_actions), onClick = { vm.navigate(entry.url) }, onLongClick = { haptics.longPress(); menu = true })
                 .padding(horizontal = Dimens.gutter, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -139,17 +141,17 @@ private fun HistoryRow(vm: BrowserViewModel, entry: HistoryEntry) {
                 Text(entry.title.ifBlank { entry.host }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("${entry.host} · $time", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
-            EddyIconButton(Icons.Rounded.Delete, "Delete ${entry.title.ifBlank { entry.host }}", { vm.history.delete(entry.id) }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            EddyIconButton(Icons.Rounded.Delete, str(R.string.delete, entry.title.ifBlank { entry.host }), { vm.history.delete(entry.id) }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(menu, { menu = false }) {
-            DropdownMenuItem(text = { Text("Open in new tab") }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(entry.url) })
-            DropdownMenuItem(text = { Text("Open in incognito tab") }, leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) }, onClick = { menu = false; vm.openInNewTab(entry.url, incognito = true) })
-            DropdownMenuItem(text = { Text("Copy link") }, leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) }, onClick = {
+            DropdownMenuItem(text = { Text(str(R.string.open_in_new_tab)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) }, onClick = { menu = false; vm.openInNewTab(entry.url) })
+            DropdownMenuItem(text = { Text(str(R.string.open_in_incognito_tab)) }, leadingIcon = { Icon(Icons.Rounded.VisibilityOff, null) }, onClick = { menu = false; vm.openInNewTab(entry.url, incognito = true) })
+            DropdownMenuItem(text = { Text(str(R.string.copy_link)) }, leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) }, onClick = {
                 menu = false
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("url", entry.url))
-                vm.snackbar("Copied")
+                vm.snackbar(str(R.string.copied))
             })
-            DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; vm.history.delete(entry.id) })
+            DropdownMenuItem(text = { Text(str(R.string.delete_4)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; vm.history.delete(entry.id) })
         }
     }
 }

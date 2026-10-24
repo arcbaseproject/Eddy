@@ -1,5 +1,7 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.util.str
+import androidx.annotation.StringRes
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
@@ -11,18 +13,20 @@ import app.eddy.browser.R
  * Launcher icons, one `activity-alias` each in the manifest. The enabled alias is the
  * stored choice, so there is no preference to keep in sync.
  */
-enum class AppIcon(val label: String, @DrawableRes val foreground: Int, @ColorRes val background: Int) {
-    DEFAULT("Original", R.drawable.ic_launcher_foreground, R.color.icon_bg),
-    FOREST("Forest", R.drawable.ic_launcher_fg_forest, R.color.icon_bg_forest),
-    VIOLET("Violet", R.drawable.ic_launcher_fg_violet, R.color.icon_bg_violet),
-    EMBER("Ember", R.drawable.ic_launcher_fg_ember, R.color.icon_bg_ember),
-    SUNSET("Sunset", R.drawable.ic_launcher_fg_sunset, R.color.icon_bg_sunset),
-    PAPER("Paper", R.drawable.ic_launcher_fg_paper, R.color.icon_bg_paper),
-    MIDNIGHT("Midnight", R.drawable.ic_launcher_fg_midnight, R.color.icon_bg_midnight),
-    NEON("Neon", R.drawable.ic_launcher_fg_neon, R.color.icon_bg_neon),
-    MONO("Mono", R.drawable.ic_launcher_fg_mono, R.color.icon_bg_mono),
-    INVERSE("Inverse", R.drawable.ic_launcher_fg_inverse, R.color.icon_bg_inverse),
-    PIXEL("Pixel", R.drawable.ic_launcher_fg_pixel, R.color.icon_bg_pixel);
+enum class AppIcon(@StringRes private val labelRes: Int, @DrawableRes val foreground: Int, @ColorRes val background: Int) {
+    DEFAULT(R.string.original, R.drawable.ic_launcher_foreground, R.color.icon_bg),
+    FOREST(R.string.forest, R.drawable.ic_launcher_fg_forest, R.color.icon_bg_forest),
+    VIOLET(R.string.violet, R.drawable.ic_launcher_fg_violet, R.color.icon_bg_violet),
+    EMBER(R.string.ember, R.drawable.ic_launcher_fg_ember, R.color.icon_bg_ember),
+    SUNSET(R.string.sunset, R.drawable.ic_launcher_fg_sunset, R.color.icon_bg_sunset),
+    PAPER(R.string.paper, R.drawable.ic_launcher_fg_paper, R.color.icon_bg_paper),
+    MIDNIGHT(R.string.midnight, R.drawable.ic_launcher_fg_midnight, R.color.icon_bg_midnight),
+    NEON(R.string.neon, R.drawable.ic_launcher_fg_neon, R.color.icon_bg_neon),
+    MONO(R.string.mono, R.drawable.ic_launcher_fg_mono, R.color.icon_bg_mono),
+    INVERSE(R.string.inverse, R.drawable.ic_launcher_fg_inverse, R.color.icon_bg_inverse),
+    PIXEL(R.string.pixel, R.drawable.ic_launcher_fg_pixel, R.color.icon_bg_pixel);
+
+    val label: String get() = str(labelRes)
 
     private fun component(context: Context) = ComponentName(
         context.packageName,

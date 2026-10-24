@@ -1,5 +1,7 @@
 package app.eddy.browser.downloads
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -25,7 +27,7 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +45,10 @@ import app.eddy.browser.browser.Screen
 import app.eddy.browser.ui.components.EddyIconButton
 import app.eddy.browser.ui.components.EmptyState
 import app.eddy.browser.ui.components.ScreenScaffold
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -55,20 +60,29 @@ import kotlinx.coroutines.withContext
 fun PdfScreen(vm: BrowserViewModel) {
     val context = LocalContext.current
     val open = vm.openPdf ?: return
-    val document = remember(open.uri) { PdfDocument(context, Uri.parse(open.uri)) }
-    DisposableEffect(document) { onDispose { document.close() } }
+    // Opening and closing can block on a slow provider or a page mid-render, so neither runs on the main thread.
+    val document by produceState<PdfDocument?>(null, open.uri) {
+        val d = withContext(Dispatchers.IO) { PdfDocument(context, Uri.parse(open.uri)) }
+        value = d
+        awaitDispose {
+            @OptIn(DelicateCoroutinesApi::class)
+            GlobalScope.launch(Dispatchers.IO) { d.close() }
+        }
+    }
 
     ScreenScaffold(
         title = open.name.ifBlank { "PDF" },
         onBack = { vm.closePdf() },
         actions = {
-            EddyIconButton(Icons.Rounded.Share, "Share ${open.name}", { vm.sharePdf() })
-            EddyIconButton(Icons.AutoMirrored.Rounded.OpenInNew, "Open in another app", { vm.openPdfExternally() })
+            EddyIconButton(Icons.Rounded.Share, str(R.string.share, open.name), { vm.sharePdf() })
+            EddyIconButton(Icons.AutoMirrored.Rounded.OpenInNew, str(R.string.open_in_another_app), { vm.openPdfExternally() })
         },
     ) { padding ->
-        when (val count = document.pageCount) {
-            null -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
-            0 -> EmptyState(Icons.Rounded.Description, "Can't open this PDF", "The file may be damaged or password protected.", Modifier.padding(padding))
+        val doc = document
+        val count = doc?.pageCount
+        when {
+            doc == null || count == null -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
+            count == 0 -> EmptyState(Icons.Rounded.Description, str(R.string.can_t_open_this_pdf), str(R.string.the_file_may_be_damaged_or_password_prot), Modifier.padding(padding))
             else -> BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
                 val widthPx = with(LocalDensity.current) { maxWidth.roundToPx() }
                 LazyColumn(
@@ -76,7 +90,7 @@ fun PdfScreen(vm: BrowserViewModel) {
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items((0 until count).toList()) { index -> PdfPage(document, index, widthPx) }
+                    items((0 until count).toList()) { index -> PdfPage(doc, index, widthPx) }
                 }
             }
         }
@@ -93,7 +107,7 @@ private fun PdfPage(document: PdfDocument, index: Int, widthPx: Int) {
         // A4 proportions keep the scroll bar honest until the real page arrives.
         Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(MaterialTheme.colorScheme.surfaceContainerHigh))
     } else {
-        Image(image.asImageBitmap(), "Page ${index + 1}", Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth)
+        Image(image.asImageBitmap(), str(R.string.page, index + 1), Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth)
     }
 }
 

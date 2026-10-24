@@ -1,5 +1,7 @@
 package app.eddy.browser.downloads
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,13 +65,13 @@ fun DownloadsScreen(vm: BrowserViewModel) {
     val items by vm.downloadItems.collectAsStateWithLifecycle(emptyList())
     val live by vm.downloads.live.collectAsStateWithLifecycle()
     ScreenScaffold(
-        "Downloads", onBack = { vm.screen = Screen.BROWSER },
+        str(R.string.downloads), onBack = { vm.screen = Screen.BROWSER },
         actions = {
-            EddyIconButton(Icons.Rounded.DeleteSweep, "Clear finished downloads", { vm.downloads.clearFinished() }, enabled = items.any { it.status in FINISHED })
+            EddyIconButton(Icons.Rounded.DeleteSweep, str(R.string.clear_finished_downloads), { vm.downloads.clearFinished() }, enabled = items.any { it.status in FINISHED })
         },
     ) { padding ->
         if (items.isEmpty()) {
-            EmptyState(Icons.Rounded.Download, "No downloads", "Files you download will appear here.", Modifier.padding(padding))
+            EmptyState(Icons.Rounded.Download, str(R.string.no_downloads), str(R.string.files_you_download_will_appear_here), Modifier.padding(padding))
         } else {
             LazyColumn(
                 Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
@@ -94,10 +96,10 @@ private fun DownloadCard(vm: BrowserViewModel, d: DownloadEntity, progress: Live
     val running = d.status == DownloadStatus.RUNNING || d.status == DownloadStatus.QUEUED
 
     val status = when (d.status) {
-        DownloadStatus.COMPLETED -> "Completed · ${Formatter.formatShortFileSize(context, d.totalBytes.coerceAtLeast(d.downloadedBytes))}"
-        DownloadStatus.FAILED -> "Failed · ${d.error.ifBlank { "Unknown error" }}"
-        DownloadStatus.CANCELED -> "Canceled"
-        DownloadStatus.PAUSED -> "Paused · ${Formatter.formatShortFileSize(context, downloaded)}" + if (total > 0) " of ${Formatter.formatShortFileSize(context, total)}" else ""
+        DownloadStatus.COMPLETED -> str(R.string.completed, Formatter.formatShortFileSize(context, d.totalBytes.coerceAtLeast(d.downloadedBytes)))
+        DownloadStatus.FAILED -> str(R.string.failed_reason, d.error.ifBlank { str(R.string.unknown_error) })
+        DownloadStatus.CANCELED -> str(R.string.canceled)
+        DownloadStatus.PAUSED -> str(R.string.paused, Formatter.formatShortFileSize(context, downloaded)) + if (total > 0) " of ${Formatter.formatShortFileSize(context, total)}" else ""
         DownloadStatus.QUEUED -> "Waiting…"
         DownloadStatus.RUNNING -> buildString {
             append(Formatter.formatShortFileSize(context, downloaded))
@@ -128,19 +130,19 @@ private fun DownloadCard(vm: BrowserViewModel, d: DownloadEntity, progress: Live
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 when (d.status) {
                     DownloadStatus.RUNNING, DownloadStatus.QUEUED -> {
-                        if (d.resumable) EddyIconButton(Icons.Rounded.Pause, "Pause ${d.fileName}", { vm.downloads.pause(d.id) })
-                        EddyIconButton(Icons.Rounded.Close, "Cancel ${d.fileName}", { vm.downloads.cancel(d.id) })
+                        if (d.resumable) EddyIconButton(Icons.Rounded.Pause, str(R.string.pause, d.fileName), { vm.downloads.pause(d.id) })
+                        EddyIconButton(Icons.Rounded.Close, str(R.string.cancel_2, d.fileName), { vm.downloads.cancel(d.id) })
                     }
                     DownloadStatus.PAUSED -> {
-                        EddyIconButton(Icons.Rounded.PlayArrow, "Resume ${d.fileName}", { vm.downloads.resume(d.id) })
-                        EddyIconButton(Icons.Rounded.Close, "Cancel ${d.fileName}", { vm.downloads.cancel(d.id) })
+                        EddyIconButton(Icons.Rounded.PlayArrow, str(R.string.resume, d.fileName), { vm.downloads.resume(d.id) })
+                        EddyIconButton(Icons.Rounded.Close, str(R.string.cancel_2, d.fileName), { vm.downloads.cancel(d.id) })
                     }
                     DownloadStatus.FAILED, DownloadStatus.CANCELED -> {
-                        if (d.url.startsWith("http")) EddyIconButton(Icons.Rounded.Refresh, "Retry ${d.fileName}", { vm.downloads.retry(d.id) })
+                        if (d.url.startsWith("http")) EddyIconButton(Icons.Rounded.Refresh, str(R.string.retry_file, d.fileName), { vm.downloads.retry(d.id) })
                     }
-                    DownloadStatus.COMPLETED -> EddyIconButton(Icons.AutoMirrored.Rounded.OpenInNew, "Open ${d.fileName}", { vm.openFile(d.contentUri, d.mimeType, d.fileName) })
+                    DownloadStatus.COMPLETED -> EddyIconButton(Icons.AutoMirrored.Rounded.OpenInNew, str(R.string.open_2, d.fileName), { vm.openFile(d.contentUri, d.mimeType, d.fileName) })
                 }
-                if (!running) EddyIconButton(Icons.Rounded.Delete, "Delete ${d.fileName}", { if (d.status == DownloadStatus.COMPLETED) confirmDelete = true else vm.downloads.delete(d.id, false) })
+                if (!running) EddyIconButton(Icons.Rounded.Delete, str(R.string.delete, d.fileName), { if (d.status == DownloadStatus.COMPLETED) confirmDelete = true else vm.downloads.delete(d.id, false) })
             }
         }
     }
@@ -148,13 +150,13 @@ private fun DownloadCard(vm: BrowserViewModel, d: DownloadEntity, progress: Live
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete ${d.fileName}?") },
-            text = { Text("Remove the entry from this list, or delete the file from your device as well.") },
-            confirmButton = { TextButton(onClick = { confirmDelete = false; vm.downloads.delete(d.id, true) }) { Text("Delete file") } },
+            title = { Text(str(R.string.delete_2, d.fileName)) },
+            text = { Text(str(R.string.remove_the_entry_from_this_list_or_delet)) },
+            confirmButton = { TextButton(onClick = { confirmDelete = false; vm.downloads.delete(d.id, true) }) { Text(str(R.string.delete_file)) } },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
-                    TextButton(onClick = { confirmDelete = false; vm.downloads.delete(d.id, false) }) { Text("Remove entry") }
+                    TextButton(onClick = { confirmDelete = false }) { Text(str(R.string.cancel)) }
+                    TextButton(onClick = { confirmDelete = false; vm.downloads.delete(d.id, false) }) { Text(str(R.string.remove_entry)) }
                 }
             },
         )

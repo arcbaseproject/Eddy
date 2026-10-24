@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,17 +57,17 @@ fun ErrorPage(
     modifier: Modifier = Modifier,
 ) {
     val (icon, title, message) = when (error.kind) {
-        ErrorKind.OFFLINE -> Triple(Icons.Rounded.WifiOff, "You're offline", "Check your Wi-Fi or mobile data connection. Eddy retries when you reconnect.")
-        ErrorKind.DNS -> Triple(Icons.Rounded.CloudOff, "Can't find this site", "Eddy could not find ${UrlUtils.displayHost(error.url)}. Check the spelling or try again later.")
-        ErrorKind.SSL -> Triple(Icons.Rounded.GppBad, "Connection isn't private", error.detail.ifBlank { "Eddy could not verify this site's security certificate." })
-        ErrorKind.TIMEOUT -> Triple(Icons.Rounded.Timer, "Took too long to respond", "${UrlUtils.displayHost(error.url)} did not answer in time. The site may be down, or your connection may be slow.")
-        ErrorKind.UNAVAILABLE -> Triple(Icons.Rounded.ErrorOutline, "This page isn't available", "Eddy could not load ${UrlUtils.displayHost(error.url).ifEmpty { "the page" }}.")
+        ErrorKind.OFFLINE -> Triple(Icons.Rounded.WifiOff, str(R.string.you_re_offline), str(R.string.check_your_wi_fi_or_mobile_data_connecti))
+        ErrorKind.DNS -> Triple(Icons.Rounded.CloudOff, str(R.string.can_t_find_this_site), str(R.string.eddy_could_not_find_check_the_spelling_o, UrlUtils.displayHost(error.url)))
+        ErrorKind.SSL -> Triple(Icons.Rounded.GppBad, str(R.string.connection_isn_t_private), error.detail.ifBlank { str(R.string.eddy_could_not_verify_this_site_s_securi) })
+        ErrorKind.TIMEOUT -> Triple(Icons.Rounded.Timer, str(R.string.took_too_long_to_respond), "${UrlUtils.displayHost(error.url)} did not answer in time. The site may be down, or your connection may be slow.")
+        ErrorKind.UNAVAILABLE -> Triple(Icons.Rounded.ErrorOutline, str(R.string.this_page_isn_t_available), str(R.string.eddy_could_not_load, UrlUtils.displayHost(error.url).ifEmpty { str(R.string.the_page) }))
         ErrorKind.INSECURE -> Triple(
-            Icons.Rounded.NoEncryption, "This site doesn't support HTTPS",
+            Icons.Rounded.NoEncryption, str(R.string.this_site_doesn_t_support_https),
             "${UrlUtils.displayHost(error.url)} did not answer over a secure connection. HTTPS-only mode blocked the plain http version.",
         )
         ErrorKind.BLOCKED -> Triple(
-            Icons.Rounded.Block, "Eddy blocked this page",
+            Icons.Rounded.Block, str(R.string.eddy_blocked_this_page),
             "${UrlUtils.displayHost(error.url)} is on your ad or tracker blocklist.",
         )
     }
@@ -99,25 +101,25 @@ fun ErrorPage(
             Text(message, Modifier.entrance(2), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Text(error.url, Modifier.entrance(2), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.Center, maxLines = 2)
             if (isInsecure) {
-                Button(onClick = onRetry, Modifier.entrance(3)) { Text("Try again") }
-                OutlinedButton(onClick = onBack, Modifier.entrance(3)) { Text("Go back") }
+                Button(onClick = onRetry, Modifier.entrance(3)) { Text(str(R.string.try_again)) }
+                OutlinedButton(onClick = onBack, Modifier.entrance(3)) { Text(str(R.string.go_back)) }
                 TextButton(
                     onClick = { confirmInsecure = true }, Modifier.entrance(3),
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Continue without HTTPS") }
+                ) { Text(str(R.string.continue_without_https)) }
             } else if (isBlocked) {
-                Button(onClick = onBack, Modifier.entrance(3)) { Text("Go back") }
-                TextButton(onClick = onRetry, Modifier.entrance(3)) { Text("Open anyway") }
+                Button(onClick = onBack, Modifier.entrance(3)) { Text(str(R.string.go_back)) }
+                TextButton(onClick = onRetry, Modifier.entrance(3)) { Text(str(R.string.open_anyway)) }
             } else if (isSsl) {
-                Button(onClick = onBack, Modifier.entrance(3)) { Text("Back to safety") }
+                Button(onClick = onBack, Modifier.entrance(3)) { Text(str(R.string.back_to_safety)) }
                 if (error.sslHandler != null) {
                     TextButton(onClick = { confirmProceed = true }, Modifier.entrance(3), colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                        Text("Proceed anyway (unsafe)")
+                        Text(str(R.string.proceed_anyway_unsafe))
                     }
                 }
             } else {
-                Button(onClick = onRetry, Modifier.entrance(3)) { Text("Try again") }
-                OutlinedButton(onClick = onBack, Modifier.entrance(3)) { Text("Go back") }
+                Button(onClick = onRetry, Modifier.entrance(3)) { Text(str(R.string.try_again)) }
+                OutlinedButton(onClick = onBack, Modifier.entrance(3)) { Text(str(R.string.go_back)) }
             }
         }
     }
@@ -125,9 +127,9 @@ fun ErrorPage(
 
     if (confirmInsecure) {
         ConfirmDialog(
-            title = "Load this site without HTTPS?",
-            message = "Anything you send to ${UrlUtils.displayHost(error.url)} travels unencrypted, and anyone on the network can read or change it. Eddy allows plain http for this site until you close the app.",
-            confirmLabel = "Continue",
+            title = str(R.string.load_this_site_without_https),
+            message = str(R.string.anything_you_send_to_travels_unencrypted, UrlUtils.displayHost(error.url)),
+            confirmLabel = str(R.string.continue_label),
             onDismiss = { confirmInsecure = false },
             onConfirm = { confirmInsecure = false; onContinueInsecure() },
         )
@@ -135,9 +137,9 @@ fun ErrorPage(
 
     if (confirmProceed) {
         ConfirmDialog(
-            title = "Continue to an unsafe site?",
-            message = "Attackers may be able to read or change what you send to ${UrlUtils.displayHost(error.url)}, including passwords and card numbers. Continue only if you accept that risk.",
-            confirmLabel = "Continue anyway",
+            title = str(R.string.continue_to_an_unsafe_site),
+            message = str(R.string.attackers_may_be_able_to_read_or_change, UrlUtils.displayHost(error.url)),
+            confirmLabel = str(R.string.continue_anyway),
             onDismiss = { confirmProceed = false },
             onConfirm = { confirmProceed = false; onProceedUnsafe() },
         )

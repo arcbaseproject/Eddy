@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import android.view.View
 import android.view.ViewGroup
 import android.app.Activity
@@ -209,7 +211,7 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 if (vm.siteInfoVisible && selected != null) SiteInfoSheet(vm, selected) { vm.siteInfoVisible = false }
                 if (vm.translateVisible) {
                     val langs = remember { Translate.languages() }
-                    ChoiceDialog("Translate to", langs, langs.first(), Translate::label, { vm.translateVisible = false }, vm::translate)
+                    ChoiceDialog(str(R.string.translate_to), langs, langs.first(), Translate::label, { vm.translateVisible = false }, vm::translate)
                 }
                 vm.linkTarget?.let { LinkSheet(vm, it) { vm.linkTarget = null } }
             }
@@ -317,8 +319,8 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
         AnimatedVisibility(vm.editing, enter = fadeIn(effectSpring()), exit = fadeOut(effectSpring())) {
             Box(
                 Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f))
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = "Close address bar", role = androidx.compose.ui.semantics.Role.Button, onClick = vm::stopEditing)
-                    .semantics { contentDescription = "Close address bar" },
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = str(R.string.close_address_bar), role = androidx.compose.ui.semantics.Role.Button, onClick = vm::stopEditing)
+                    .semantics { contentDescription = str(R.string.close_address_bar) },
             )
         }
         AnimatedVisibility(
@@ -426,7 +428,7 @@ private fun androidx.compose.foundation.layout.BoxScope.PullIndicator(tab: Brows
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         shadowElevation = 4.dp,
     ) {
-        val spinner = Modifier.padding(9.dp).semantics { contentDescription = if (tab.refreshing) "Refreshing" else "Pull to refresh" }
+        val spinner = Modifier.padding(9.dp).semantics { contentDescription = if (tab.refreshing) str(R.string.refreshing) else str(R.string.pull_to_refresh) }
         if (tab.refreshing && pull == 0) {
             CircularProgressIndicator(spinner, strokeWidth = 2.5.dp)
         } else {

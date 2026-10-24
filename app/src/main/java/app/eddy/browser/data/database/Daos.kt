@@ -119,8 +119,8 @@ interface DownloadDao {
     @Query("SELECT id FROM downloads WHERE incognito = 1")
     suspend fun incognitoIds(): List<Long>
 
-    @Query("DELETE FROM downloads WHERE status IN ('COMPLETED','FAILED','CANCELED')")
-    suspend fun clearFinished()
+    @Query("SELECT id FROM downloads WHERE status IN ('COMPLETED','FAILED','CANCELED')")
+    suspend fun finishedIds(): List<Long>
 
     /** Anything left "running" after a process death is really paused. */
     @Query("UPDATE downloads SET status = 'PAUSED' WHERE status IN ('RUNNING','QUEUED')")

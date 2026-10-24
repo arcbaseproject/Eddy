@@ -23,6 +23,9 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
     var cosmeticScript: ScriptHandler? = null
     var youtubeScript: ScriptHandler? = null
     var incognito = false
+    /** Uptime of the last tap or key press, the native side of "user activation" for bridges a page could call directly. */
+    var lastInteraction = 0L
+        private set
     /** Cancels the in-flight prerender, if any, when a new one starts or the omnibox closes. */
     var prerender: android.os.CancellationSignal? = null
 
@@ -57,7 +60,13 @@ class EddyWebView(private val ctx: MutableContextWrapper) : WebView(ctx) {
         return super.overScrollBy(deltaX, deltaY, scrollX, scrollY, scrollRangeX, scrollRangeY, maxOverScrollX, maxOverScrollY, isTouchEvent)
     }
 
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.action == android.view.KeyEvent.ACTION_UP) lastInteraction = android.os.SystemClock.uptimeMillis()
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_UP) lastInteraction = android.os.SystemClock.uptimeMillis()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 pullStartY = if (scrollY == 0 && !canScrollVertically(-1)) event.y else -1f

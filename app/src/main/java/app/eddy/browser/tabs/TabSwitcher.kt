@@ -1,5 +1,7 @@
 package app.eddy.browser.tabs
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -114,22 +116,22 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                     SegmentedButton(
                         selected = !incognito, onClick = { vm.switcherIncognito = false; haptics.tick() },
                         shape = SegmentedButtonDefaults.itemShape(0, 2),
-                    ) { Text("Tabs · $normalCount") }
+                    ) { Text(str(R.string.tabs, normalCount)) }
                     SegmentedButton(
                         selected = incognito, onClick = { vm.switcherIncognito = true; haptics.tick() },
                         shape = SegmentedButtonDefaults.itemShape(1, 2),
                         icon = { Icon(Icons.Rounded.VisibilityOff, null, Modifier.size(18.dp)) },
-                    ) { Text("Incognito · $incognitoCount") }
+                    ) { Text(str(R.string.incognito, incognitoCount)) }
                 }
                 Box {
-                    EddyIconButton(Icons.Rounded.MoreVert, "More tab actions", { menu = true })
+                    EddyIconButton(Icons.Rounded.MoreVert, str(R.string.more_tab_actions), { menu = true })
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Close all tabs") }, enabled = shown.isNotEmpty(),
+                            text = { Text(str(R.string.close_all_tabs)) }, enabled = shown.isNotEmpty(),
                             leadingIcon = { Icon(Icons.Rounded.Close, null) }, onClick = { menu = false; confirmCloseAll = true },
                         )
                         DropdownMenuItem(
-                            text = { Text("Reopen closed tab") }, enabled = vm.tabs.closedCount > 0,
+                            text = { Text(str(R.string.reopen_closed_tab)) }, enabled = vm.tabs.closedCount > 0,
                             leadingIcon = { Icon(Icons.Rounded.Restore, null) }, onClick = { menu = false; vm.restoreClosedTab() },
                         )
                     }
@@ -139,11 +141,11 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
             if (shown.isEmpty()) {
                 EmptyState(
                     if (incognito) Icons.Rounded.VisibilityOff else Icons.Rounded.Home,
-                    if (incognito) "No incognito tabs" else "No tabs",
+                    if (incognito) str(R.string.no_incognito_tabs) else str(R.string.no_tabs),
                     if (incognito) {
-                        if (vm.incognitoIsolated) "Incognito tabs save no history. Their cookies go away when you close them."
-                        else "Incognito tabs save no history. This device's WebView shares their cookies with normal tabs."
-                    } else "Open a new tab to start browsing.",
+                        if (vm.incognitoIsolated) str(R.string.incognito_tabs_save_no_history_their_coo)
+                        else str(R.string.incognito_tabs_save_no_history_this_devi)
+                    } else str(R.string.open_a_new_tab_to_start_browsing),
                     Modifier.weight(1f),
                 )
             } else {
@@ -202,11 +204,11 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
         }
 
         Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).fillMaxWidth()) {
-            TextButton(onClick = { vm.screen = app.eddy.browser.browser.Screen.BROWSER }, Modifier.align(Alignment.CenterStart).height(Dimens.touchTarget)) { Text("Done") }
+            TextButton(onClick = { vm.screen = app.eddy.browser.browser.Screen.BROWSER }, Modifier.align(Alignment.CenterStart).height(Dimens.touchTarget)) { Text(str(R.string.done)) }
             ExtendedFloatingActionButton(
                 onClick = { haptics.confirm(); vm.newTab(incognito) },
                 icon = { Icon(Icons.Rounded.Add, null) },
-                text = { Text(if (incognito) "New incognito tab" else "New tab") },
+                text = { Text(if (incognito) str(R.string.new_incognito_tab) else str(R.string.new_tab)) },
                 modifier = Modifier.align(Alignment.Center),
                 containerColor = if (incognito) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer,
             )
@@ -215,9 +217,9 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
 
     if (confirmCloseAll) {
         ConfirmDialog(
-            title = if (incognito) "Close all incognito tabs?" else "Close all tabs?",
+            title = if (incognito) str(R.string.close_all_incognito_tabs) else str(R.string.close_all_tabs_2),
             message = "${shown.size} tabs will be closed.",
-            confirmLabel = "Close all",
+            confirmLabel = str(R.string.close_all),
             onDismiss = { confirmCloseAll = false },
             onConfirm = { confirmCloseAll = false; haptics.confirm(); vm.closeAllTabs(incognito) },
         )
@@ -231,7 +233,7 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
     val scheme = MaterialTheme.colorScheme
     val border by animateFloatAsState(if (selected) 3f else 0f, spatialSpring(), label = "selected")
     val lift by animateFloatAsState(if (dragging) 1.05f else 1f, spatialSpring(), label = "lift")
-    val title = tab.displayTitle(if (tab.isHome) "New tab" else "Tab")
+    val title = tab.displayTitle(if (tab.isHome) str(R.string.new_tab) else str(R.string.tab))
 
     SwipeToDismissBox(
         rememberSwipeToDismissBoxState(), backgroundContent = {}, modifier.graphicsLayer { scaleX = lift; scaleY = lift },
@@ -250,7 +252,7 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
                     if (tab.isHome) Icon(Icons.Rounded.Home, null, Modifier.size(20.dp), tint = scheme.primary)
                     else SiteIcon(tab.host, size = 20.dp, live = tab.favicon)
                     Text(title, Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    EddyIconButton(Icons.Rounded.Close, "Close $title", { haptics.confirm(); vm.closeTab(tab) }, Modifier.size(40.dp))
+                    EddyIconButton(Icons.Rounded.Close, str(R.string.close, title), { haptics.confirm(); vm.closeTab(tab) }, Modifier.size(40.dp))
                 }
                 Box(
                     Modifier.fillMaxWidth().height(thumbHeight).clip(RoundedCornerShape(22.dp)).background(scheme.surfaceContainerLowest),
@@ -264,7 +266,7 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
                     }
                 }
                 Text(
-                    if (tab.isHome) "Start page" else tab.host,
+                    if (tab.isHome) str(R.string.start_page) else tab.host,
                     Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )

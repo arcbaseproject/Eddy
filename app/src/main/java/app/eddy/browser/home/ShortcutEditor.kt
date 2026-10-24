@@ -1,5 +1,7 @@
 package app.eddy.browser.home
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,32 +67,32 @@ fun ShortcutEditor(initial: Shortcut, isNew: Boolean, onDismiss: () -> Unit, onS
             Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = Dimens.gutterLarge, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(if (isNew) "New shortcut" else "Edit shortcut", style = MaterialTheme.typography.titleLarge)
-            OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true)
+            Text(if (isNew) str(R.string.new_shortcut) else str(R.string.edit_shortcut), style = MaterialTheme.typography.titleLarge)
+            OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.name)) }, singleLine = true)
             OutlinedTextField(
-                url, { url = it }, Modifier.fillMaxWidth(), label = { Text("Address") }, singleLine = true,
+                url, { url = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.address)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 isError = url.isNotBlank() && normalizedUrl.isEmpty(),
             )
 
-            Text("Icon", style = MaterialTheme.typography.titleSmall)
+            Text(str(R.string.icon), style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Choice(selected = icon == ShortcutIcons.AUTO, description = "Site icon", onClick = { icon = ShortcutIcons.AUTO }) {
-                    Text("Auto", style = MaterialTheme.typography.labelMedium)
+                Choice(selected = icon == ShortcutIcons.AUTO, description = str(R.string.site_icon), onClick = { icon = ShortcutIcons.AUTO }) {
+                    Text(str(R.string.auto), style = MaterialTheme.typography.labelMedium)
                 }
                 ShortcutIcons.all.forEach { (key, glyph) ->
                     Choice(selected = icon == key, description = key, onClick = { icon = key }) { Icon(glyph, null, Modifier.size(22.dp)) }
                 }
             }
 
-            Text("Colour", style = MaterialTheme.typography.titleSmall)
+            Text(str(R.string.colour), style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 repeat(ShortcutColors.COUNT) { i ->
                     Box(
                         Modifier.size(Dimens.touchTarget - 4.dp).clip(CircleShape).background(ShortcutColors.container(i, scheme))
                             .border(if (color.mod(ShortcutColors.COUNT) == i) 3.dp else 1.dp, if (color.mod(ShortcutColors.COUNT) == i) scheme.primary else scheme.outlineVariant, CircleShape)
                             .clickable { color = i }
-                            .semantics { contentDescription = "Colour ${i + 1}" },
+                            .semantics { contentDescription = str(R.string.colour_2, i + 1) },
                         contentAlignment = Alignment.Center,
                     ) {
                         if (color.mod(ShortcutColors.COUNT) == i) Icon(Icons.Rounded.Check, null, tint = ShortcutColors.content(i, scheme))
@@ -98,28 +100,28 @@ fun ShortcutEditor(initial: Shortcut, isNew: Boolean, onDismiss: () -> Unit, onS
                 }
             }
 
-            Text("Shape", style = MaterialTheme.typography.titleSmall)
+            Text(str(R.string.shape), style = MaterialTheme.typography.titleSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 EddyPolygons.all.forEachIndexed { i, polygon ->
                     Box(
                         Modifier.size(Dimens.touchTarget).clip(polygon.toShape())
                             .background(if (shape.mod(EddyPolygons.all.size) == i) scheme.primary else scheme.surfaceContainerHighest)
                             .clickable { shape = i }
-                            .semantics { contentDescription = "Shape ${i + 1}" },
+                            .semantics { contentDescription = str(R.string.shape_2, i + 1) },
                     )
                 }
             }
             Text(
-                "Shapes take effect when Appearance > Shortcut appearance is set to Mixed shapes.",
+                str(R.string.shapes_take_effect_when_appearance_short),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
 
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) }
                 Button(
                     onClick = { onSave(initial.copy(title = title.trim(), url = UrlUtils.resolve(normalizedUrl, app.eddy.browser.data.models.SearchEngine("", "", "%s")), icon = icon, color = color, shape = shape)) },
                     enabled = valid,
-                ) { Text("Save") }
+                ) { Text(str(R.string.save)) }
             }
         }
     }

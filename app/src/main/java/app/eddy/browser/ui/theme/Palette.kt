@@ -1,19 +1,24 @@
 package app.eddy.browser.ui.theme
 
+import app.eddy.browser.util.str
+import app.eddy.browser.R
+import androidx.annotation.StringRes
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 /** Seed palettes for devices without dynamic color, or users who prefer a fixed look. */
-enum class Palette(val label: String, val hue: Float, val saturation: Float = 1f) {
-    ORCHID("Orchid", 268f),
-    OCEAN("Ocean", 208f),
-    MEADOW("Meadow", 142f, 0.85f),
-    EMBER("Ember", 18f),
-    ROSE("Rose", 338f),
-    SLATE("Slate", 215f, 0.25f),
+enum class Palette(@StringRes private val labelRes: Int, val hue: Float, val saturation: Float = 1f) {
+    ORCHID(R.string.orchid, 268f),
+    OCEAN(R.string.ocean, 208f),
+    MEADOW(R.string.meadow, 142f, 0.85f),
+    EMBER(R.string.ember, 18f),
+    ROSE(R.string.rose, 338f),
+    SLATE(R.string.slate, 215f, 0.25f),
     ;
+
+    val label: String get() = str(labelRes)
 
     val swatch: Color get() = Color.hsl(hue, 0.6f * saturation, 0.5f)
 

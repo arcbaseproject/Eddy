@@ -1,5 +1,6 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.util.str
 import android.Manifest
 import android.app.Application
 import android.content.ClipData
@@ -96,7 +97,7 @@ class SaveLoginPrompt(val tabId: String, val origin: String, val username: Strin
 /** Saved logins for the focused field's site. Filling needs a tap, then goes through [reply] to that frame only. */
 class AutofillOffer(val tabId: String, val origin: String, val logins: List<LoginEntity>, val reply: JavaScriptReplyProxy)
 
-class FindState {
+class FindState(val tabId: String?) {
     var query by mutableStateOf("")
     var active by mutableIntStateOf(0)
     var total by mutableIntStateOf(0)
@@ -128,7 +129,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     val blockerUpdating = container.blocker.updating
 
     private val factory = WebViewFactory(app, this)
-    val tabs = TabManager(app, viewModelScope, thumbnails, { factory }, { settings })
+    val tabs = TabManager(app, viewModelScope, thumbnails, { factory }, { settings }, onPrivateSessionEnd = { sites.clearPrivate() }, onClosed = { blobDownloader.cancelTab(it.id) })
     val incognitoIsolated: Boolean get() = factory.incognitoIsolated
     val pageBridgeSupported: Boolean get() = factory.pageBridgeSupported
 
@@ -192,6 +193,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     private var ignoreScrollUntil = 0L
 
     init {
+        // Find belongs to the page it searched; switching tabs closes it instead of showing that page's count here.
+        viewModelScope.launch { snapshotFlow { tabs.selectedId }.collect { id -> if (find != null && find?.tabId != id) closeFind() } }
         // ponytail: top-level documents only; media inside cross-origin iframes (embedded players) keeps playing.
         MediaService.pauseAll = { tabs.tabs.forEach { it.webView?.evaluateJavascript("document.querySelectorAll('video,audio').forEach(m => m.pause())", null) } }
         viewModelScope.launch {
@@ -216,8 +219,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         }
         viewModelScope.launch {
             downloads.events.collect { e ->
-                if (e.success && e.contentUri.isNotEmpty()) snackbar("${e.fileName} downloaded", "Open") { openFile(e.contentUri, e.mimeType, e.fileName) }
-                else if (!e.success) snackbar("${e.fileName} failed to download", "View") { screen = Screen.DOWNLOADS }
+                if (e.success && e.contentUri.isNotEmpty()) snackbar("${e.fileName} downloaded", str(R.string.open)) { openFile(e.contentUri, e.mimeType, e.fileName) }
+                else if (!e.success) snackbar("${e.fileName} failed to download", str(R.string.view)) { screen = Screen.DOWNLOADS }
             }
         }
         viewModelScope.launch {
@@ -269,14 +272,14 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val tab = tabs.selected ?: openHomeTab()
         tabs.load(tab, url)
         screen = Screen.BROWSER
-        stopEditing()
+        stopEditing(navigating = true)
         chromeVisible = true
     }
 
     fun openInNewTab(url: String, incognito: Boolean = false, select: Boolean = true) {
         val opener = tabs.selected
         tabs.newTab(url, incognito || opener?.incognito == true, select, opener)
-        if (select) screen = Screen.BROWSER else snackbar("Opened in a new tab", "Switch") {
+        if (select) screen = Screen.BROWSER else snackbar(str(R.string.opened_in_a_new_tab), str(R.string.switch_label)) {
             tabs.tabs.lastOrNull { it.url == url }?.let(tabs::select)
         }
     }
@@ -426,11 +429,14 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     fun dictateStarted() { dictateOnOpen = false }
 
-    fun stopEditing() {
+    /** [navigating]: a load just started, which takes over a matching prerender, so leave it alone. */
+    fun stopEditing(navigating: Boolean = false) {
         editing = false
         dictateOnOpen = false
         suggestJob?.cancel()
         suggestions.value = emptyList()
+        // Whatever was typed is no longer where the user is going, so stop loading it in the background.
+        if (!navigating) tabs.selected?.webView?.let(factory::cancelPrerender)
     }
 
     fun onOmniboxText(text: String) {
@@ -463,7 +469,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (!desc.hasMimeType("text/plain") && !desc.hasMimeType("text/uri-list")) return
         val text = runCatching { cm.primaryClip?.getItemAt(0)?.coerceToText(app)?.toString() }.getOrNull()?.trim().orEmpty()
         if (text.isEmpty() || text.length > 2048 || text == tabs.selected?.url) return
-        suggestions.value = listOf(Suggestion(SuggestionKind.CLIPBOARD, text, text, if (UrlUtils.isUrl(text)) "Link from clipboard" else "Text from clipboard"))
+        suggestions.value = listOf(Suggestion(SuggestionKind.CLIPBOARD, text, text, if (UrlUtils.isUrl(text)) str(R.string.link_from_clipboard) else str(R.string.text_from_clipboard)))
     }
 
     // ---- chrome & scrolling ---------------------------------------------------------------
@@ -490,7 +496,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     // ---- find in page ---------------------------------------------------------------------
 
-    fun openFind() { find = FindState(); menuVisible = false; chromeVisible = true }
+    fun openFind() { find = FindState(tabs.selectedId); menuVisible = false; chromeVisible = true }
 
     fun findQuery(q: String) {
         val state = find ?: return
@@ -502,12 +508,14 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun findNext(forward: Boolean) { tabs.selected?.webView?.findNext(forward) }
 
     fun closeFind() {
-        tabs.selected?.webView?.clearMatches()
+        val id = find?.tabId
+        tabs.tabs.firstOrNull { it.id == id }?.webView?.clearMatches()
         find = null
     }
 
     override fun onFindResult(tab: BrowserTab, active: Int, total: Int) {
-        find?.let { it.active = if (total == 0) 0 else active + 1; it.total = total }
+        // A late result from a tab the user has left must not overwrite the count.
+        find?.takeIf { it.tabId == tab.id }?.let { it.active = if (total == 0) 0 else active + 1; it.total = total }
     }
 
     // ---- tabs -----------------------------------------------------------------------------
@@ -530,13 +538,13 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     fun closeTab(tab: BrowserTab) {
-        val title = tab.displayTitle("Tab")
+        val title = tab.displayTitle(str(R.string.tab))
         val remembered = !tab.incognito && !tab.isHome
         val wasLast = tabs.tabs.count { it.incognito == tab.incognito } == 1
         tabs.close(tab)
         // Closing the last tab lands on the new-tab page instead of leaving an empty switcher.
         if (wasLast) screen = Screen.BROWSER
-        if (remembered) snackbar("Closed $title", "Undo") { restoreClosedTab() }
+        if (remembered) snackbar(str(R.string.closed, title), str(R.string.undo)) { restoreClosedTab() }
     }
 
     fun restoreClosedTab() {
@@ -558,7 +566,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (!UrlUtils.isWebUrl(tab.url)) return
         viewModelScope.launch {
             val added = bookmarks.toggle(tab.url, tab.title)
-            if (added) snackbar("Bookmark saved", "View") { screen = Screen.BOOKMARKS } else snackbar("Bookmark removed")
+            if (added) snackbar(str(R.string.bookmark_saved), str(R.string.view)) { screen = Screen.BOOKMARKS } else snackbar(str(R.string.bookmark_removed))
         }
     }
 
@@ -598,7 +606,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         } else {
             ReaderMode.show(app, view) { ok ->
                 tab.readerActive = ok
-                if (!ok) snackbar("No article found on this page")
+                if (!ok) snackbar(str(R.string.no_article_found_on_this_page))
             }
         }
     }
@@ -609,7 +617,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val view = tabs.selected?.webView ?: return
         view.evaluateJavascript("(document.body&&document.body.innerText||'')") { raw ->
             val text = runCatching { JSONObject("{\"t\":$raw}").getString("t") }.getOrNull().orEmpty()
-            if (text.isBlank()) snackbar("Nothing to read on this page") else readAloud.speak(text)
+            if (text.isBlank()) snackbar(str(R.string.nothing_to_read_on_this_page)) else readAloud.speak(text)
         }
     }
 
@@ -619,15 +627,15 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun printPage() {
         val tab = tabs.selected ?: return
         val view = tab.webView ?: return
-        val name = tab.displayTitle(tab.host).ifBlank { "Page" }.take(80)
+        val name = tab.displayTitle(tab.host).ifBlank { str(R.string.page_2) }.take(80)
         effects.trySend(UiEffect.Print(view.createPrintDocumentAdapter(name), name))
     }
 
     fun toggleDesktopForSite() {
         val tab = tabs.selected ?: return
         val host = UrlUtils.displayHost(tab.url)
-        val on = sites.peek(host)?.desktop == SiteSettings.ALLOW
-        sites.set(host, SiteFeature.DESKTOP, if (on) null else SiteSettings.ALLOW)
+        val on = sites.peek(host, tab.incognito)?.desktop == SiteSettings.ALLOW
+        sites.set(host, SiteFeature.DESKTOP, if (on) null else SiteSettings.ALLOW, tab.incognito)
         tab.desktopOverride = null
         tab.webView?.let { factory.load(tab, it, tab.url) }
     }
@@ -639,14 +647,14 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                 val n = s.shortcuts.size
                 s.copy(shortcuts = s.shortcuts + Shortcut(UUID.randomUUID().toString(), tab.displayTitle(tab.host), tab.url, n, n))
             }
-            snackbar("Added to home shortcuts")
+            snackbar(str(R.string.added_to_home_shortcuts))
         }
     }
 
     /** Pins a launcher icon that opens the page in Eddy. The launcher shows its own confirmation. */
     fun addToLauncher(tab: BrowserTab) {
         if (!UrlUtils.isWebUrl(tab.url)) return
-        if (!ShortcutManagerCompat.isRequestPinShortcutSupported(app)) { snackbar("Your launcher does not support shortcuts"); return }
+        if (!ShortcutManagerCompat.isRequestPinShortcutSupported(app)) { snackbar(str(R.string.your_launcher_does_not_support_shortcuts)); return }
         viewModelScope.launch {
             val icon = (tab.favicon ?: favicons.load(UrlUtils.displayHost(tab.url)))
                 ?.let { IconCompat.createWithBitmap(it) } ?: IconCompat.createWithResource(app, R.mipmap.ic_launcher)
@@ -661,7 +669,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val host = if (feature in setOf(SiteFeature.CAMERA, SiteFeature.MICROPHONE, SiteFeature.LOCATION)) {
             UrlUtils.origin(tab.url) ?: return
         } else UrlUtils.displayHost(tab.url)
-        sites.set(host, feature, value)
+        sites.set(host, feature, value, tab.incognito)
         tab.webView?.let { factory.prepare(tab, it, tab.url) }
         if (feature == SiteFeature.JAVASCRIPT || feature == SiteFeature.CONTENT_BLOCKING || feature == SiteFeature.THIRD_PARTY_COOKIES) {
             tab.webView?.reload()
@@ -674,15 +682,26 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun clearSiteData(tab: BrowserTab) {
         val cm = factory.cookieManager(tab.incognito)
         val url = tab.url
-        cm.getCookie(url)?.split(';')?.forEach { pair ->
-            val name = pair.substringBefore('=').trim()
-            if (name.isNotEmpty()) cm.setCookie(url, "$name=; Max-Age=0; Path=/")
+        // WebView only reveals names, and a cookie is deleted only by an exact Domain and Path match,
+        // so expire each name for the host, every parent domain and every path prefix of this page.
+        val host = UrlUtils.host(url)
+        val labels = host.split('.')
+        val domains = listOf("") + (0 until (labels.size - 1).coerceAtLeast(0)).map { "; Domain=" + labels.drop(it).joinToString(".") }
+        val segments = runCatching { java.net.URI(url).path }.getOrNull().orEmpty().split('/').filter { it.isNotEmpty() }
+        val paths = listOf("/") + segments.indices.map { "/" + segments.take(it + 1).joinToString("/") }
+        val secure = if (UrlUtils.isHttps(url)) "; Secure" else ""
+        val writes = cm.getCookie(url)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }?.distinct().orEmpty()
+            .flatMap { name -> domains.flatMap { d -> paths.map { p -> "$name=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=$p$d$secure" } } }
+        var pending = writes.size
+        fun done() {
+            cm.flush()
+            UrlUtils.origin(url)?.let { factory.webStorage(tab.incognito)?.deleteOrigin(it) }
+            tab.webView?.reload()
+            snackbar(str(R.string.site_data_cleared))
         }
-        cm.flush()
-        val origin = Regex("^https?://[^/]+").find(url)?.value
-        if (origin != null && !tab.incognito) WebStorage.getInstance().deleteOrigin(origin)
-        tab.webView?.reload()
-        snackbar("Site data cleared")
+        if (pending == 0) return done()
+        // Reload only after every expiry has landed, or the page could send the old cookies once more.
+        writes.forEach { cm.setCookie(url, it) { if (--pending == 0) done() } }
     }
 
     fun clearBrowsingData(types: Set<DataType>, historyRangeMillis: Long?) {
@@ -698,12 +717,12 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                 val view = tabs.selected?.webView?.takeIf { !it.incognito }
                 if (view != null) view.clearCache(true) else WebView(app).apply { clearCache(true); destroy() }
                 container.favicons.clear()
-                thumbnails.trim()
+                thumbnails.clear()
             }
             if (DataType.DOWNLOADS in types) downloads.clearFinished()
             if (DataType.SITE_SETTINGS in types) sites.resetAll()
             if (DataType.PASSWORDS in types) passwords.deleteAll()
-            snackbar("Browsing data cleared")
+            snackbar(str(R.string.browsing_data_cleared))
         }
     }
 
@@ -734,7 +753,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                         }
                     }.getOrNull()
                 }
-                if (text == null) return@launch snackbar("Could not open this file, or it was moved")
+                if (text == null) return@launch snackbar(str(R.string.could_not_open_this_file_or_it_was_moved))
                 openSource = OpenSource(name, text, screen)
                 screen = Screen.SOURCE
             }
@@ -756,7 +775,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             // The ad-hiding style is ours, not the site's.
             val text = runCatching { JSONObject("{\"t\":$raw}").getString("t") }.getOrNull()
                 ?.replace("<style>${WebViewFactory.COSMETIC_CSS}</style>", "")
-            if (text.isNullOrEmpty()) return@evaluateJavascript snackbar("Could not read this page's source")
+            if (text.isNullOrEmpty()) return@evaluateJavascript snackbar(str(R.string.could_not_read_page_source))
             openSource = OpenSource(tab.url, text, Screen.BROWSER)
             screen = Screen.SOURCE
         }
@@ -771,8 +790,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                         .redirectErrorStream(true).start().inputStream.bufferedReader().use { it.readText() }
                 }.getOrNull()
             }
-            if (text.isNullOrBlank()) return@launch snackbar("No logs to show")
-            openSource = OpenSource("App logs", text, screen, isLog = true)
+            if (text.isNullOrBlank()) return@launch snackbar(str(R.string.no_logs_to_show))
+            openSource = OpenSource(str(R.string.app_logs), text, screen, isLog = true)
             screen = Screen.SOURCE
         }
     }
@@ -786,7 +805,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val source = openSource ?: return
         // The clipboard goes through Binder, which refuses anything past roughly 1 MB.
         runCatching { app.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(source.name, source.text)) }
-            .onSuccess { snackbar("Source copied") }.onFailure { snackbar("Too large to copy") }
+            .onSuccess { snackbar(str(R.string.source_copied)) }.onFailure { snackbar(str(R.string.too_large_to_copy)) }
     }
 
     fun closePdf() {
@@ -866,7 +885,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         savePrompt = null
         viewModelScope.launch {
             passwords.save(p.origin, p.username, p.password)
-            snackbar(if (p.existingId != null) "Password updated" else "Password saved", "View") { screen = Screen.PASSWORDS }
+            snackbar(if (p.existingId != null) str(R.string.password_updated) else str(R.string.password_saved), str(R.string.view)) { screen = Screen.PASSWORDS }
         }
     }
 
@@ -874,7 +893,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         val p = savePrompt ?: return
         savePrompt = null
         passwords.neverSave(p.origin)
-        snackbar("Eddy will not offer to save passwords for ${UrlUtils.displayHost(p.origin)}")
+        snackbar(str(R.string.eddy_will_not_offer_to_save_passwords_fo, UrlUtils.displayHost(p.origin)))
     }
 
     fun dismissSaveLogin() { savePrompt = null }
@@ -882,7 +901,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun fillLogin(offer: AutofillOffer, login: LoginEntity) {
         autofillOffer = null
         viewModelScope.launch {
-            val password = passwords.decrypt(login) ?: return@launch snackbar("Eddy could not decrypt this password")
+            val password = passwords.decrypt(login) ?: return@launch snackbar(str(R.string.eddy_could_not_decrypt_this_password))
             offer.reply.postMessage(JSONObject().put("u", login.username).put("p", password).toString())
             passwords.touch(login.id)
         }
@@ -929,7 +948,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     private fun launchExternal(tab: BrowserTab, intent: Intent, fallback: String?) {
         effects.trySend(UiEffect.Launch(intent) {
             if (fallback != null && UrlUtils.isWebUrl(fallback)) externalFallback(tab, fallback)
-            else snackbar("No app can open this")
+            else snackbar(str(R.string.no_app_can_open_this))
         })
     }
 
@@ -975,7 +994,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (!userGesture || settings.externalLinks == ExternalLinks.NEVER) {
             // Redirects that no one asked for never leave the browser.
             if (fallbackUrl != null && UrlUtils.isWebUrl(fallbackUrl)) externalFallback(tab, fallbackUrl)
-            else if (userGesture) snackbar("Opening other apps is turned off")
+            else if (userGesture) snackbar(str(R.string.opening_other_apps_is_turned_off))
             return
         }
         if (settings.externalLinks == ExternalLinks.ALWAYS) launchExternal(tab, safe, fallbackUrl)
@@ -1010,16 +1029,16 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     override fun createPopup(parent: BrowserTab, resultMsg: Message, userGesture: Boolean): Boolean {
         val host = UrlUtils.displayHost(parent.url)
-        val policy = sites.peek(host)?.popups
+        val policy = sites.peek(host, parent.incognito)?.popups
         val allow = policy == SiteSettings.ALLOW || (policy != SiteSettings.BLOCK && userGesture)
         if (!allow) {
-            snackbar("Popup blocked", "Allow") { sites.set(host, SiteFeature.POPUPS, SiteSettings.ALLOW) }
+            snackbar(str(R.string.popup_blocked), str(R.string.allow)) { sites.set(host, SiteFeature.POPUPS, SiteSettings.ALLOW, parent.incognito) }
             return false
         }
         val switch = settings.switchToNewTabs
         if (switch) screen = Screen.BROWSER
         return tabs.createPopup(parent, resultMsg).also { created ->
-            if (created && !switch) snackbar("Opened in a new tab", "Switch") { tabs.tabs.lastOrNull { it.openerId == parent.id }?.let(::selectTab) }
+            if (created && !switch) snackbar(str(R.string.opened_in_a_new_tab), str(R.string.switch_label)) { tabs.tabs.lastOrNull { it.openerId == parent.id }?.let(::selectTab) }
         }
     }
 
@@ -1032,10 +1051,11 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     private val readAloud = ReadAloud(app) { readingAloud = it }
 
     private val blobDownloader = BlobDownloader(app, viewModelScope, downloads) { message, id ->
-        snackbar(message, if (id != null) "View" else null) { screen = Screen.DOWNLOADS }
+        snackbar(message, if (id != null) str(R.string.view) else null) { screen = Screen.DOWNLOADS }
     }
 
-    override fun onBlobMessage(tab: BrowserTab, origin: String, data: String) = blobDownloader.onMessage(tab, origin, data)
+    override fun onBlobMessage(tab: BrowserTab, origin: String, data: String, reply: JavaScriptReplyProxy) =
+        blobDownloader.onMessage(tab, origin, data) { reply.postMessage(it) }
 
     override fun startDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
         if (!contentDisposition.contains("filename", ignoreCase = true) && tab.webView != null) {
@@ -1069,7 +1089,12 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     override fun onClipboardRead(tab: BrowserTab, origin: String, reply: JavaScriptReplyProxy) {
         // Only the page on screen may ask; a background tab would get a dialog the user cannot place.
-        if (tab.id != tabs.selectedId || (!origin.startsWith("http://") && !origin.startsWith("https://"))) {
+        // The page script checks for a tap too, but a page can call the bridge directly, so check here as well
+        // (5 seconds, as Chrome's activation window), and keep at most one paste prompt open.
+        val tapped = tab.webView?.let { android.os.SystemClock.uptimeMillis() - it.lastInteraction < 5_000 } == true
+        if (tab.id != tabs.selectedId || !tapped || prompts.any { it is Prompt.Paste } ||
+            (!origin.startsWith("http://") && !origin.startsWith("https://"))
+        ) {
             return reply.postMessage("{\"ok\":false}")
         }
         prompts.add(Prompt.Paste(UrlUtils.displayHost(origin), reply))
@@ -1090,7 +1115,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     private fun startDownloadNow(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
         if (url.startsWith("blob:")) {
-            if (!pageBridgeSupported) return snackbar("This WebView is too old to save this download. Update Android System WebView.")
+            if (!pageBridgeSupported) return snackbar(str(R.string.this_webview_is_too_old_to_save_this_dow))
             return blobDownloader.start(tab, url, contentDisposition, mime)
         }
         enqueueDownload(tab, url, userAgent, contentDisposition, mime, length)
@@ -1108,9 +1133,9 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                 .onSuccess {
                     // A tab that only existed to fetch this file (nothing rendered, no history) is not worth keeping.
                     if (!tab.canGoBack && tab.title.isEmpty() && tab.error == null && tabs.tabs.size > 1) tabs.close(tab, remember = false)
-                    snackbar("Download started", "View") { screen = Screen.DOWNLOADS }
+                    snackbar(str(R.string.download_started), str(R.string.view)) { screen = Screen.DOWNLOADS }
                 }
-                .onFailure { snackbar("Could not start download") }
+                .onFailure { snackbar(str(R.string.could_not_start_download)) }
         }
     }
 

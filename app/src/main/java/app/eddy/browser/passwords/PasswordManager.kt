@@ -3,6 +3,7 @@ package app.eddy.browser.passwords
 import app.eddy.browser.data.database.LoginBlock
 import app.eddy.browser.data.database.LoginDao
 import app.eddy.browser.data.database.LoginEntity
+import app.eddy.browser.util.UrlUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,20 @@ class ImportResult(val added: Int, val updated: Int, val unchanged: Int, val ski
 /** Saved logins. Passwords are encrypted before they reach the database and decrypted on demand only. */
 class PasswordManager(private val dao: LoginDao, private val scope: CoroutineScope) {
     val logins: Flow<List<LoginEntity>> = dao.all()
+
+    init {
+        // Older builds stored imported and typed origins with default ports or user info, which page lookups never match.
+        scope.launch {
+            for (row in dao.snapshot()) {
+                val canonical = normalizeOrigin(row.origin) ?: continue
+                if (canonical == row.origin) continue
+                val clash = dao.find(canonical, row.username)
+                if (clash == null) dao.upsert(row.copy(origin = canonical))
+                else if (clash.updatedAt < row.updatedAt) { dao.delete(clash.id); dao.upsert(row.copy(origin = canonical)) }
+                else dao.delete(row.id)
+            }
+        }
+    }
 
     suspend fun forOrigin(origin: String) = dao.forOrigin(origin)
     suspend fun find(origin: String, username: String) = dao.find(origin, username)
@@ -101,16 +116,15 @@ class PasswordManager(private val dao: LoginDao, private val scope: CoroutineSco
     fun resetNeverSave() { scope.launch { dao.clearBlocklist() } }
 
     companion object {
-        private val originRegex = Regex("^(https?://[^/?#\\s]+)", RegexOption.IGNORE_CASE)
         private const val MAX_IMPORT_ROWS = 10_000
         private const val MAX_FIELD = 256
         private const val ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#%^*-_"
 
-        /** "example.com/login" -> "https://example.com"; null when it is not a web address. */
+        /** "example.com/login" -> "https://example.com"; null when it is not a web address. Same key as [UrlUtils.origin] gives a page. */
         fun normalizeOrigin(input: String): String? {
             val text = input.trim()
             val withScheme = if (text.contains("://")) text else "https://$text"
-            return originRegex.find(withScheme)?.groupValues?.get(1)?.lowercase()?.takeIf { it.substringAfter("://").contains('.') || it.contains("localhost") }
+            return UrlUtils.origin(withScheme)?.takeIf { it.substringAfter("://").contains('.') || it.contains("localhost") }
         }
 
         fun generatePassword(length: Int = 20): String {

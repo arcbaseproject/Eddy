@@ -1,5 +1,6 @@
 package app.eddy.browser.settings
 
+import app.eddy.browser.util.str
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -51,7 +52,7 @@ fun SearchSettings(vm: BrowserViewModel, s: app.eddy.browser.data.models.Setting
     var adding by remember { mutableStateOf(false) }
     var editInstance by remember { mutableStateOf(false) }
 
-    SettingsGroup("Default search engine") {
+    SettingsGroup(str(R.string.default_search_engine)) {
         s.allEngines.forEachIndexed { i, engine ->
             if (i > 0) GroupDivider()
             Row(
@@ -65,24 +66,24 @@ fun SearchSettings(vm: BrowserViewModel, s: app.eddy.browser.data.models.Setting
                     Text(engine.searchUrl.substringAfter("://").substringBefore('/'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (!engine.builtIn) {
-                    EddyIconButton(Icons.Rounded.Delete, "Remove ${engine.name}", {
+                    EddyIconButton(Icons.Rounded.Delete, str(R.string.remove, engine.name), {
                         vm.launchSettings { it.copy(customEngines = it.customEngines.filterNot { c -> c.id == engine.id }, searchEngineId = if (it.searchEngineId == engine.id) "duckduckgo" else it.searchEngineId) }
                     })
                 }
             }
         }
     }
-    SettingsGroup("Customize") {
+    SettingsGroup(str(R.string.customize)) {
         if (s.searchEngineId == "searxng") {
-            NavRowLike("SearXNG instance", s.searxngInstance) { editInstance = true }
+            NavRowLike(str(R.string.searxng_instance), s.searxngInstance) { editInstance = true }
             GroupDivider()
         }
-        NavRowLike("Add custom search engine", "Use %s where the query goes", icon = true) { adding = true }
+        NavRowLike(str(R.string.add_custom_search_engine), str(R.string.use_s_where_the_query_goes), icon = true) { adding = true }
     }
-    SettingsFootnote("Eddy asks your default engine for suggestions. Turn them off in General.")
+    SettingsFootnote(str(R.string.eddy_asks_your_default_engine_for_sugges))
 
     if (editInstance) {
-        TextInputDialog("SearXNG instance", s.searxngInstance, "Instance URL", keyboardType = KeyboardType.Uri, validate = { it.startsWith("http://") || it.startsWith("https://") }, onDismiss = { editInstance = false }) { v ->
+        TextInputDialog(str(R.string.searxng_instance), s.searxngInstance, str(R.string.instance_url), keyboardType = KeyboardType.Uri, validate = { it.startsWith("http://") || it.startsWith("https://") }, onDismiss = { editInstance = false }) { v ->
             vm.launchSettings { it.copy(searxngInstance = v.trimEnd('/')) }
             editInstance = false
         }
@@ -123,15 +124,15 @@ private fun AddEngineDialog(onDismiss: () -> Unit, onAdd: (SearchEngine) -> Unit
     val valid = name.isNotBlank() && url.startsWith("http") && "%s" in url && (suggest.isBlank() || "%s" in suggest)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Custom search engine") },
+        title = { Text(str(R.string.custom_search_engine)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true)
-                OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text("Search URL (with %s)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), isError = "%s" !in url)
-                OutlinedTextField(suggest, { suggest = it }, Modifier.fillMaxWidth(), label = { Text("Suggestions URL (optional)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.name)) }, singleLine = true)
+                OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.search_url_with_s)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), isError = "%s" !in url)
+                OutlinedTextField(suggest, { suggest = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.suggestions_url_optional)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
             }
         },
-        confirmButton = { TextButton(enabled = valid, onClick = { onAdd(SearchEngine("custom-" + UUID.randomUUID(), name.trim(), url.trim(), suggest.trim().ifBlank { null })) }) { Text("Add") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(enabled = valid, onClick = { onAdd(SearchEngine("custom-" + UUID.randomUUID(), name.trim(), url.trim(), suggest.trim().ifBlank { null })) }) { Text(str(R.string.add)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
 }

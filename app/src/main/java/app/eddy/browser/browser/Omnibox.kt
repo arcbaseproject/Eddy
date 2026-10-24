@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
@@ -119,10 +121,10 @@ fun BrowserBar(
     val loadingColor = MaterialTheme.colorScheme.primary
     val home = tab == null || tab.isHome
     val label = when {
-        tab == null || tab.isHome -> "Search or type URL"
-        tab.error != null -> UrlUtils.displayHost(tab.url).ifEmpty { "Page unavailable" }
+        tab == null || tab.isHome -> str(R.string.search_or_type_url)
+        tab.error != null -> UrlUtils.displayHost(tab.url).ifEmpty { str(R.string.page_unavailable) }
         tab.host.isNotEmpty() -> tab.host
-        else -> tab.url.ifEmpty { "Search or type URL" }
+        else -> tab.url.ifEmpty { str(R.string.search_or_type_url) }
     }
 
     Surface(
@@ -142,15 +144,15 @@ fun BrowserBar(
         ) {
             if (compact) {
                 Text(
-                    label, Modifier.align(Alignment.Center).clickable(role = Role.Button, onClickLabel = "Show toolbar", onClick = onExpand).fillMaxSize().wrapContentSize(),
+                    label, Modifier.align(Alignment.Center).clickable(role = Role.Button, onClickLabel = str(R.string.show_toolbar), onClick = onExpand).fillMaxSize().wrapContentSize(),
                     style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             } else {
                 Row(Modifier.fillMaxSize().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    EddyIconButton(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack, enabled = tab != null && (tab.canGoBack || !tab.isHome))
+                    EddyIconButton(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.back), onBack, enabled = tab != null && (tab.canGoBack || !tab.isHome))
                     Row(
                         Modifier.weight(1f).fillMaxHeight().clip(CircleShape)
-                            .clickable(role = Role.Button, onClickLabel = "Edit address", onClick = onEdit),
+                            .clickable(role = Role.Button, onClickLabel = str(R.string.edit_address), onClick = onEdit),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (tab != null && !home) SecurityButton(tab, tab.incognito, onSiteInfo)
@@ -165,11 +167,11 @@ fun BrowserBar(
                         )
                         if (tab != null && tab.blockedCount > 0) BlockedBadge(tab.blockedCount, onSiteInfo)
                         // Only shown while loading; reload lives in the menu and pull-to-refresh.
-                        if (tab?.isLoading == true) EddyIconButton(Icons.Rounded.Close, "Stop loading", onStop)
+                        if (tab?.isLoading == true) EddyIconButton(Icons.Rounded.Close, str(R.string.stop_loading), onStop)
                     }
-                    EddyIconButton(Icons.Rounded.Add, "New tab", onNewTab)
+                    EddyIconButton(Icons.Rounded.Add, str(R.string.new_tab), onNewTab)
                     TabCountButton(tabCount, tab?.incognito == true, onTabs)
-                    EddyIconButton(Icons.Rounded.MoreVert, "Menu", onMenu)
+                    EddyIconButton(Icons.Rounded.MoreVert, str(R.string.menu), onMenu)
                 }
             }
         }
@@ -179,11 +181,11 @@ fun BrowserBar(
 @Composable
 private fun SecurityButton(tab: BrowserTab, incognito: Boolean, onClick: () -> Unit) {
     val (icon, description) = when {
-        incognito && tab.security == Security.NONE -> Icons.Rounded.VisibilityOff to "Incognito tab"
-        tab.security == Security.SECURE -> Icons.Rounded.Lock to "Secure connection. Open site information"
-        tab.security == Security.INSECURE -> Icons.Rounded.Warning to "Not secure. Open site information"
-        tab.security == Security.ERROR -> Icons.Rounded.GppBad to "Connection problem. Open site information"
-        else -> Icons.Rounded.Search to "Site information"
+        incognito && tab.security == Security.NONE -> Icons.Rounded.VisibilityOff to str(R.string.shortcut_incognito)
+        tab.security == Security.SECURE -> Icons.Rounded.Lock to str(R.string.secure_connection_open_site_information)
+        tab.security == Security.INSECURE -> Icons.Rounded.Warning to str(R.string.not_secure_open_site_information)
+        tab.security == Security.ERROR -> Icons.Rounded.GppBad to str(R.string.connection_problem_open_site_information)
+        else -> Icons.Rounded.Search to str(R.string.site_information)
     }
     val tint = when (tab.security) {
         Security.SECURE -> MaterialTheme.colorScheme.primary
@@ -198,7 +200,7 @@ private fun SecurityButton(tab: BrowserTab, incognito: Boolean, onClick: () -> U
         }
         // A word next to the icon so "not secure" never depends on colour alone.
         if (tab.security == Security.INSECURE) {
-            Text("Not secure", Modifier.padding(start = 6.dp), style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.SemiBold)
+            Text(str(R.string.not_secure), Modifier.padding(start = 6.dp), style = MaterialTheme.typography.labelSmall, color = tint, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -206,7 +208,7 @@ private fun SecurityButton(tab: BrowserTab, incognito: Boolean, onClick: () -> U
 @Composable
 private fun BlockedBadge(count: Int, onClick: () -> Unit) {
     Row(
-        Modifier.clip(CircleShape).clickable(role = Role.Button, onClickLabel = "Blocked requests", onClick = onClick)
+        Modifier.clip(CircleShape).clickable(role = Role.Button, onClickLabel = str(R.string.blocked_requests), onClick = onClick)
             .heightIn(min = 32.dp).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -222,7 +224,7 @@ private fun TabCountButton(count: Int, incognito: Boolean, onClick: () -> Unit) 
     val fade = effectSpring<Float>()
     Box(
         Modifier.size(Dimens.touchTarget).clip(CircleShape)
-            .clickable(role = Role.Button, onClickLabel = "Open tab switcher") { haptics.tick(); onClick() }
+            .clickable(role = Role.Button, onClickLabel = str(R.string.open_tab_switcher)) { haptics.tick(); onClick() }
             .semantics { contentDescription = "$count tabs" },
         contentAlignment = Alignment.Center,
     ) {
@@ -295,7 +297,7 @@ fun OmniboxEditor(
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (value.text.isEmpty()) {
                             Text(
-                                if (voice.listening) "Listening" else "Search or type a URL",
+                                if (voice.listening) str(R.string.listening) else str(R.string.search_or_type_a_url),
                                 style = UrlTextStyle,
                                 color = if (voice.listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -308,9 +310,9 @@ fun OmniboxEditor(
             VoiceInputButton({ spoken -> value = TextFieldValue(spoken, TextRange(spoken.length)); onTextChange(spoken) }, voice, autoStart = dictate, onAutoStarted = onDictateStarted)
             // The slot stays put while dictating: a button appearing beside the mic would shift it too.
             if (value.text.isNotEmpty() || voice.listening) {
-                EddyIconButton(Icons.Rounded.Close, "Clear text", { value = TextFieldValue(""); onTextChange("") })
+                EddyIconButton(Icons.Rounded.Close, str(R.string.clear_text), { value = TextFieldValue(""); onTextChange("") })
             }
-            EddyIconButton(Icons.AutoMirrored.Rounded.ArrowForward, "Go", { onSubmit(value.text) }, tint = MaterialTheme.colorScheme.primary)
+            EddyIconButton(Icons.AutoMirrored.Rounded.ArrowForward, str(R.string.go), { onSubmit(value.text) }, tint = MaterialTheme.colorScheme.primary)
         }
     }
 
@@ -347,7 +349,7 @@ private fun SuggestionRow(s: Suggestion, onPick: () -> Unit, onFill: () -> Unit)
                 Text(s.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        EddyIconButton(Icons.Rounded.NorthWest, "Use ${s.title} in address bar", onFill, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        EddyIconButton(Icons.Rounded.NorthWest, str(R.string.use_in_address_bar, s.title), onFill, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -369,22 +371,22 @@ fun FindBar(state: FindState, onQuery: (String) -> Unit, onNext: (Boolean) -> Un
                 keyboardActions = KeyboardActions(onSearch = { onNext(true) }),
                 decorationBox = { inner ->
                     Box(contentAlignment = Alignment.CenterStart) {
-                        if (state.query.isEmpty()) Text("Find in page", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f))
+                        if (state.query.isEmpty()) Text(str(R.string.find_in_page), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f))
                         inner()
                     }
                 },
             )
             if (state.query.isNotEmpty()) {
                 Text(
-                    if (state.total == 0) "No results" else "${state.active} of ${state.total}",
+                    if (state.total == 0) str(R.string.no_results) else "${state.active} of ${state.total}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(horizontal = 6.dp),
                 )
             }
-            EddyIconButton(Icons.Rounded.KeyboardArrowUp, "Previous result", { onNext(false) }, enabled = state.total > 0)
-            EddyIconButton(Icons.Rounded.KeyboardArrowDown, "Next result", { onNext(true) }, enabled = state.total > 0)
-            EddyIconButton(Icons.Rounded.Close, "Close find", onClose)
+            EddyIconButton(Icons.Rounded.KeyboardArrowUp, str(R.string.previous_result), { onNext(false) }, enabled = state.total > 0)
+            EddyIconButton(Icons.Rounded.KeyboardArrowDown, str(R.string.next_result), { onNext(true) }, enabled = state.total > 0)
+            EddyIconButton(Icons.Rounded.Close, str(R.string.close_find), onClose)
         }
     }
 }

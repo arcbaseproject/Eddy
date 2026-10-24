@@ -8,10 +8,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsIndexTest {
+    init { TestStrings.install() }
+
     @Test fun everyEntryMatchesARealRowTitle() {
         val source = File("src/main/java/app/eddy/browser/settings").listFiles { f -> f.extension == "kt" }!!
             .filter { it.name != "SettingsSearch.kt" }.joinToString("\n") { it.readText() }
-        val missing = settingsIndex.map { it.title }.filter { "\"$it\"" !in source }
+        val missing = settingsIndex.map { TestStrings.nameOf.getValue(it.titleRes) }.filter { !Regex("R\\.string\\.$it\\b").containsMatchIn(source) }
         assertTrue("Index titles with no matching row: $missing", missing.isEmpty())
     }
 

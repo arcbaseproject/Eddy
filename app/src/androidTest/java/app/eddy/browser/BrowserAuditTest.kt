@@ -365,7 +365,7 @@ class BrowserAuditTest {
     @Test fun invalidResumeRangeIsNotPublished() = runBlocking {
         val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
         HttpFixture().use { server ->
-            val id = dao.insert(app.eddy.browser.data.database.DownloadEntity(url = server.origin + "/bad-range", fileName = "range.bin", mimeType = "application/octet-stream", resumable = true))
+            val id = dao.insert(app.eddy.browser.data.database.DownloadEntity(url = server.origin + "/bad-range", fileName = "range.bin", mimeType = "application/octet-stream", resumable = true, etag = "\"v1\""))
             File(instrumentation.targetContext.filesDir, "downloads/$id.part").writeText("abc")
             try {
                 vm.downloads.resume(id)

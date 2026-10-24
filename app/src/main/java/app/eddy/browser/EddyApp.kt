@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import app.eddy.browser.util.Strings
 import app.eddy.browser.widget.SearchWidget
 
 class EddyApp : Application() {
@@ -13,6 +14,7 @@ class EddyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Strings.install(resources)
         container = AppContainer(this)
         container.start()
         // Long-press on the launcher icon offers an incognito tab; dynamic so it follows whichever icon alias is enabled.

@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -70,7 +72,7 @@ private fun SaveLoginCard(prompt: SaveLoginPrompt, vm: BrowserViewModel) {
                 Icon(Icons.Rounded.Key, null, Modifier.size(24.dp))
                 Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text(
-                        if (update) "Update password?" else "Save password?",
+                        if (update) str(R.string.update_password) else str(R.string.save_password),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
@@ -84,13 +86,13 @@ private fun SaveLoginCard(prompt: SaveLoginPrompt, vm: BrowserViewModel) {
                 }
                 EddyIconButton(
                     if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    if (reveal) "Hide password" else "Show password", { reveal = !reveal },
+                    if (reveal) str(R.string.hide_password) else str(R.string.show_password), { reveal = !reveal },
                 )
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = vm::neverSaveLogin) { Text("Never") }
-                TextButton(onClick = vm::dismissSaveLogin) { Text("Not now") }
-                Button(onClick = vm::confirmSaveLogin) { Text(if (update) "Update" else "Save") }
+                TextButton(onClick = vm::neverSaveLogin) { Text(str(R.string.never)) }
+                TextButton(onClick = vm::dismissSaveLogin) { Text(str(R.string.not_now)) }
+                Button(onClick = vm::confirmSaveLogin) { Text(if (update) str(R.string.update) else str(R.string.save)) }
             }
         }
     }
@@ -116,7 +118,7 @@ fun AutofillLayer(vm: BrowserViewModel, tab: BrowserTab?, keyboardVisible: Boole
                 ) {
                     item {
                         Text(
-                            "Fill for ${UrlUtils.displayHost(offer.origin)}",
+                            str(R.string.fill_for, UrlUtils.displayHost(offer.origin)),
                             Modifier.padding(end = 4.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -132,7 +134,7 @@ fun AutofillLayer(vm: BrowserViewModel, tab: BrowserTab?, keyboardVisible: Boole
                             Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Rounded.Key, null, Modifier.size(18.dp))
                                 Text(
-                                    login.username.ifEmpty { "Saved password" },
+                                    login.username.ifEmpty { str(R.string.saved_password) },
                                     Modifier.padding(start = 8.dp),
                                     style = MaterialTheme.typography.labelLarge, maxLines = 1,
                                 )

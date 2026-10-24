@@ -1,5 +1,7 @@
 package app.eddy.browser.browser
 
+import app.eddy.browser.R
+import app.eddy.browser.util.str
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,30 +29,30 @@ fun PromptHost(vm: BrowserViewModel) {
         is Prompt.HttpAuth -> AuthDialog(p, vm)
         is Prompt.ExternalApp -> AlertDialog(
             onDismissRequest = { vm.answerExternal(p, false) },
-            title = { Text("Open in another app?") },
-            text = { Text("This page wants to open a link in another app:\n\n${p.intent.dataString ?: p.intent.`package` ?: "unknown"}") },
-            confirmButton = { TextButton(onClick = { vm.answerExternal(p, true) }) { Text("Open") } },
-            dismissButton = { TextButton(onClick = { vm.answerExternal(p, false) }) { Text("Stay here") } },
+            title = { Text(str(R.string.open_in_another_app_2)) },
+            text = { Text(str(R.string.page_wants_to_open_app, p.intent.dataString ?: p.intent.`package` ?: str(R.string.unknown))) },
+            confirmButton = { TextButton(onClick = { vm.answerExternal(p, true) }) { Text(str(R.string.open)) } },
+            dismissButton = { TextButton(onClick = { vm.answerExternal(p, false) }) { Text(str(R.string.stay_here)) } },
         )
         is Prompt.RiskyDownload -> AlertDialog(
             onDismissRequest = { vm.answerRiskyDownload(p, false) },
-            title = { Text("Download this file?") },
+            title = { Text(str(R.string.download_this_file)) },
             text = {
                 Text(
                     "${p.fileName} from ${p.sourceHost} can install or run code on your device." +
-                        (if (p.insecure) " It is also being sent over an unencrypted connection." else "") +
-                        " Download it only if you trust this site.",
+                        (if (p.insecure) str(R.string.it_is_also_being_sent_over_an_unencrypte) else "") +
+                        str(R.string.download_it_only_if_you_trust_this_site),
                 )
             },
-            confirmButton = { TextButton(onClick = { vm.answerRiskyDownload(p, true) }) { Text("Download") } },
-            dismissButton = { TextButton(onClick = { vm.answerRiskyDownload(p, false) }) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = { vm.answerRiskyDownload(p, true) }) { Text(str(R.string.download)) } },
+            dismissButton = { TextButton(onClick = { vm.answerRiskyDownload(p, false) }) { Text(str(R.string.cancel)) } },
         )
         is Prompt.Paste -> AlertDialog(
             onDismissRequest = { vm.answerPaste(p, false) },
-            title = { Text("Paste from clipboard?") },
+            title = { Text(str(R.string.paste_from_clipboard)) },
             text = { Text("${p.host} wants to read the text you copied.") },
-            confirmButton = { TextButton(onClick = { vm.answerPaste(p, true) }) { Text("Paste") } },
-            dismissButton = { TextButton(onClick = { vm.answerPaste(p, false) }) { Text("Block") } },
+            confirmButton = { TextButton(onClick = { vm.answerPaste(p, true) }) { Text(str(R.string.paste)) } },
+            dismissButton = { TextButton(onClick = { vm.answerPaste(p, false) }) { Text(str(R.string.block)) } },
         )
         null -> Unit
     }
@@ -69,10 +71,10 @@ private fun PermissionDialog(p: Prompt.Permission, vm: BrowserViewModel) {
     }
     AlertDialog(
         onDismissRequest = { vm.answerPermission(p, false, false) },
-        title = { Text("Allow ${p.host} to use your $what?") },
-        text = { if (!p.incognito) CheckRow("Remember my choice for this site", rememberChoice) { rememberChoice = it } },
-        confirmButton = { TextButton(onClick = { vm.answerPermission(p, true, rememberChoice) }) { Text("Allow") } },
-        dismissButton = { TextButton(onClick = { vm.answerPermission(p, false, rememberChoice) }) { Text("Block") } },
+        title = { Text(str(R.string.allow_to_use_your, p.host, what)) },
+        text = { if (!p.incognito) CheckRow(str(R.string.remember_my_choice_for_this_site), rememberChoice) { rememberChoice = it } },
+        confirmButton = { TextButton(onClick = { vm.answerPermission(p, true, rememberChoice) }) { Text(str(R.string.allow)) } },
+        dismissButton = { TextButton(onClick = { vm.answerPermission(p, false, rememberChoice) }) { Text(str(R.string.block)) } },
     )
 }
 
@@ -82,17 +84,17 @@ private fun AuthDialog(p: Prompt.HttpAuth, vm: BrowserViewModel) {
     var pass by remember(p) { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = { vm.answerAuth(p, null, null) },
-        title = { Text("Sign in to ${p.host}") },
+        title = { Text(str(R.string.sign_in_to, p.host)) },
         text = {
             Column {
                 if (p.realm.isNotBlank()) Text("Realm: ${p.realm}")
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(user, { user = it }, Modifier.fillMaxWidth(), label = { Text("Username") }, singleLine = true)
+                OutlinedTextField(user, { user = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.username)) }, singleLine = true)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(pass, { pass = it }, Modifier.fillMaxWidth(), label = { Text("Password") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                OutlinedTextField(pass, { pass = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.password)) }, singleLine = true, visualTransformation = PasswordVisualTransformation())
             }
         },
-        confirmButton = { TextButton(onClick = { vm.answerAuth(p, user, pass) }) { Text("Sign in") } },
-        dismissButton = { TextButton(onClick = { vm.answerAuth(p, null, null) }) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { vm.answerAuth(p, user, pass) }) { Text(str(R.string.sign_in)) } },
+        dismissButton = { TextButton(onClick = { vm.answerAuth(p, null, null) }) { Text(str(R.string.cancel)) } },
     )
 }
