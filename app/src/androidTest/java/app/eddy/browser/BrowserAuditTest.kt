@@ -52,6 +52,19 @@ class BrowserAuditTest {
         fail("Condition did not become true within 15 seconds: $detail")
     }
 
+    @Test fun firstLoadFromStartPageKnowsItsPageHost() {
+        HttpFixture().use { server ->
+            main {
+                vm.newTab()
+                assertEquals("", vm.tabs.selected!!.pageHost)
+                // Requests can start before onPageStarted; third-party blocking needs the host from the load itself.
+                vm.navigate(server.origin + "/a")
+                assertEquals("127.0.0.1", vm.tabs.selected!!.pageHost)
+            }
+            await { vm.tabs.selected!!.title == "A" }
+        }
+    }
+
     @Test fun backgroundTabsRespectLiveBudget() {
         main { repeat(8) { vm.tabs.newTab("about:blank", select = false) } }
         main { assertTrue("Background tabs bypass the four-WebView budget", vm.tabs.tabs.count { it.webView != null } <= 4) }

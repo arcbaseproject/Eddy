@@ -1,0 +1,3 @@
+* Ad and tracker blocking now covers the first page opened from the start page or address bar
+* Google Tag Manager is blocked by the built-in tracker list
+* The About page links to the new website, eddybrowser.xyz

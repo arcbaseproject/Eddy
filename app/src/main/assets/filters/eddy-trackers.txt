@@ -49,6 +49,7 @@ gemius.com
 gemius.pl
 getclicky.com
 google-analytics.com
+googletagmanager.com
 heapanalytics.com
 heap.io
 histats.com

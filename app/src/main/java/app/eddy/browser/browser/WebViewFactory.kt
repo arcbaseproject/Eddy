@@ -269,6 +269,9 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     fun load(tab: BrowserTab, view: EddyWebView, requested: String) {
         val url = upgrade(requested)
         tab.httpsUpgradedFrom = if (url != requested) requested else null
+        // The page's first requests can arrive before onPageStarted; with no page host yet nothing counts as
+        // third party, so a tab opened from the start page would load its ads unblocked.
+        tab.pageHost = UrlUtils.host(url)
         prepare(tab, view, url)
         view.settings.allowFileAccess = url.startsWith("file:", ignoreCase = true)
         val headers = if (host.settings.doNotTrack && UrlUtils.isWebUrl(url)) mapOf("DNT" to "1", "Sec-GPC" to "1") else emptyMap()

@@ -296,7 +296,7 @@ private fun AboutSettings(vm: BrowserViewModel) {
 }
 
 private const val REPO_URL = "https://github.com/arcbaseproject/Eddy"
-private const val SITE_URL = "https://eddy.libreapps.xyz"
+private const val SITE_URL = "https://eddybrowser.xyz"
 
 /** App icon, name and version, with links to the website and the source code. */
 @Composable
