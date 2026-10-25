@@ -113,10 +113,12 @@ runtime permissions, external apps, fullscreen video) leaves the ViewModel as a 
 - **Incognito.** Uses a separate WebView *profile* (androidx.webkit multi-profile) whose cookies and
   storage are deleted when the last incognito tab closes. On WebViews without multi-profile support
   incognito still skips history/cache/thumbnails but shares cookies (Settings > Privacy says so).
-- **Blocking.** Host-based, parsed once into hash sets cached on disk, matched on WebView's IO
-  thread in `shouldInterceptRequest`. Only third-party requests are blocked. Per-site switch, custom
-  lists, daily background refresh via `JobScheduler`. Supports hosts files, domain lists and
-  `||domain^` rules.
+- **Blocking.** Lists are parsed once and cached on disk, then matched on WebView's IO thread in
+  `shouldInterceptRequest`. Domain rules (hosts files, domain lists, `||domain^`) block third-party
+  requests only. URL rules with paths can also block a site's own ad scripts, and they honour `@@`
+  exceptions, `$domain=` and `$third-party`. A built-in stylesheet hides common ad slots, and YouTube
+  gets its own ad-stripping script. Per-site switch, custom lists, daily background refresh via
+  `JobScheduler`.
 - **Downloads.** Own resumable HTTP engine (Range/ETag) with a foreground service; finished files are
   published to `Downloads` through MediaStore. Pause/resume, retry, speed, notifications.
 - **Welcome tour.** First launch shows a five-step tour with a hero shape that morphs as you swipe. Theme, colours, search engine and toolbar position apply to the real settings live. It is skipped when the app opens from a link, and Settings > About can replay it.
@@ -128,8 +130,8 @@ runtime permissions, external apps, fullscreen video) leaves the ViewModel as a 
 
 - WebView does not implement the Web Notifications API, so there is no per-site notification switch.
 - `blob:` downloads and password autofill need a recent Android System WebView. On older ones Eddy says so and turns the password switches off.
-- Blocking is domain-based only; there is no cosmetic (element-hiding) filtering.
-- User-facing strings are inline English, not yet extracted to resources.
+- Element hiding uses one built-in stylesheet; `##` element-hiding rules in filter lists are ignored.
+- The app is English only. Its text is in `res/values/strings.xml`, ready for translations.
 
 ## Privacy and legal
 
