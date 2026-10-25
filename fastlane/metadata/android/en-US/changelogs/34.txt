@@ -1,0 +1,2 @@
+* Fixes the F-Droid build: dependency checksums are now complete when Gradle starts with an empty cache
+* The app description now mentions that Translate sends the page address to Google
