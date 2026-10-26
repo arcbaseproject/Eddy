@@ -1,8 +1,9 @@
 > [!CAUTION]
-> **Eddy 0.6.15 and later need a one-time reinstall.**
+> **Eddy 0.6.25 and later need a one-time reinstall.**
 >
-> The key that signed Eddy 0.6.14 and earlier was lost, so new versions are signed with a new key.
-> Android will not update an older Eddy to them: it shows **"App not installed"**. To switch:
+> The key that signed Eddy 0.6.15 through 0.6.24 has been lost, so those versions and every version
+> from 0.6.25 on are signed with different keys. Android will not update an older Eddy to the new
+> ones: it shows **"App not installed"**. To switch:
 >
 > 1. **Save your passwords.** In Eddy, open **Menu > Passwords**, tap **⋮** and choose **Export to CSV**.
 > 2. **Uninstall Eddy.** This deletes your tabs, history and bookmarks.
@@ -11,6 +12,18 @@
 >    pick the file you exported. Then delete that file: it is not encrypted.
 >
 > You only need to do this once. Later updates install normally.
+>
+> <details><summary>How the key was lost</summary>
+>
+> The keystore lived in a `.tar.zst` archive rather than in a real backup. While migrating this
+> machine from Void Linux to NixOS, that archive turned out to be corrupt: extracting it on the new
+> system produced everything except the keystore, and the Void install was already gone. There was no
+> second copy anywhere, so the key is unrecoverable.
+>
+> This is the second time an Eddy signing key has been lost. The new key is held in a password manager
+> as well as on disk.
+>
+> </details>
 
 <p align="center"><img src="logo.png" alt="Eddy logo" width="112"></p>
 
