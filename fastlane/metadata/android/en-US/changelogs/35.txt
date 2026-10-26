@@ -1,0 +1,2 @@
+* Signed with a new key, so this version needs a one-time uninstall and reinstall. Export your passwords first, from Menu > Passwords > ⋮ > Export to CSV, and import them again afterwards
+* No other changes: the app is the same as 0.6.24-beta
