@@ -29,6 +29,8 @@
 
 # Eddy
 
+<p align="center"><a href="https://discord.gg/jQDnjD3KE"><img src="https://img.shields.io/badge/Discord-Join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the Eddy Discord"></a></p>
+
 > **Beta.** Eddy is in active development. Expect rough edges.
 
 A fast, lightweight, privacy-focused Android browser built on the system WebView, with a Material 3
@@ -37,6 +39,11 @@ Expressive interface. Kotlin, Jetpack Compose, no ads, no analytics, no telemetr
 Eddy is an original app. It takes its *feel* (floating one-hand chrome, expressive shapes, springy
 motion, a calm start page) from the lightweight-browser school of design, but shares no code, name,
 icons or assets with any other browser.
+
+## Community
+
+Questions, bug reports and feedback are welcome on the [Eddy Discord](https://discord.gg/YOUR_INVITE_CODE).
+Bugs can also be reported as [GitHub issues](https://github.com/arcbaseproject/Eddy/issues).
 
 ## Screenshots
 
