@@ -1,0 +1,1 @@
+* Ads and trackers are now blocked on a page opened right after the app starts, even before large downloaded filter lists finish loading

@@ -66,9 +66,12 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
             (thirdParty && isBlocked(host, ads, trackers))
     }
 
-    /** Called on WebView's IO thread; only blocks until the very first rule load ends. */
+    /**
+     * Called on WebView's IO thread; only blocks until the very first rule load ends. Parsing large
+     * downloaded lists takes seconds on slow devices, and requests let through early go unfiltered.
+     */
     private fun awaitFirstLoad() {
-        if (firstLoad.count > 0L) firstLoad.await(500, TimeUnit.MILLISECONDS)
+        if (firstLoad.count > 0L) firstLoad.await(FIRST_LOAD_TIMEOUT_S, TimeUnit.SECONDS)
     }
 
     fun reload(lists: List<FilterList>) {
@@ -76,6 +79,10 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
     }
 
     private suspend fun loadFromCache(lists: List<FilterList>) = mutex.withLock {
+        try { parseLists(lists) } finally { firstLoad.countDown() }
+    }
+
+    private fun parseLists(lists: List<FilterList>) {
         val ads = HashSet<String>()
         val trackers = HashSet<String>()
         val adUrls = ArrayList<String>()
@@ -102,7 +109,6 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
         }
         rules = Rules(ads, trackers, NetworkRules(adUrls), NetworkRules(trackerUrls))
         _ruleCount.value = ads.size + trackers.size
-        firstLoad.countDown()
     }
 
     /** Downloads remote lists, stores supported rules, then reloads. Returns the number of failures. */
@@ -162,6 +168,7 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
 
     companion object {
         const val ASSET_PREFIX = "asset://"
+        private const val FIRST_LOAD_TIMEOUT_S = 20L
         private val domainRegex = Regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
         private val ipRegex = Regex("^[0-9.]+$")
         private val hostsSinks = setOf("0.0.0.0", "127.0.0.1", "::1", "::")
