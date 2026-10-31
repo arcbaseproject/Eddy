@@ -1,0 +1,1 @@
+* Eddy now has a Discord server: a one-time message at startup links to it

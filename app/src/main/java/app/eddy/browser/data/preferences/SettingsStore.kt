@@ -74,6 +74,7 @@ class SettingsStore(private val context: Context) {
         val httpsOnly = booleanPreferencesKey("https_only")
         val clearOnExit = booleanPreferencesKey("clear_on_exit")
         val onboardingDone = booleanPreferencesKey("onboarding_done")
+        val discordAnnounced = booleanPreferencesKey("discord_announced")
         val savePasswords = booleanPreferencesKey("save_passwords")
         val autofillPasswords = booleanPreferencesKey("autofill_passwords")
         val restore = booleanPreferencesKey("restore_tabs")
@@ -130,6 +131,7 @@ class SettingsStore(private val context: Context) {
             httpsOnly = this[K.httpsOnly] ?: d.httpsOnly,
             clearOnExit = this[K.clearOnExit] ?: d.clearOnExit,
             onboardingCompleted = this[K.onboardingDone] ?: d.onboardingCompleted,
+            discordAnnounced = this[K.discordAnnounced] ?: d.discordAnnounced,
             savePasswords = this[K.savePasswords] ?: d.savePasswords,
             autofillPasswords = this[K.autofillPasswords] ?: d.autofillPasswords,
             restoreTabs = this[K.restore] ?: d.restoreTabs,
@@ -182,6 +184,7 @@ class SettingsStore(private val context: Context) {
         this[K.httpsOnly] = s.httpsOnly
         this[K.clearOnExit] = s.clearOnExit
         this[K.onboardingDone] = s.onboardingCompleted
+        this[K.discordAnnounced] = s.discordAnnounced
         this[K.savePasswords] = s.savePasswords
         this[K.autofillPasswords] = s.autofillPasswords
         this[K.restore] = s.restoreTabs

@@ -81,6 +81,8 @@ data class Settings(
     /** Clears history, open tabs, cookies, site data and cache when the app is swiped away or its process ends. */
     val clearOnExit: Boolean = false,
     val onboardingCompleted: Boolean = false,
+    /** Set once the Discord announcement has been shown, so it never appears again. */
+    val discordAnnounced: Boolean = false,
     val savePasswords: Boolean = true,
     val autofillPasswords: Boolean = true,
     val restoreTabs: Boolean = true,

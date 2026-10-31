@@ -654,4 +654,7 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="web_debugging_hint">Lets chrome://inspect attach to pages over USB</string>
     <string name="skipped_suffix">, %1$s skipped</string>
     <string name="voice_search">Voice search</string>
+    <string name="discord_title">Eddy has a Discord</string>
+    <string name="discord_message">Join the new Eddy Discord server to chat with other users, report bugs, suggest features and hear about releases first.</string>
+    <string name="discord_join">Join</string>
 </resources>

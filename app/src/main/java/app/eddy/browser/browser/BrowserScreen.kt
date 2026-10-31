@@ -9,7 +9,10 @@ import android.view.WindowManager
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -206,6 +209,20 @@ fun BrowserRoot(vm: BrowserViewModel) {
                     OnboardingScreen(vm, settings)
                 }
 
+                // One-time announcement, held back until the welcome tour is out of the way.
+                if (settings.onboardingCompleted && !settings.discordAnnounced) {
+                    val dismiss = { vm.launchSettings { it.copy(discordAnnounced = true) } }
+                    AlertDialog(
+                        onDismissRequest = dismiss,
+                        title = { Text(str(R.string.discord_title)) },
+                        text = { Text(str(R.string.discord_message)) },
+                        confirmButton = {
+                            TextButton(onClick = { dismiss(); vm.openInNewTab(DiscordInvite) }) { Text(str(R.string.discord_join)) }
+                        },
+                        dismissButton = { TextButton(onClick = dismiss) { Text(str(R.string.not_now)) } },
+                    )
+                }
+
                 PromptHost(vm)
                 if (vm.menuVisible) MenuSheet(vm, selected, vm.isBookmarked.collectAsStateWithLifecycle().value) { vm.menuVisible = false }
                 if (vm.siteInfoVisible && selected != null) SiteInfoSheet(vm, selected) { vm.siteInfoVisible = false }
@@ -218,6 +235,8 @@ fun BrowserRoot(vm: BrowserViewModel) {
         }
     }
 }
+
+private const val DiscordInvite = "https://discord.gg/Q5NXwwwDph"
 
 @Composable
 private fun Overlay(visible: Boolean, modifier: Modifier, content: @Composable () -> Unit) {

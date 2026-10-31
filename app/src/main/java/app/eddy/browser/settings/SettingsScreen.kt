@@ -259,7 +259,7 @@ private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
     if (confirmReset) {
         ConfirmDialog(str(R.string.reset_all_settings_2), str(R.string.eddy_restores_every_setting_to_its_defau), str(R.string.reset_2), { confirmReset = false }) {
             confirmReset = false
-            vm.launchSettings { Settings(shortcuts = it.shortcuts, onboardingCompleted = it.onboardingCompleted) }
+            vm.launchSettings { Settings(shortcuts = it.shortcuts, onboardingCompleted = it.onboardingCompleted, discordAnnounced = it.discordAnnounced) }
         }
     }
 }
