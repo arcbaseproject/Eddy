@@ -203,7 +203,7 @@ class EddyWebViewClient(
         if (url != tab.url && url != view.url) { handler.cancel(); return }
         tab.error?.sslHandler?.cancel()
         val reason = when (error.primaryError) {
-            SslError.SSL_UNTRUSTED -> "A trusted authority did not issue this certificate."
+            SslError.SSL_UNTRUSTED -> str(R.string.the_certificate_is_untrusted)
             SslError.SSL_EXPIRED -> str(R.string.the_certificate_has_expired)
             SslError.SSL_IDMISMATCH -> str(R.string.the_certificate_belongs_to_a_different_s)
             SslError.SSL_NOTYETVALID -> str(R.string.the_certificate_is_not_valid_yet)

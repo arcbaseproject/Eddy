@@ -151,7 +151,7 @@ fun SitePermissionsSettings(vm: BrowserViewModel) {
                 site.get(f)?.let { v ->
                     // Text size stores a percentage; every other feature stores allow/block.
                     if (f == SiteFeature.TEXT_ZOOM) "${label(f)}: $v%"
-                    else "${label(f)}: ${if (v == SiteSettings.ALLOW) "allow" else "block"}"
+                    else "${label(f)}: ${if (v == SiteSettings.ALLOW) str(R.string.feature_allow) else str(R.string.feature_block)}"
                 }
             }.joinToString(" · ")
             Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -167,15 +167,15 @@ fun SitePermissionsSettings(vm: BrowserViewModel) {
 }
 
 private fun label(f: SiteFeature) = when (f) {
-    SiteFeature.LOCATION -> "location"
-    SiteFeature.CAMERA -> "camera"
-    SiteFeature.MICROPHONE -> "microphone"
+    SiteFeature.LOCATION -> str(R.string.feature_location)
+    SiteFeature.CAMERA -> str(R.string.feature_camera)
+    SiteFeature.MICROPHONE -> str(R.string.feature_microphone)
     SiteFeature.JAVASCRIPT -> str(R.string.javascript)
-    SiteFeature.POPUPS -> "pop-ups"
-    SiteFeature.THIRD_PARTY_COOKIES -> "3rd-party cookies"
-    SiteFeature.DESKTOP -> "desktop site"
-    SiteFeature.CONTENT_BLOCKING -> "blocking"
-    SiteFeature.TEXT_ZOOM -> "text size"
+    SiteFeature.POPUPS -> str(R.string.feature_popups)
+    SiteFeature.THIRD_PARTY_COOKIES -> str(R.string.feature_third_party_cookies)
+    SiteFeature.DESKTOP -> str(R.string.feature_desktop_site)
+    SiteFeature.CONTENT_BLOCKING -> str(R.string.feature_blocking)
+    SiteFeature.TEXT_ZOOM -> str(R.string.feature_text_size)
 }
 
 @Composable

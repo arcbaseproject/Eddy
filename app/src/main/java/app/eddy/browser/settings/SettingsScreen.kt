@@ -314,7 +314,7 @@ private fun AboutHeader(open: (String) -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            "A fast, private browser. No ads, no tracking.",
+            str(R.string.about_tagline),
             Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,

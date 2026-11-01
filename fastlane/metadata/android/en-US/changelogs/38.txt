@@ -1,0 +1,2 @@
+* Spanish translation of the whole interface; Android 13+ can set it per app
+* Playback speed in the page menu, from 0.5x to 3x, including videos embedded from other sites

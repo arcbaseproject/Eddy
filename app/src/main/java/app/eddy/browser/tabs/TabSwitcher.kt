@@ -1,6 +1,7 @@
 package app.eddy.browser.tabs
 
 import app.eddy.browser.R
+import app.eddy.browser.util.plural
 import app.eddy.browser.util.str
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -218,7 +219,7 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
     if (confirmCloseAll) {
         ConfirmDialog(
             title = if (incognito) str(R.string.close_all_incognito_tabs) else str(R.string.close_all_tabs_2),
-            message = "${shown.size} tabs will be closed.",
+            message = plural(R.plurals.tabs_will_be_closed, shown.size),
             confirmLabel = str(R.string.close_all),
             onDismiss = { confirmCloseAll = false },
             onConfirm = { confirmCloseAll = false; haptics.confirm(); vm.closeAllTabs(incognito) },
@@ -241,7 +242,7 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
         onDismiss = { haptics.confirm(); vm.closeTab(tab) },
     ) {
         Surface(
-            modifier = Modifier.semantics { contentDescription = "$title. ${tab.host}. Swipe sideways to close, long-press and drag to move." },
+            modifier = Modifier.semantics { contentDescription = str(R.string.tab_card_description, title, tab.host) },
             shape = RoundedCornerShape(28.dp),
             color = if (tab.incognito) scheme.tertiaryContainer.copy(alpha = 0.5f) else scheme.surfaceContainerHigh,
             border = if (border > 0.05f) androidx.compose.foundation.BorderStroke(border.dp, scheme.primary) else null,

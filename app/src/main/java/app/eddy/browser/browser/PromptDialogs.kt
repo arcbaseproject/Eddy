@@ -39,7 +39,7 @@ fun PromptHost(vm: BrowserViewModel) {
             title = { Text(str(R.string.download_this_file)) },
             text = {
                 Text(
-                    "${p.fileName} from ${p.sourceHost} can install or run code on your device." +
+                    str(R.string.file_from_host_can_run_code, p.fileName, p.sourceHost) +
                         (if (p.insecure) str(R.string.it_is_also_being_sent_over_an_unencrypte) else "") +
                         str(R.string.download_it_only_if_you_trust_this_site),
                 )
@@ -50,7 +50,7 @@ fun PromptHost(vm: BrowserViewModel) {
         is Prompt.Paste -> AlertDialog(
             onDismissRequest = { vm.answerPaste(p, false) },
             title = { Text(str(R.string.paste_from_clipboard)) },
-            text = { Text("${p.host} wants to read the text you copied.") },
+            text = { Text(str(R.string.host_wants_to_read_clipboard, p.host)) },
             confirmButton = { TextButton(onClick = { vm.answerPaste(p, true) }) { Text(str(R.string.paste)) } },
             dismissButton = { TextButton(onClick = { vm.answerPaste(p, false) }) { Text(str(R.string.block)) } },
         )
@@ -61,11 +61,11 @@ fun PromptHost(vm: BrowserViewModel) {
 @Composable
 private fun PermissionDialog(p: Prompt.Permission, vm: BrowserViewModel) {
     var rememberChoice by remember(p) { mutableStateOf(true) }
-    val what = p.features.joinToString(" and ") {
+    val what = p.features.joinToString(str(R.string.and_separator)) {
         when (it) {
-            SiteFeature.CAMERA -> "camera"
-            SiteFeature.MICROPHONE -> "microphone"
-            SiteFeature.LOCATION -> "location"
+            SiteFeature.CAMERA -> str(R.string.feature_camera)
+            SiteFeature.MICROPHONE -> str(R.string.feature_microphone)
+            SiteFeature.LOCATION -> str(R.string.feature_location)
             else -> it.name.lowercase()
         }
     }
@@ -87,7 +87,7 @@ private fun AuthDialog(p: Prompt.HttpAuth, vm: BrowserViewModel) {
         title = { Text(str(R.string.sign_in_to, p.host)) },
         text = {
             Column {
-                if (p.realm.isNotBlank()) Text("Realm: ${p.realm}")
+                if (p.realm.isNotBlank()) Text(str(R.string.realm, p.realm))
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(user, { user = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.username)) }, singleLine = true)
                 Spacer(Modifier.height(8.dp))

@@ -1,6 +1,7 @@
 package app.eddy.browser.browser
 
 import app.eddy.browser.R
+import app.eddy.browser.util.plural
 import app.eddy.browser.util.str
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
@@ -212,7 +213,7 @@ private fun BlockedBadge(count: Int, onClick: () -> Unit) {
             .heightIn(min = 32.dp).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.Shield, "$count requests blocked", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
+        Icon(Icons.Rounded.Shield, plural(R.plurals.requests_blocked, count), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
         Text(if (count > 99) "99+" else "$count", Modifier.padding(start = 3.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
     }
 }
@@ -225,7 +226,7 @@ private fun TabCountButton(count: Int, incognito: Boolean, onClick: () -> Unit) 
     Box(
         Modifier.size(Dimens.touchTarget).clip(CircleShape)
             .clickable(role = Role.Button, onClickLabel = str(R.string.open_tab_switcher)) { haptics.tick(); onClick() }
-            .semantics { contentDescription = "$count tabs" },
+            .semantics { contentDescription = plural(R.plurals.tab_count, count) },
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -378,7 +379,7 @@ fun FindBar(state: FindState, onQuery: (String) -> Unit, onNext: (Boolean) -> Un
             )
             if (state.query.isNotEmpty()) {
                 Text(
-                    if (state.total == 0) str(R.string.no_results) else "${state.active} of ${state.total}",
+                    if (state.total == 0) str(R.string.no_results) else str(R.string.find_match_of_total, state.active, state.total),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(horizontal = 6.dp),

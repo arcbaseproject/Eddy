@@ -1,6 +1,7 @@
 package app.eddy.browser.browser
 
 import app.eddy.browser.R
+import app.eddy.browser.util.plural
 import app.eddy.browser.util.str
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -94,7 +95,7 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
                     Text(str(R.string.ad_and_tracker_blocking), style = MaterialTheme.typography.bodyLarge)
                     Text(
                         if (!settings.adBlock && !settings.trackerProtection) str(R.string.turned_off_in_settings)
-                        else "${tab.blockedCount} blocked on this page",
+                        else plural(R.plurals.blocked_on_this_page, tab.blockedCount),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -110,13 +111,13 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
                 val zoom = site?.get(SiteFeature.TEXT_ZOOM)
                 Surface(onClick = { zoomOpen = true }, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
                     Text(
-                        zoom?.let { "$it%" } ?: "${settings.textZoom}% (default)",
+                        zoom?.let { "$it%" } ?: str(R.string.percent_default, settings.textZoom),
                         Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelLarge,
                     )
                     DropdownMenu(expanded = zoomOpen, onDismissRequest = { zoomOpen = false }) {
                         DropdownMenuItem(
-                            text = { Text("${settings.textZoom}% (default)") },
+                            text = { Text(str(R.string.percent_default, settings.textZoom)) },
                             onClick = { zoomOpen = false; vm.setSiteTextZoom(tab, null); refresh++ },
                         )
                         listOf(75, 100, 125, 150, 175, 200).forEach { percent ->
@@ -142,13 +143,13 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             PermissionRow(str(R.string.camera), permissions?.get(SiteFeature.CAMERA), str(R.string.ask)) { set(SiteFeature.CAMERA, it) }
             PermissionRow(str(R.string.microphone), permissions?.get(SiteFeature.MICROPHONE), str(R.string.ask)) { set(SiteFeature.MICROPHONE, it) }
             PermissionRow(str(R.string.javascript), site?.get(SiteFeature.JAVASCRIPT), if (settings.javascript) str(R.string.allowed_default) else str(R.string.blocked_default)) { set(SiteFeature.JAVASCRIPT, it) }
-            PermissionRow("Pop-ups", site?.get(SiteFeature.POPUPS), str(R.string.blocked_default)) { set(SiteFeature.POPUPS, it) }
+            PermissionRow(str(R.string.pop_ups), site?.get(SiteFeature.POPUPS), str(R.string.blocked_default)) { set(SiteFeature.POPUPS, it) }
             PermissionRow(str(R.string.third_party_cookies), site?.get(SiteFeature.THIRD_PARTY_COOKIES), str(R.string.follows_settings)) { set(SiteFeature.THIRD_PARTY_COOKIES, it) }
             HorizontalDivider()
 
             Text(str(R.string.site_data), style = MaterialTheme.typography.titleSmall)
             Text(
-                if (cookieCount == 0) str(R.string.no_cookies_stored_for_this_page) else "$cookieCount cookies stored for this page",
+                if (cookieCount == 0) str(R.string.no_cookies_stored_for_this_page) else plural(R.plurals.cookies_stored_for_this_page, cookieCount),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

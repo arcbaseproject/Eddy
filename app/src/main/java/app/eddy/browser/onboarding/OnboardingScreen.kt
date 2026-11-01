@@ -204,7 +204,7 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     when (page) {
-                        0 -> PageText(str(R.string.welcome_to_eddy), "A fast browser that keeps your data on your device.")
+                        0 -> PageText(str(R.string.welcome_to_eddy), str(R.string.welcome_subtitle))
                         1 -> {
                             PageText(str(R.string.private_by_default), str(R.string.eddy_blocks_ads_and_trackers_and_sends_n))
                             FlowRow(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -366,7 +366,7 @@ private fun LookPicker(vm: BrowserViewModel, s: Settings) {
                     Modifier.size(Dimens.touchTarget - 6.dp).clip(CircleShape).background(p.swatch)
                         .border(if (selected) 3.dp else 0.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                         .clickable(role = Role.RadioButton) { vm.launchSettings { it.copy(palette = i, dynamicColor = false) } }
-                        .semantics { contentDescription = "${p.label} colors" + if (selected) ", selected" else "" },
+                        .semantics { contentDescription = str(R.string.colors_description, p.label) + if (selected) str(R.string.selected_suffix) else "" },
                     contentAlignment = Alignment.Center,
                 ) { if (selected) Icon(Icons.Rounded.Check, null, tint = Color.White) }
             }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Eddy</string>
+    <string name="app_name" translatable="false">Eddy</string>
     <string name="channel_downloads_active">Active downloads</string>
     <string name="channel_downloads_done">Finished downloads</string>
     <string name="download_complete">Download complete</string>
@@ -171,6 +171,7 @@
     <string name="reader">Reader</string>
     <string name="stop">Stop</string>
     <string name="read_aloud">Read aloud</string>
+    <string name="playback_speed">Playback speed</string>
     <string name="print">Print</string>
     <string name="new_tab">New tab</string>
     <string name="new_incognito_tab">New incognito tab</string>
@@ -571,6 +572,7 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="see_the_privacy_policy_for_details">See the privacy policy for details.</string>
     <string name="skip">Skip</string>
     <string name="welcome_to_eddy">Welcome to Eddy</string>
+    <string name="welcome_subtitle">A fast browser that keeps your data on your device.</string>
     <string name="private_by_default">Private by default</string>
     <string name="eddy_blocks_ads_and_trackers_and_sends_n">Eddy blocks ads and trackers and sends no telemetry. Your history, bookmarks and passwords never leave your phone.</string>
     <string name="password_manager">Password manager</string>
@@ -611,8 +613,8 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="hide_shortcuts">Hide shortcuts</string>
     <string name="add_shortcut">Add shortcut</string>
     <string name="shortcut_options">Shortcut options</string>
-    <string name="javascript">JavaScript</string>
-    <string name="github">GitHub</string>
+    <string name="javascript" translatable="false">JavaScript</string>
+    <string name="github" translatable="false">GitHub</string>
     <string name="original">Original</string>
     <string name="forest">Forest</string>
     <string name="violet">Violet</string>
@@ -657,4 +659,59 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="discord_title">Eddy has a Discord</string>
     <string name="discord_message">Join the new Eddy Discord server to chat with other users, report bugs, suggest features and hear about releases first.</string>
     <string name="discord_join">Join</string>
+    <string name="the_certificate_is_untrusted">A trusted authority did not issue this certificate.</string>
+    <string name="feature_location">location</string>
+    <string name="feature_camera">camera</string>
+    <string name="feature_microphone">microphone</string>
+    <string name="feature_popups">pop-ups</string>
+    <string name="feature_third_party_cookies">3rd-party cookies</string>
+    <string name="feature_desktop_site">desktop site</string>
+    <string name="feature_blocking">blocking</string>
+    <string name="feature_text_size">text size</string>
+    <string name="feature_allow">allow</string>
+    <string name="feature_block">block</string>
+    <string name="file_from_host_can_run_code">%1$s from %2$s can install or run code on your device.</string>
+    <string name="host_wants_to_read_clipboard">%1$s wants to read the text you copied.</string>
+    <string name="and_separator">" and "</string>
+    <string name="realm">Realm: %1$s</string>
+    <string name="file_downloaded">%1$s downloaded</string>
+    <string name="file_failed_to_download">%1$s failed to download</string>
+    <string name="label_copied">%1$s copied</string>
+    <string name="about_tagline">A fast, private browser. No ads, no tracking.</string>
+    <string name="of_size">" of %1$s"</string>
+    <string name="waiting">Waiting…</string>
+    <string name="file_type_generic">FILE</string>
+    <string name="tab_card_description">%1$s. %2$s. Swipe sideways to close, long-press and drag to move.</string>
+    <string name="palette_description">%1$s palette</string>
+    <string name="icon_description">%1$s icon</string>
+    <string name="colors_description">%1$s colors</string>
+    <string name="selected_suffix">", selected"</string>
+    <plurals name="blocked_on_this_page">
+        <item quantity="one">%d blocked on this page</item>
+        <item quantity="other">%d blocked on this page</item>
+    </plurals>
+    <string name="percent_default">%1$d%% (default)</string>
+    <string name="pop_ups">Pop-ups</string>
+    <string name="find_match_of_total">%1$d of %2$d</string>
+    <string name="folder_label">Folder: %1$s</string>
+    <plurals name="tabs_will_be_closed">
+        <item quantity="one">%d tab will be closed.</item>
+        <item quantity="other">%d tabs will be closed.</item>
+    </plurals>
+    <plurals name="cookies_stored_for_this_page">
+        <item quantity="one">%d cookie stored for this page</item>
+        <item quantity="other">%d cookies stored for this page</item>
+    </plurals>
+    <plurals name="requests_blocked">
+        <item quantity="one">%d request blocked</item>
+        <item quantity="other">%d requests blocked</item>
+    </plurals>
+    <plurals name="tab_count">
+        <item quantity="one">%d tab</item>
+        <item quantity="other">%d tabs</item>
+    </plurals>
+    <plurals name="bookmark_count">
+        <item quantity="one">%d bookmark</item>
+        <item quantity="other">%d bookmarks</item>
+    </plurals>
 </resources>

@@ -68,7 +68,7 @@ fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
                         Modifier.size(Dimens.touchTarget).clip(CircleShape).background(p.swatch)
                             .border(if (selected) 3.dp else 0.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                             .clickable { vm.launchSettings { it.copy(palette = i) } }
-                            .semantics { contentDescription = "${p.label} palette" + if (selected) ", selected" else "" },
+                            .semantics { contentDescription = str(R.string.palette_description, p.label) + if (selected) str(R.string.selected_suffix) else "" },
                         contentAlignment = Alignment.Center,
                     ) { if (selected) Icon(Icons.Rounded.Check, null, tint = androidx.compose.ui.graphics.Color.White) }
                 }
@@ -153,7 +153,7 @@ private fun AppIconPicker() {
                 Modifier.size(56.dp).clip(shape).background(colorResource(icon.background))
                     .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, shape) else Modifier)
                     .clickable { AppIcon.set(icon); current = icon }
-                    .semantics { contentDescription = "${icon.label} icon" + if (selected) ", selected" else "" },
+                    .semantics { contentDescription = str(R.string.icon_description, icon.label) + if (selected) str(R.string.selected_suffix) else "" },
             ) {
                 // The foreground art sits inside the adaptive-icon safe zone; scale it to fill the tile.
                 Image(painterResource(icon.foreground), null, Modifier.fillMaxSize().scale(1.4f))

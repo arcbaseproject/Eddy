@@ -1,6 +1,7 @@
 package app.eddy.browser.util
 
 import android.content.res.Resources
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 
 /**
@@ -10,12 +11,17 @@ import androidx.annotation.StringRes
  */
 object Strings {
     @Volatile var lookup: (Int, Array<out Any?>) -> String = { _, _ -> error("Strings.lookup is not installed") }
+    @Volatile var quantity: (Int, Int) -> String = { _, _ -> error("Strings.quantity is not installed") }
 
     fun install(resources: Resources) {
         lookup = { id, args -> if (args.isEmpty()) resources.getString(id) else resources.getString(id, *args) }
+        quantity = { id, count -> resources.getQuantityString(id, count, count) }
     }
 }
 
 // shortcut: resolved per call from the application's resources, so text follows the locale the app runs in; a
 // per-screen locale override would need stringResource() in composables instead.
 fun str(@StringRes id: Int, vararg args: Any?): String = Strings.lookup(id, args)
+
+/** Plural text whose only argument is [count]. */
+fun plural(@PluralsRes id: Int, count: Int): String = Strings.quantity(id, count)

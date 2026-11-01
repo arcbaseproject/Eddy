@@ -4,6 +4,7 @@ import app.eddy.browser.R
 import app.eddy.browser.util.str
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,8 +38,11 @@ import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +52,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -112,6 +120,15 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
             if (webPage) {
                 Group {
                     SwitchRow(Icons.Rounded.DesktopWindows, str(R.string.desktop_site), tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
+                    if (tab?.webView != null && tab.error == null) Box {
+                        var speedOpen by remember { mutableStateOf(false) }
+                        Row(Icons.Rounded.Speed, str(R.string.playback_speed), { speedOpen = true })
+                        DropdownMenu(expanded = speedOpen, onDismissRequest = { speedOpen = false }) {
+                            listOf(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0).forEach { rate ->
+                                DropdownMenuItem(text = { Text(rate.toString().removeSuffix(".0") + "×") }, onClick = act { vm.setPlaybackSpeed(rate) })
+                            }
+                        }
+                    }
                     if (tab?.webView != null) Row(Icons.Rounded.Translate, str(R.string.translate), act { vm.translateVisible = true })
                     Row(Icons.Rounded.Home, str(R.string.add_to_start_page), act { tab?.let(vm::addShortcut) })
                     if (tab?.webView != null && tab.error == null) Row(Icons.Rounded.Code, str(R.string.view_source), act { vm.viewPageSource() })

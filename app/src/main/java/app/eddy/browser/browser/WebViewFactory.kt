@@ -158,6 +158,8 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
             if (isMainFrame) host.onClipboardRead(tab, sourceOrigin.toString(), reply)
         }
         WebViewCompat.addDocumentStartJavaScript(view, ClipboardBridge.SOURCE, setOf("*"))
+        // Playback speed reaches players inside iframes, which the main frame's script cannot touch across origins.
+        WebViewCompat.addDocumentStartJavaScript(view, SPEED_SCRIPT, setOf("*"))
     }
 
     /** Settings that do not depend on the current site; also re-run when the user changes a preference. */
@@ -388,6 +390,11 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
                 "if(v){if(!s)s={v:v,m:v.muted,r:v.playbackRate};v.muted=true;v.playbackRate=16;" +
                 "var b=document.querySelector('.ytp-skip-ad-button,.ytp-ad-skip-button-modern,.ytp-ad-skip-button');if(b)b.click()}" +
                 "else if(s){s.v.muted=s.m;s.v.playbackRate=s.r;s=null}},300)})()"
+        /** Sets this frame's media to the posted speed and passes the message on to its own child frames. */
+        private const val SPEED_SCRIPT =
+            "addEventListener('message',function(e){var r=e.data&&e.data.eddySpeed;if(typeof r!='number')return;" +
+                "document.querySelectorAll('video,audio').forEach(function(m){m.playbackRate=r});" +
+                "for(var i=0;i<frames.length;i++)frames[i].postMessage({eddySpeed:r},'*')})"
         private const val DNT_SCRIPT =
             "try{Object.defineProperty(navigator,'doNotTrack',{get:function(){return '1'}});" +
                 "Object.defineProperty(navigator,'globalPrivacyControl',{get:function(){return true}})}catch(e){}"

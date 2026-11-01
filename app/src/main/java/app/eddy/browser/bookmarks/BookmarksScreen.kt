@@ -1,6 +1,7 @@
 package app.eddy.browser.bookmarks
 
 import app.eddy.browser.R
+import app.eddy.browser.util.plural
 import app.eddy.browser.util.str
 import androidx.activity.compose.BackHandler
 import android.content.ClipData
@@ -203,7 +204,7 @@ private fun FolderRow(f: BookmarkFolder, count: Int, onOpen: () -> Unit, onRenam
             }
             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
                 Text(f.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(if (count == 1) "1 bookmark" else "$count bookmarks", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(plural(R.plurals.bookmark_count, count), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             EddyIconButton(Icons.Rounded.MoreVert, str(R.string.actions_for_folder, f.name), { menu = true }, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -232,7 +233,7 @@ private fun BookmarkEditor(b: Bookmark, folders: List<BookmarkFolder>, onDismiss
                 OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.title)) }, singleLine = true)
                 OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.address)) }, singleLine = true, isError = !UrlUtils.isUrl(url))
                 Box {
-                    TextButton(onClick = { pick = true }) { Text("Folder: ${folders.firstOrNull { it.id == folderId }?.name ?: "None"}") }
+                    TextButton(onClick = { pick = true }) { Text(str(R.string.folder_label, folders.firstOrNull { it.id == folderId }?.name ?: str(R.string.none))) }
                     DropdownMenu(pick, { pick = false }) {
                         DropdownMenuItem(text = { Text(str(R.string.none)) }, onClick = { folderId = Bookmark.ROOT_FOLDER; pick = false })
                         folders.forEach { f -> DropdownMenuItem(text = { Text(f.name) }, onClick = { folderId = f.id; pick = false }) }

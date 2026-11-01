@@ -17,8 +17,8 @@ android {
         applicationId = "app.eddy.browser"
         minSdk = 29
         targetSdk = 37
-        versionCode = 37
-        versionName = "0.6.27-beta"
+        versionCode = 38
+        versionName = "0.6.28-beta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -56,6 +56,9 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+
+    // Lists the values-xx folders in the manifest, so Android 13+ offers them in the per-app language setting.
+    androidResources { generateLocaleConfig = true }
 
     buildFeatures {
         compose = true

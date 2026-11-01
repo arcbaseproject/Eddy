@@ -219,8 +219,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         }
         viewModelScope.launch {
             downloads.events.collect { e ->
-                if (e.success && e.contentUri.isNotEmpty()) snackbar("${e.fileName} downloaded", str(R.string.open)) { openFile(e.contentUri, e.mimeType, e.fileName) }
-                else if (!e.success) snackbar("${e.fileName} failed to download", str(R.string.view)) { screen = Screen.DOWNLOADS }
+                if (e.success && e.contentUri.isNotEmpty()) snackbar(str(R.string.file_downloaded, e.fileName), str(R.string.open)) { openFile(e.contentUri, e.mimeType, e.fileName) }
+                else if (!e.success) snackbar(str(R.string.file_failed_to_download, e.fileName), str(R.string.view)) { screen = Screen.DOWNLOADS }
             }
         }
         viewModelScope.launch {
@@ -584,6 +584,15 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         factory.load(tab, view, tab.url)
     }
 
+    /** Sets the main frame's media directly; the posted message reaches iframes through WebViewFactory's speed script. */
+    fun setPlaybackSpeed(rate: Double) {
+        tabs.selected?.webView?.evaluateJavascript(
+            "document.querySelectorAll('video,audio').forEach(function(m){m.playbackRate=$rate});" +
+                "for(var i=0;i<frames.length;i++)frames[i].postMessage({eddySpeed:$rate},'*')",
+            null,
+        )
+    }
+
     fun toggleDevTools() {
         val tab = tabs.selected ?: return
         val view = tab.webView ?: return
@@ -917,7 +926,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         }
         app.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
         ClipboardClearReceiver.schedule(app, CLIPBOARD_CLEAR_MS)
-        snackbar("$label copied")
+        snackbar(str(R.string.label_copied, label))
     }
 
     // ---- prompts --------------------------------------------------------------------------

@@ -99,8 +99,8 @@ private fun DownloadCard(vm: BrowserViewModel, d: DownloadEntity, progress: Live
         DownloadStatus.COMPLETED -> str(R.string.completed, Formatter.formatShortFileSize(context, d.totalBytes.coerceAtLeast(d.downloadedBytes)))
         DownloadStatus.FAILED -> str(R.string.failed_reason, d.error.ifBlank { str(R.string.unknown_error) })
         DownloadStatus.CANCELED -> str(R.string.canceled)
-        DownloadStatus.PAUSED -> str(R.string.paused, Formatter.formatShortFileSize(context, downloaded)) + if (total > 0) " of ${Formatter.formatShortFileSize(context, total)}" else ""
-        DownloadStatus.QUEUED -> "Waiting…"
+        DownloadStatus.PAUSED -> str(R.string.paused, Formatter.formatShortFileSize(context, downloaded)) + if (total > 0) str(R.string.of_size, Formatter.formatShortFileSize(context, total)) else ""
+        DownloadStatus.QUEUED -> str(R.string.waiting)
         DownloadStatus.RUNNING -> buildString {
             append(Formatter.formatShortFileSize(context, downloaded))
             if (total > 0) append(" of ").append(Formatter.formatShortFileSize(context, total))
@@ -177,6 +177,6 @@ private fun typeLabel(mime: String, name: String): String {
     return when {
         ext.isNotEmpty() && ext.length <= 5 -> ext
         mime.isNotBlank() -> mime.substringAfter('/').uppercase().take(8)
-        else -> "FILE"
+        else -> str(R.string.file_type_generic)
     }
 }
