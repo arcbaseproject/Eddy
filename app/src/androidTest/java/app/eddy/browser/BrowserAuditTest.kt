@@ -52,6 +52,46 @@ class BrowserAuditTest {
         fail("Condition did not become true within 15 seconds: $detail")
     }
 
+    @Test fun privateCameraBlockDoesNotPrompt() {
+        main {
+            val host = "https://private-permission.example"
+            vm.sites.set(host, app.eddy.browser.privacy.SiteFeature.CAMERA, app.eddy.browser.data.database.SiteSettings.BLOCK, true)
+            var denied = false
+            val coordinator = app.eddy.browser.browser.WebPermissionCoordinator(
+                instrumentation.targetContext,
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main.immediate),
+                vm.sites,
+                { fail("Blocked private permission must not prompt") },
+                { fail("Blocked private permission must not request runtime access"); emptyMap() },
+            )
+            coordinator.onWebRequest(object : android.webkit.PermissionRequest() {
+                override fun getOrigin() = Uri.parse(host)
+                override fun getResources() = arrayOf(android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+                override fun grant(resources: Array<String>) { fail("Blocked camera was granted") }
+                override fun deny() { denied = true }
+            }, true)
+            assertTrue(denied)
+            vm.sites.clearPrivate()
+        }
+    }
+
+    @Test fun clearSiteDataRemovesCookiesOutsideCurrentPath() {
+        org.junit.Assume.assumeTrue(androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.DELETE_BROWSING_DATA))
+        HttpFixture().use { server ->
+            main { vm.navigate(server.origin + "/a") }
+            await { vm.tabs.selected!!.title == "A" }
+            val cookies = android.webkit.CookieManager.getInstance()
+            val set = CountDownLatch(1)
+            main { cookies.setCookie(server.origin + "/account", "hidden=yes; Path=/account") { set.countDown() } }
+            assertTrue(set.await(5, TimeUnit.SECONDS))
+            main {
+                assertTrue(cookies.getCookie(server.origin + "/account").orEmpty().contains("hidden=yes"))
+                vm.clearSiteData(vm.tabs.selected!!)
+            }
+            await { !cookies.getCookie(server.origin + "/account").orEmpty().contains("hidden=yes") }
+        }
+    }
+
     @Test fun firstLoadFromStartPageKnowsItsPageHost() {
         HttpFixture().use { server ->
             main {
@@ -225,7 +265,7 @@ class BrowserAuditTest {
         val request = object : android.webkit.PermissionRequest() {
             var granted = false
             override fun getOrigin() = Uri.parse("https://audit-permission.example")
-            override fun getResources() = arrayOf(RESOURCE_VIDEO_CAPTURE)
+            override fun getResources() = arrayOf(android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE)
             override fun grant(resources: Array<out String>) { granted = true }
             override fun deny() {}
         }
@@ -362,6 +402,48 @@ class BrowserAuditTest {
         }
     }
 
+    @Test fun redirectedDownloadUsesDestinationCookies() = runBlocking {
+        val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
+        HttpFixture().use { server ->
+            val target = server.origin.replace("127.0.0.1", "localhost")
+            val cookies = android.webkit.CookieManager.getInstance()
+            val set = CountDownLatch(1)
+            main { cookies.setCookie(target, "redirectAuth=yes; Path=/") { set.countDown() } }
+            assertTrue(set.await(5, TimeUnit.SECONDS))
+            val id = vm.downloads.enqueue(DownloadRequest(server.origin + "/auth-redirect", "", "", "attachment; filename=redirect.bin", "application/octet-stream", -1, cookie = "sourceOnly=yes"))
+            try {
+                kotlinx.coroutines.withTimeout(15000) { while (vm.downloads.active.value != 0) kotlinx.coroutines.delay(50) }
+                val result = dao.get(id)!!
+                assertEquals(result.error, app.eddy.browser.data.database.DownloadStatus.COMPLETED, result.status)
+                assertEquals(2L, result.downloadedBytes)
+            } finally {
+                vm.downloads.delete(id, true)
+                main { cookies.setCookie(target, "redirectAuth=; Max-Age=0; Path=/") }
+            }
+        }
+    }
+
+    @Test fun blobFloodIsRejectedBeforeAcknowledgement() {
+        HttpFixture().use { server ->
+            main { vm.navigate(server.origin + "/a") }
+            await { vm.tabs.selected!!.title == "A" }
+            main {
+                var failures = 0
+                val downloader = app.eddy.browser.downloads.BlobDownloader(
+                    instrumentation.targetContext,
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main.immediate),
+                    vm.downloads,
+                ) { _, id -> if (id == null) failures++ }
+                val tab = vm.tabs.selected!!
+                downloader.start(tab, "blob:${server.origin}/missing", "", "text/plain")
+                val chunk = """{"id":1,"t":"chunk","d":"YQ=="}"""
+                downloader.onMessage(tab, server.origin, chunk) { fail("Flooded job must not acknowledge") }
+                downloader.onMessage(tab, server.origin, chunk) { fail("Flooded job must not acknowledge") }
+                assertEquals(1, failures)
+            }
+        }
+    }
+
     @Test fun queuedDownloadCancellationUpdatesDatabase() = runBlocking {
         val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
         HttpFixture().use { server ->
@@ -402,7 +484,7 @@ class BrowserAuditTest {
         val request = object : android.webkit.PermissionRequest() {
             var granted = false
             override fun getOrigin() = Uri.parse("https://www.audit-permission.example:8443")
-            override fun getResources() = arrayOf(RESOURCE_VIDEO_CAPTURE)
+            override fun getResources() = arrayOf(android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE)
             override fun grant(resources: Array<out String>) { granted = true }
             override fun deny() {}
         }

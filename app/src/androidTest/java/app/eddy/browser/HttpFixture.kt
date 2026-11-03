@@ -56,6 +56,18 @@ class HttpFixture(tls: Boolean = false) : AutoCloseable {
                             }
                             return@use
                         }
+                        if (path == "/auth-redirect" || path == "/auth-target") {
+                            val response = if (path == "/auth-redirect") {
+                                "HTTP/1.1 302 Found\r\nLocation: ${origin.replace("127.0.0.1", "localhost")}/auth-target\r\nContent-Length: 0\r\n"
+                            } else if (headers["cookie"].orEmpty().contains("redirectAuth=yes")) {
+                                "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: 2\r\n"
+                            } else {
+                                "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\n"
+                            }
+                            it.getOutputStream().write((response + "Connection: close\r\n\r\n").toByteArray())
+                            if (path == "/auth-target" && headers["cookie"].orEmpty().contains("redirectAuth=yes")) it.getOutputStream().write("ok".toByteArray())
+                            return@use
+                        }
                         val body = when (path.substringBefore('?')) {
                             "/a" -> "<title>A</title><a id='next' href='/b'>Next</a><input id='text'><input id='upload' type='file'><button id='popup' onclick=\"window.open('/b')\">Popup</button>"
                             "/b" -> "<title>B</title><a href='/a'>First</a>"

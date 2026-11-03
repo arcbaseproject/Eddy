@@ -86,7 +86,11 @@ class SitePermissions(private val dao: SiteSettingsDao, private val scope: Corou
     /** Forgets every choice made in incognito, once the last private tab closes. */
     fun clearPrivate() = private.clear()
 
-    fun reset(host: String) {
+    fun reset(host: String, incognito: Boolean = false) {
+        if (incognito) {
+            private[host] = SiteSettings(host)
+            return
+        }
         cache.remove(host)
         private.remove(host)
         scope.launch { writes.withLock { loaded.await(); dao.delete(host); cache.remove(host) } }

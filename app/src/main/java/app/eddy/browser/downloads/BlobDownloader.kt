@@ -17,6 +17,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Saves `blob:` downloads. A blob only exists inside the page that made it, so the page itself reads it in
@@ -32,7 +33,8 @@ class BlobDownloader(
 ) {
     private class Job(val tabId: String, val origin: String, val name: String, val mime: String, val file: File, val incognito: Boolean) {
         var size = 0L
-        var failed = false
+        @Volatile var failed = false
+        val pending = AtomicBoolean(false)
         @Volatile var lastSeen = SystemClock.uptimeMillis()
     }
 
@@ -77,7 +79,11 @@ class BlobDownloader(
         val job = jobs[id] ?: return
         if (job.tabId != tab.id || !job.origin.equals(origin, ignoreCase = true)) return
         job.lastSeen = SystemClock.uptimeMillis()
-        when (json.optString("t")) {
+        val type = json.optString("t")
+        if (type != "chunk" && type != "end" && type != "error") return
+        // Enforce backpressure here; page scripts can ignore the acknowledgement protocol.
+        if (type != "error" && !job.pending.compareAndSet(false, true)) return fail(id, job)
+        when (type) {
             "chunk" -> {
                 val encoded = json.optString("d")
                 if (job.size + encoded.length / 4 * 3 > MAX_BYTES) return fail(id, job)
@@ -88,7 +94,14 @@ class BlobDownloader(
                     job.size += bytes.size
                     if (job.size > MAX_BYTES) return@launch fail(id, job)
                     runCatching { FileOutputStream(job.file, true).use { it.write(bytes) } }
-                        .onSuccess { withContext(Dispatchers.Main) { runCatching { reply("ack") } } }
+                        .onSuccess {
+                            withContext(Dispatchers.Main) {
+                                if (!job.failed) {
+                                    job.pending.set(false)
+                                    runCatching { reply("ack:$id") }
+                                }
+                            }
+                        }
                         .onFailure { fail(id, job) }
                 }
             }
@@ -117,6 +130,14 @@ class BlobDownloader(
 (function(id, url) {
   var bridge = window.EddyBlob;
   if (!bridge) return;
+  var handlers = bridge.__eddyHandlers;
+  if (!handlers) {
+    handlers = bridge.__eddyHandlers = Object.create(null);
+    bridge.onmessage = function (e) {
+      var handler = handlers[e.data];
+      if (handler) { delete handlers[e.data]; handler(); }
+    };
+  }
   function send(o) { o.id = id; bridge.postMessage(JSON.stringify(o)); }
   fetch(url).then(function (r) { return r.blob(); }).then(function (blob) {
     var CHUNK = $CHUNK, offset = 0;
@@ -127,7 +148,7 @@ class BlobDownloader(
         var s = reader.result;
         offset += CHUNK;
         // The browser answers "ack" once the chunk is on disk; only then is the next one read.
-        bridge.onmessage = function (e) { if (e.data === 'ack') { bridge.onmessage = null; next(); } };
+        handlers['ack:' + id] = next;
         send({ t: 'chunk', d: s.substring(s.indexOf(',') + 1) });
       };
       reader.onerror = function () { send({ t: 'error' }); };

@@ -154,7 +154,7 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { vm.clearSiteData(tab); onDismiss() }) { Text(str(R.string.clear_site_data)) }
-                TextButton(onClick = { vm.sites.reset(host); origin?.let(vm.sites::reset); vm.setSiteSetting(tab, SiteFeature.CONTENT_BLOCKING, null); refresh++ }, enabled = site != null || permissions != null) { Text(str(R.string.reset_permissions)) }
+                TextButton(onClick = { vm.sites.reset(host, tab.incognito); origin?.let { vm.sites.reset(it, tab.incognito) }; vm.setSiteSetting(tab, SiteFeature.CONTENT_BLOCKING, null); refresh++ }, enabled = site != null || permissions != null) { Text(str(R.string.reset_permissions)) }
             }
         }
     }

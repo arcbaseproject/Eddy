@@ -1,0 +1,4 @@
+* Fix concurrent blob downloads and reject message flooding.
+* Honor incognito permission blocks and keep private permission resets separate from saved settings.
+* Clear all site data on supported WebViews; report partial clearing on older versions.
+* Fix authenticated downloads redirected to another host.

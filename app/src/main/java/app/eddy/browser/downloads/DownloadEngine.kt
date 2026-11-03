@@ -288,7 +288,7 @@ class DownloadEngine(
         if (d.userAgent.isNotBlank()) conn.setRequestProperty("User-Agent", d.userAgent)
         DownloadPolicy.referrerFor(d.referer, d.url)?.let { conn.setRequestProperty("Referer", it) }
         val cookie = cookies[d.id]?.takeIf { it.first == hostOf(d.url) }?.second
-            ?: if (!d.incognito && !cookies.containsKey(d.id)) runCatching { profileCookie(d.url) }.getOrNull().orEmpty() else ""
+            ?: if (!d.incognito) runCatching { profileCookie(d.url) }.getOrNull().orEmpty() else ""
         if (cookie.isNotEmpty()) conn.setRequestProperty("Cookie", cookie)
         if (offset > 0) {
             conn.setRequestProperty("Range", "bytes=$offset-")

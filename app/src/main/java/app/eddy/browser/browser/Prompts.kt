@@ -123,7 +123,7 @@ class WebPermissionCoordinator(
 
     /** Applies stored site policy; anything undecided is put to the user in a single prompt. */
     private suspend fun decide(host: String, features: List<SiteFeature>, incognito: Boolean): Set<SiteFeature> {
-        val stored = if (incognito) null else sites.peek(host)
+        val stored = sites.peek(host, incognito)
         val undecided = features.filter { stored?.get(it) == null }
         val allowed = features.filter { stored?.get(it) == SiteSettings.ALLOW }.toMutableSet()
         if (undecided.isNotEmpty()) {

@@ -688,7 +688,17 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     fun cookieCount(tab: BrowserTab): Int =
         factory.cookieManager(tab.incognito).getCookie(tab.url)?.split(';')?.count { it.isNotBlank() } ?: 0
 
+    @android.annotation.SuppressLint("RequiresFeature")
     fun clearSiteData(tab: BrowserTab) {
+        val storage = factory.webStorage(tab.incognito)
+        if (storage != null && androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.DELETE_BROWSING_DATA)) {
+            androidx.webkit.WebStorageCompat.deleteBrowsingDataForSite(storage, tab.url) {
+                factory.cookieManager(tab.incognito).flush()
+                tab.webView?.reload()
+                snackbar(str(R.string.site_data_cleared))
+            }
+            return
+        }
         val cm = factory.cookieManager(tab.incognito)
         val url = tab.url
         // WebView only reveals names, and a cookie is deleted only by an exact Domain and Path match,
@@ -706,7 +716,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             cm.flush()
             UrlUtils.origin(url)?.let { factory.webStorage(tab.incognito)?.deleteOrigin(it) }
             tab.webView?.reload()
-            snackbar(str(R.string.site_data_cleared))
+            snackbar(str(R.string.site_data_partially_cleared))
         }
         if (pending == 0) return done()
         // Reload only after every expiry has landed, or the page could send the old cookies once more.

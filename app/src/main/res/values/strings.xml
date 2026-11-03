@@ -714,4 +714,5 @@ Each site, search engine and list host you contact can see your IP address and t
         <item quantity="one">%d bookmark</item>
         <item quantity="other">%d bookmarks</item>
     </plurals>
+    <string name="site_data_partially_cleared">Some site data may remain. Update Android System WebView to clear all data for this site.</string>
 </resources>
