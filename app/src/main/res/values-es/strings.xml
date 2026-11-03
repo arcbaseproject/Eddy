@@ -718,4 +718,5 @@ Cada sitio, buscador y servidor de listas con el que contactas puede ver tu dire
         <item quantity="many">%d marcadores</item>
         <item quantity="other">%d marcadores</item>
     </plurals>
+    <string name="site_data_partially_cleared">Es posible que queden algunos datos del sitio. Actualiza Android System WebView para borrar todos los datos de este sitio.</string>
 </resources>
