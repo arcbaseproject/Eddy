@@ -69,6 +69,8 @@ data class Settings(
     val homepageUrl: String = "",
     val externalLinks: ExternalLinks = ExternalLinks.ASK,
     val downloadLocation: DownloadLocation = DownloadLocation.DOWNLOADS,
+    /** Hands http(s) downloads to another app chosen by the user instead of downloading them here. */
+    val externalDownloads: Boolean = false,
     val adBlock: Boolean = true,
     val trackerProtection: Boolean = true,
     val filterLists: List<FilterList> = emptyList(),

@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        vm.tabs.onActivityCreated(this)
         setContent {
             val settings by vm.settingsState.collectAsStateWithLifecycle()
             val systemDark = isSystemInDarkTheme()

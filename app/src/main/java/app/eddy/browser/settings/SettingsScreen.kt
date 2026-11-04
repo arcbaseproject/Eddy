@@ -207,6 +207,7 @@ private fun GeneralSettings(vm: BrowserViewModel, s: Settings) {
             { if (it == DownloadLocation.DOWNLOADS) str(R.string.downloads) else "Downloads/Eddy" },
             { v -> vm.launchSettings { it.copy(downloadLocation = v) } },
         )
+        SwitchRow(str(R.string.download_with_another_app), s.externalDownloads, { v -> vm.launchSettings { it.copy(externalDownloads = v) } }, str(R.string.download_with_another_app_summary))
     }
     if (editHome) {
         TextInputDialog(str(R.string.custom_page), s.homepageUrl, str(R.string.address), keyboardType = KeyboardType.Uri, onDismiss = { editHome = false }) { v ->

@@ -2,6 +2,8 @@ package app.eddy.browser.downloads
 
 import app.eddy.browser.R
 import app.eddy.browser.util.str
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Description
@@ -128,6 +131,11 @@ private fun DownloadCard(vm: BrowserViewModel, d: DownloadEntity, progress: Live
                 else if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                // Only web links: data: and blob: URLs are useless (or huge) outside the page that made them.
+                if (d.url.startsWith("http")) EddyIconButton(Icons.Rounded.ContentCopy, str(R.string.copy_link), {
+                    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("url", d.url))
+                    vm.snackbar(str(R.string.copied))
+                })
                 when (d.status) {
                     DownloadStatus.RUNNING, DownloadStatus.QUEUED -> {
                         if (d.resumable) EddyIconButton(Icons.Rounded.Pause, str(R.string.pause, d.fileName), { vm.downloads.pause(d.id) })

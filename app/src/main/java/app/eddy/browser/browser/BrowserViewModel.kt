@@ -5,6 +5,7 @@ import android.Manifest
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.os.PersistableBundle
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -1137,7 +1138,32 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             if (!pageBridgeSupported) return snackbar(str(R.string.this_webview_is_too_old_to_save_this_dow))
             return blobDownloader.start(tab, url, contentDisposition, mime)
         }
+        releaseDownloadTab(tab, url)
+        // The other app gets only the URL (no cookies), and incognito downloads must not leave the private session.
+        if (settings.externalDownloads && !tab.incognito && UrlUtils.isWebUrl(url)) {
+            val view = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(url), mime.ifBlank { null })
+            val chooser = Intent.createChooser(view, null)
+                .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(app, MainActivity::class.java)))
+            effects.trySend(UiEffect.Launch(chooser))
+            return
+        }
         enqueueDownload(tab, url, userAgent, contentDisposition, mime, length)
+    }
+
+    /**
+     * A typed or opened address that turns out to be a file never becomes a page, so the tab still holds the file's
+     * address and would fetch it again when restored. Put the tab back on the page it shows, or drop it if it shows none.
+     */
+    private fun releaseDownloadTab(tab: BrowserTab, url: String) {
+        if (tab.url != url) return
+        val shown = tab.webView?.copyBackForwardList()?.currentItem
+        // Closing the last incognito tab ends the session, which would cancel this download.
+        val lastPrivate = tab.incognito && tabs.tabs.count { it.incognito } == 1
+        when {
+            shown != null -> { tab.url = shown.url; tab.title = shown.title.orEmpty(); tab.isLoading = false; tabs.requestPersist() }
+            tabs.tabs.size > 1 && !lastPrivate -> tabs.close(tab, remember = false)
+            else -> tabs.showHome(tab)
+        }
     }
 
     private fun enqueueDownload(tab: BrowserTab, url: String, userAgent: String, contentDisposition: String, mime: String, length: Long) {
@@ -1150,8 +1176,6 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
                 downloads.enqueue(DownloadRequest(url, userAgent, tab.url, contentDisposition, mime, length, tab.incognito, cookie))
             }
                 .onSuccess {
-                    // A tab that only existed to fetch this file (nothing rendered, no history) is not worth keeping.
-                    if (!tab.canGoBack && tab.title.isEmpty() && tab.error == null && tabs.tabs.size > 1) tabs.close(tab, remember = false)
                     snackbar(str(R.string.download_started), str(R.string.view)) { screen = Screen.DOWNLOADS }
                 }
                 .onFailure { snackbar(str(R.string.could_not_start_download)) }

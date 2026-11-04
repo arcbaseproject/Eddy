@@ -715,4 +715,6 @@ Each site, search engine and list host you contact can see your IP address and t
         <item quantity="other">%d bookmarks</item>
     </plurals>
     <string name="site_data_partially_cleared">Some site data may remain. Update Android System WebView to clear all data for this site.</string>
+    <string name="download_with_another_app">Download with another app</string>
+    <string name="download_with_another_app_summary">Opens downloads in an app you pick, such as a download manager. Downloads that need you to be signed in may fail there. Not used in incognito.</string>
 </resources>

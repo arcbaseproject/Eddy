@@ -62,6 +62,7 @@ class SettingsStore(private val context: Context) {
         val homepageUrl = stringPreferencesKey("homepage_url")
         val external = stringPreferencesKey("external_links")
         val downloadLocation = stringPreferencesKey("download_location")
+        val externalDownloads = booleanPreferencesKey("external_downloads")
         val adBlock = booleanPreferencesKey("ad_block")
         val trackers = booleanPreferencesKey("trackers")
         val filterLists = stringPreferencesKey("filter_lists")
@@ -121,6 +122,7 @@ class SettingsStore(private val context: Context) {
             homepageUrl = this[K.homepageUrl] ?: "",
             externalLinks = this[K.external].toEnum(d.externalLinks),
             downloadLocation = this[K.downloadLocation].toEnum(d.downloadLocation),
+            externalDownloads = this[K.externalDownloads] ?: d.externalDownloads,
             adBlock = this[K.adBlock] ?: d.adBlock,
             trackerProtection = this[K.trackers] ?: d.trackerProtection,
             filterLists = this[K.filterLists]?.let { decodeFilterLists(it, this[K.filterDefaultsSeen]) } ?: DefaultFilterLists,
@@ -173,6 +175,7 @@ class SettingsStore(private val context: Context) {
         this[K.homepageUrl] = s.homepageUrl
         this[K.external] = s.externalLinks.name
         this[K.downloadLocation] = s.downloadLocation.name
+        this[K.externalDownloads] = s.externalDownloads
         this[K.adBlock] = s.adBlock
         this[K.trackers] = s.trackerProtection
         this[K.filterLists] = encodeFilterLists(s.filterLists)

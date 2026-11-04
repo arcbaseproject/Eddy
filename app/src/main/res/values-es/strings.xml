@@ -719,4 +719,6 @@ Cada sitio, buscador y servidor de listas con el que contactas puede ver tu dire
         <item quantity="other">%d marcadores</item>
     </plurals>
     <string name="site_data_partially_cleared">Es posible que queden algunos datos del sitio. Actualiza Android System WebView para borrar todos los datos de este sitio.</string>
+    <string name="download_with_another_app">Descargar con otra app</string>
+    <string name="download_with_another_app_summary">Abre las descargas en la app que elijas, como un gestor de descargas. Las descargas que requieren iniciar sesión pueden fallar ahí. No se usa en incógnito.</string>
 </resources>

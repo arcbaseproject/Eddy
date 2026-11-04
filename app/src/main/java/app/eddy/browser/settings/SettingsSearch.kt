@@ -23,6 +23,7 @@ internal val settingsIndex = listOf(
     SettingEntry(R.string.new_tab_opens, listOf(GENERAL), "homepage home page start page custom"),
     SettingEntry(R.string.open_links_in_other_apps, listOf(GENERAL), "external intent"),
     SettingEntry(R.string.download_location, listOf(GENERAL), "downloads folder storage"),
+    SettingEntry(R.string.download_with_another_app, listOf(GENERAL), "external download manager adm idm"),
 
     SettingEntry(R.string.theme, listOf(APPEARANCE), "dark light system mode night"),
     SettingEntry(R.string.amoled_black, listOf(APPEARANCE), "true black dark oled"),

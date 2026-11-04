@@ -1,0 +1,7 @@
+* Add an option to send downloads to another app, such as a download manager.
+* Add a copy link button to each download.
+* Fix incognito downloads that were canceled when started from a new tab.
+* Stop restored tabs from starting the same download again.
+* Fix password manager verification during autofill.
+* Fix freezes and crashes when copying very large links.
+* Make long-press on start page shortcuts more reliable.

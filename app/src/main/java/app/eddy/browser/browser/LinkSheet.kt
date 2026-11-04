@@ -45,13 +45,15 @@ fun LinkSheet(vm: BrowserViewModel, target: HitTarget, onDismiss: () -> Unit) {
     val primary = link ?: image.orEmpty()
     fun run(block: () -> Unit): () -> Unit = { onDismiss(); block() }
     fun copy(text: String) {
-        context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("url", text))
-        vm.snackbar(str(R.string.copied))
+        // The clipboard goes through Binder, which refuses anything past roughly 1 MB (a data: image URL).
+        runCatching { context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("url", text)) }
+            .onSuccess { vm.snackbar(str(R.string.copied)) }.onFailure { vm.snackbar(str(R.string.too_large_to_copy)) }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-            Text(primary, Modifier.padding(horizontal = Dimens.gutterLarge, vertical = 8.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            // A data: image URL can be megabytes; laying out all of it freezes the UI even with maxLines.
+            Text(primary.take(500), Modifier.padding(horizontal = Dimens.gutterLarge, vertical = 8.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             HorizontalDivider()
             if (link != null) {
                 Action(Icons.Rounded.Tab, str(R.string.open_in_new_tab), run { vm.openInNewTab(link, select = false) })

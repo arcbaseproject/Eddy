@@ -58,6 +58,12 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
     @Volatile var incognitoProfile: String = newProfileName()
         private set
 
+    /**
+     * The live Activity, if any. A password manager's "verify it's you" step reports back to the Activity's
+     * autofill session; a WebView built on the app context starts its session elsewhere, so the login is dropped.
+     */
+    var activity: Context? = null
+
     fun startIncognitoSession() { incognitoProfile = newProfileName() }
 
     /** Password capture, autofill and blob downloads need message channels and start-up scripts (newer WebView only). */
@@ -75,7 +81,7 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
 
     @SuppressLint("SetJavaScriptEnabled", "RequiresFeature")
     fun create(tab: BrowserTab): EddyWebView {
-        val view = EddyWebView(MutableContextWrapper(appContext))
+        val view = EddyWebView(MutableContextWrapper(activity ?: appContext))
         view.incognito = tab.incognito
         if (tab.incognito && incognitoIsolated) WebViewCompat.setProfile(view, incognitoProfile)
         if (!sslPreferencesCleared) {

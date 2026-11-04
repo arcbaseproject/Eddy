@@ -320,7 +320,13 @@ class TabManager(
         view.destroy()
     }
 
-    fun onActivityDestroyed() = tabs.forEach { it.webView?.detachFromActivity(context.applicationContext) }
+    fun onActivityCreated(activity: Context) { factory().activity = activity }
+
+    // shortcut: views built on this Activity keep its AutofillManager (and so the Activity) until evicted; rebuild them if recreation becomes common.
+    fun onActivityDestroyed() {
+        factory().activity = null
+        tabs.forEach { it.webView?.detachFromActivity(context.applicationContext) }
+    }
 
     // ---- persistence ----------------------------------------------------------------------
 

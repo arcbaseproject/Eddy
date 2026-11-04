@@ -140,7 +140,8 @@ fun ShortcutGrid(
                                                 }
                                             },
                                             onDragEnd = {
-                                                if (total.getDistance() < 12f) menuFor = item.id
+                                                // Touch slop, not a few pixels: a finger always wobbles a little during a long press.
+                                                if (total.getDistance() < viewConfiguration.touchSlop) menuFor = item.id
                                                 draggingId = null
                                                 if (order.map { it.id } != shortcuts.map { it.id }) onReorder(order)
                                             },
