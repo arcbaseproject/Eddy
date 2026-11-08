@@ -70,8 +70,8 @@ class TabManager(
 
     // ---- creation / selection -------------------------------------------------------------
 
-    fun newTab(url: String = "", incognito: Boolean = false, select: Boolean = true, opener: BrowserTab? = null): BrowserTab {
-        val tab = BrowserTab(incognito = incognito, initialUrl = url).also { it.openerId = opener?.id }
+    fun newTab(url: String = "", incognito: Boolean = false, select: Boolean = true, opener: BrowserTab? = null, group: String? = opener?.group): BrowserTab {
+        val tab = BrowserTab(incognito = incognito, initialUrl = url).also { it.openerId = opener?.id; it.group = group }
         if (incognito && tabs.none { it.incognito }) factory().startIncognitoSession()
         val at = opener?.let { tabs.indexOf(it) + 1 }?.takeIf { it > 0 } ?: tabs.size
         tabs.add(at, tab)
@@ -160,7 +160,7 @@ class TabManager(
 
     fun createPopup(parent: BrowserTab, resultMsg: Message): Boolean {
         val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
-        val tab = BrowserTab(incognito = parent.incognito, initialUrl = "about:blank").also { it.openerId = parent.id; it.popup = true }
+        val tab = BrowserTab(incognito = parent.incognito, initialUrl = "about:blank").also { it.openerId = parent.id; it.popup = true; it.group = parent.group }
         tabs.add(tabs.indexOf(parent) + 1, tab)
         val view = factory().create(tab)
         tab.webView = view
@@ -220,8 +220,9 @@ class TabManager(
         requestPersist()
     }
 
-    fun closeAll(incognito: Boolean) {
-        tabs.filter { it.incognito == incognito }.forEach { close(it, remember = false) }
+    /** Closes every tab in the mode, or only those in [group] when given. */
+    fun closeAll(incognito: Boolean, group: String? = null) {
+        tabs.filter { it.incognito == incognito && (group == null || it.group == group) }.forEach { close(it, remember = false) }
     }
 
     fun restoreClosed(): BrowserTab? {
@@ -349,7 +350,7 @@ class TabManager(
         val index = JSONObject().put("selected", selectedNormal).put(
             "tabs",
             JSONArray().also { arr ->
-                normal.forEach { arr.put(JSONObject().put("id", it.id).put("url", it.url).put("title", it.title)) }
+                normal.forEach { arr.put(JSONObject().put("id", it.id).put("url", it.url).put("title", it.title).put("group", it.group)) }
             },
         ).toString()
         val ids = normal.map { it.id }.toSet()
@@ -375,7 +376,7 @@ class TabManager(
             if (tabs.any { it.id == id }) continue
             tabs.add(
                 BrowserTab(id = id, initialUrl = o.optString("url"), initialTitle = o.optString("title"))
-                    .also { it.hasPersistedState = File(stateDir, "$id.bin").exists() },
+                    .also { it.hasPersistedState = File(stateDir, "$id.bin").exists(); it.group = o.optString("group").ifEmpty { null } },
             )
         }
         if (tabs.isEmpty()) return false

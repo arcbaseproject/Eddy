@@ -34,6 +34,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Restore
@@ -85,7 +89,9 @@ import app.eddy.browser.data.models.Settings
 import app.eddy.browser.data.models.TabLayout
 import app.eddy.browser.ui.animation.rememberHaptics
 import app.eddy.browser.ui.animation.spatialSpring
+import app.eddy.browser.ui.components.ChoiceDialog
 import app.eddy.browser.ui.components.ConfirmDialog
+import app.eddy.browser.ui.components.TextInputDialog
 import app.eddy.browser.ui.components.EmptyState
 import app.eddy.browser.ui.components.SiteIcon
 import app.eddy.browser.ui.components.EddyIconButton
@@ -97,7 +103,13 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
     val haptics = rememberHaptics()
     val incognito = vm.switcherIncognito
     val all = vm.tabs.tabs
-    val shown = all.filter { it.incognito == incognito }
+    val mode = all.filter { it.incognito == incognito }
+    val groups = mode.mapNotNull { it.group }.distinct().sorted()
+    // A folder that lost its last tab simply disappears, so fall back to showing everything.
+    val group = vm.switcherGroup?.takeIf { it in groups }
+    val shown = if (group == null) mode else mode.filter { it.group == group }
+    var folderFor by remember { mutableStateOf<BrowserTab?>(null) }
+    var newFolderFor by remember { mutableStateOf<BrowserTab?>(null) }
     val normalCount = all.count { !it.incognito }
     val incognitoCount = all.count { it.incognito }
     var menu by remember { mutableStateOf(false) }
@@ -139,6 +151,22 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                 }
             }
 
+            if (groups.isNotEmpty()) {
+                LazyRow(
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Dimens.gutter),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item { FilterChip(group == null, { vm.switcherGroup = null; haptics.tick() }, { Text(str(R.string.all_tabs)) }) }
+                    items(groups.size) { i ->
+                        val g = groups[i]
+                        FilterChip(
+                            group == g, { vm.switcherGroup = g; haptics.tick() }, { Text(g) },
+                            leadingIcon = { Icon(Icons.Rounded.Folder, null, Modifier.size(18.dp)) },
+                        )
+                    }
+                }
+            }
+
             if (shown.isEmpty()) {
                 EmptyState(
                     if (incognito) Icons.Rounded.VisibilityOff else Icons.Rounded.Home,
@@ -151,7 +179,7 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                 )
             } else {
                 // Opens scrolled to the current tab rather than the top of a long list.
-                val grid = remember(incognito) { LazyGridState(shown.indexOfFirst { it.id == vm.tabs.selectedId }.coerceAtLeast(0)) }
+                val grid = remember(incognito, group) { LazyGridState(shown.indexOfFirst { it.id == vm.tabs.selectedId }.coerceAtLeast(0)) }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
                     modifier = Modifier.weight(1f),
@@ -168,6 +196,7 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                             selected = tab.id == vm.tabs.selectedId,
                             thumbHeight = if (columns == 1) 120.dp else Dimens.tabCardThumbHeight,
                             dragging = dragging,
+                            onFolder = { folderFor = tab },
                             // The dragged card follows the finger, so only the others animate into their new places.
                             modifier = Modifier
                                 .animateItem(placementSpec = if (dragging) null else spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntOffset.VisibilityThreshold))
@@ -207,7 +236,7 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
         Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).fillMaxWidth()) {
             TextButton(onClick = { vm.screen = app.eddy.browser.browser.Screen.BROWSER }, Modifier.align(Alignment.CenterStart).height(Dimens.touchTarget)) { Text(str(R.string.done)) }
             ExtendedFloatingActionButton(
-                onClick = { haptics.confirm(); vm.newTab(incognito) },
+                onClick = { haptics.confirm(); vm.newTab(incognito, group) },
                 icon = { Icon(Icons.Rounded.Add, null) },
                 text = { Text(if (incognito) str(R.string.new_incognito_tab) else str(R.string.new_tab)) },
                 modifier = Modifier.align(Alignment.Center),
@@ -218,17 +247,43 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
 
     if (confirmCloseAll) {
         ConfirmDialog(
-            title = if (incognito) str(R.string.close_all_incognito_tabs) else str(R.string.close_all_tabs_2),
+            title = when {
+                group != null -> str(R.string.close_folder_tabs, group)
+                incognito -> str(R.string.close_all_incognito_tabs)
+                else -> str(R.string.close_all_tabs_2)
+            },
             message = plural(R.plurals.tabs_will_be_closed, shown.size),
             confirmLabel = str(R.string.close_all),
             onDismiss = { confirmCloseAll = false },
-            onConfirm = { confirmCloseAll = false; haptics.confirm(); vm.closeAllTabs(incognito) },
+            onConfirm = { confirmCloseAll = false; haptics.confirm(); vm.closeAllTabs(incognito, group) },
+        )
+    }
+
+    folderFor?.let { tab ->
+        // 0 = no folder, 1..n = existing folders, n + 1 = new folder.
+        ChoiceDialog(
+            title = str(R.string.move_to_folder),
+            options = (0..groups.size + 1).toList(),
+            selected = groups.indexOf(tab.group) + 1,
+            label = { i -> if (i == 0) str(R.string.no_folder) else groups.getOrNull(i - 1) ?: str(R.string.new_folder) },
+            onDismiss = { folderFor = null },
+            onSelect = { i ->
+                if (i > groups.size) newFolderFor = tab
+                else { tab.group = groups.getOrNull(i - 1); vm.tabs.requestPersist() }
+            },
+        )
+    }
+    newFolderFor?.let { tab ->
+        TextInputDialog(
+            title = str(R.string.new_folder), initial = "", label = str(R.string.folder_name),
+            onDismiss = { newFolderFor = null },
+            onConfirm = { name -> tab.group = name; vm.tabs.requestPersist(); newFolderFor = null },
         )
     }
 }
 
 @Composable
-private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, thumbHeight: androidx.compose.ui.unit.Dp, dragging: Boolean, modifier: Modifier = Modifier) {
+private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, thumbHeight: androidx.compose.ui.unit.Dp, dragging: Boolean, onFolder: () -> Unit, modifier: Modifier = Modifier) {
     val haptics = rememberHaptics()
     val thumb by produceState(vm.thumbnails.peek(tab.id), tab.id, tab.thumbVersion) { value = vm.thumbnails.load(tab.id) }
     val scheme = MaterialTheme.colorScheme
@@ -266,11 +321,18 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
                         else -> SiteIcon(tab.host, size = 56.dp, live = tab.favicon)
                     }
                 }
-                Text(
-                    if (tab.isHome) str(R.string.start_page) else tab.host,
-                    Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (tab.isHome) str(R.string.start_page) else tab.host,
+                        Modifier.weight(1f).padding(horizontal = 10.dp),
+                        style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    EddyIconButton(
+                        if (tab.group != null) Icons.Rounded.Folder else Icons.Rounded.FolderOpen,
+                        str(R.string.move_tab_to_folder, title), onFolder, Modifier.size(40.dp),
+                        tint = if (tab.group != null) scheme.primary else scheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

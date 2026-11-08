@@ -74,6 +74,8 @@ class BrowserTab(
     var lastHistoryUrl = ""
     var lastHistoryAt = 0L
     var openerId: String? = null
+    /** Tab-switcher folder name; null means ungrouped. */
+    var group by mutableStateOf<String?>(null)
     /** Opened by the page through window.open; closes itself if it lands on a blocked ad host. */
     var popup = false
 

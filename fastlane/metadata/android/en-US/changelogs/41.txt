@@ -1,0 +1,3 @@
+* Add tab folders: move a tab into a folder from its card in the tab switcher.
+* Filter the tab switcher by folder. New tabs and links opened there join that folder.
+* "Close all tabs" while a folder is selected closes only that folder's tabs.

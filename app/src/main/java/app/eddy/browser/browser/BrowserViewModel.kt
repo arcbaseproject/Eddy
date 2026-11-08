@@ -137,6 +137,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     // ---- UI state -------------------------------------------------------------------------
     var screen by mutableStateOf(Screen.BROWSER)
     var switcherIncognito by mutableStateOf(false)
+    /** Folder the tab switcher is filtered to; null shows every tab. */
+    var switcherGroup by mutableStateOf<String?>(null)
     var menuVisible by mutableStateOf(false)
     var siteInfoVisible by mutableStateOf(false)
     var translateVisible by mutableStateOf(false)
@@ -256,14 +258,14 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
 
     // ---- navigation -----------------------------------------------------------------------
 
-    private fun openHomeTab(incognito: Boolean = false): BrowserTab {
+    private fun openHomeTab(incognito: Boolean = false, group: String? = null): BrowserTab {
         val s = settings
         val custom = s.homepageMode == HomepageMode.CUSTOM && s.homepageUrl.isNotBlank()
-        return tabs.newTab(url = if (custom) UrlUtils.resolve(s.homepageUrl, s.searchEngine) else "", incognito = incognito)
+        return tabs.newTab(url = if (custom) UrlUtils.resolve(s.homepageUrl, s.searchEngine) else "", incognito = incognito, group = group)
     }
 
-    fun newTab(incognito: Boolean = settings.alwaysIncognito) {
-        openHomeTab(incognito)
+    fun newTab(incognito: Boolean = settings.alwaysIncognito, group: String? = null) {
+        openHomeTab(incognito, group)
         screen = Screen.BROWSER
         stopEditing()
         menuVisible = false
@@ -552,8 +554,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         if (tabs.restoreClosed() != null) screen = Screen.BROWSER
     }
 
-    fun closeAllTabs(incognito: Boolean) {
-        tabs.closeAll(incognito)
+    fun closeAllTabs(incognito: Boolean, group: String? = null) {
+        tabs.closeAll(incognito, group)
         if (tabs.tabs.none { it.incognito == switcherIncognito }) switcherIncognito = false
         // Leaving an empty switcher would be a dead end, so land on a fresh page.
         if (tabs.tabs.none { !it.incognito }) tabs.newTab()
