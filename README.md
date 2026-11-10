@@ -29,7 +29,7 @@
 
 # Eddy
 
-<p align="center"><a href="https://discord.gg/jQDnjD3KE"><img src="https://img.shields.io/badge/Discord-Join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the Eddy Discord"></a></p>
+<p align="center"><a href="https://discord.gg/Q5NXwwwDph"><img src="https://img.shields.io/badge/Discord-Join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the Eddy Discord"></a></p>
 
 > **Beta.** Eddy is in active development. Expect rough edges.
 
@@ -42,7 +42,7 @@ icons or assets with any other browser.
 
 ## Community
 
-Questions, bug reports and feedback are welcome on the [Eddy Discord](https://discord.gg/YOUR_INVITE_CODE).
+Questions, bug reports and feedback are welcome on the [Eddy Discord](https://discord.gg/Q5NXwwwDph).
 Bugs can also be reported as [GitHub issues](https://github.com/arcbaseproject/Eddy/issues).
 
 ## Screenshots
@@ -151,7 +151,7 @@ runtime permissions, external apps, fullscreen video) leaves the ViewModel as a 
 - WebView does not implement the Web Notifications API, so there is no per-site notification switch.
 - `blob:` downloads and password autofill need a recent Android System WebView. On older ones Eddy says so and turns the password switches off.
 - Element hiding uses one built-in stylesheet; `##` element-hiding rules in filter lists are ignored.
-- The app is English only. Its text is in `res/values/strings.xml`, ready for translations.
+- The app is in English and Spanish. Other languages need a `res/values-<lang>/strings.xml` (and changelogs under `fastlane/metadata/android/<locale>/`).
 
 ## Privacy and legal
 
