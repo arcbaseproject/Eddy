@@ -54,6 +54,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.RemoveModerator
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Icon
@@ -166,7 +167,7 @@ fun BrowserBar(
                             style = UrlTextStyle, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             color = if (home) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         )
-                        if (tab != null && tab.blockedCount > 0) BlockedBadge(tab.blockedCount, onSiteInfo)
+                        if (tab != null && !home && tab.shieldShown) BlockedBadge(tab.blockedCount, tab.siteBlockingOff, onSiteInfo)
                         // Only shown while loading; reload lives in the menu and pull-to-refresh.
                         if (tab?.isLoading == true) EddyIconButton(Icons.Rounded.Close, str(R.string.stop_loading), onStop)
                     }
@@ -207,14 +208,20 @@ private fun SecurityButton(tab: BrowserTab, incognito: Boolean, onClick: () -> U
 }
 
 @Composable
-private fun BlockedBadge(count: Int, onClick: () -> Unit) {
+private fun BlockedBadge(count: Int, off: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.clip(CircleShape).clickable(role = Role.Button, onClickLabel = str(R.string.blocked_requests), onClick = onClick)
             .heightIn(min = 32.dp).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.Shield, plural(R.plurals.requests_blocked, count), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
-        Text(if (count > 99) "99+" else "$count", Modifier.padding(start = 3.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+        // On: a light tint so it stays quiet. Off: crossed out in the error colour, so the state never rests on colour alone.
+        val tint = if (off) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
+        if (off) {
+            Icon(Icons.Rounded.RemoveModerator, str(R.string.blocking_off_for_site), Modifier.size(16.dp), tint = tint)
+        } else {
+            Icon(Icons.Rounded.Shield, plural(R.plurals.requests_blocked, count), Modifier.size(16.dp), tint = tint)
+            if (count > 0) Text(if (count > 99) "99+" else "$count", Modifier.padding(start = 3.dp), style = MaterialTheme.typography.labelSmall, color = tint)
+        }
     }
 }
 

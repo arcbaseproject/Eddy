@@ -658,6 +658,10 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="voice_search">Voice search</string>
     <string name="discord_title">Eddy has a Discord</string>
     <string name="discord_message">Join the new Eddy Discord server to chat with other users, report bugs, suggest features and hear about releases first.</string>
+    <!-- Folder under fastlane/metadata/android that holds this language's changelogs. -->
+    <string name="blocking_off_for_site">Ad and tracker blocking is off for this site</string>
+    <string name="changelog_locale">en-US</string>
+    <string name="changelog_title">What\'s new</string>
     <string name="discord_join">Join</string>
     <string name="the_certificate_is_untrusted">A trusted authority did not issue this certificate.</string>
     <string name="feature_location">location</string>

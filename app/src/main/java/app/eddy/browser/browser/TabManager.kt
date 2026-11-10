@@ -134,7 +134,7 @@ class TabManager(
         tab.url = url
         tab.title = ""
         tab.isLoading = true
-        val view = tab.webView ?: createView(tab, null, loadUrl = false).also { tab.webView = it }
+        val view = tab.webView ?: createView(tab, null, loadUrl = false).also { tab.webView = it; tab.painted = false }
         factory().load(tab, view, url)
         requestPersist()
     }

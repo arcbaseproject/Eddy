@@ -656,6 +656,10 @@ Cada sitio, buscador y servidor de listas con el que contactas puede ver tu dire
     <string name="voice_search">Búsqueda por voz</string>
     <string name="discord_title">Eddy tiene Discord</string>
     <string name="discord_message">Únete al nuevo servidor de Discord de Eddy para hablar con otros usuarios, informar de errores, sugerir funciones y enterarte antes que nadie de las novedades.</string>
+    <!-- Folder under fastlane/metadata/android that holds this language's changelogs. -->
+    <string name="blocking_off_for_site">El bloqueo de anuncios y rastreadores está desactivado en este sitio</string>
+    <string name="changelog_locale">es-ES</string>
+    <string name="changelog_title">Novedades</string>
     <string name="discord_join">Unirme</string>
     <string name="the_certificate_is_untrusted">Ninguna autoridad de confianza emitió este certificado.</string>
     <string name="feature_location">ubicación</string>

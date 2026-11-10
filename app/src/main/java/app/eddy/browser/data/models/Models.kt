@@ -85,6 +85,8 @@ data class Settings(
     val onboardingCompleted: Boolean = false,
     /** Set once the Discord announcement has been shown, so it never appears again. */
     val discordAnnounced: Boolean = false,
+    /** versionCode whose changelog was last shown; a lower value means the app was updated since. */
+    val changelogSeen: Int = 0,
     val savePasswords: Boolean = true,
     val autofillPasswords: Boolean = true,
     val restoreTabs: Boolean = true,

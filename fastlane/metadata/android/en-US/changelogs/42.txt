@@ -1,0 +1,4 @@
+* Show what's new: the first time Eddy opens after an update, a panel lists the changes in that version.
+* The list appears in Spanish when Eddy is in Spanish.
+* Stop the white screen that covered everything while search results load.
+* The shield in the address bar stays visible when ad and tracker blocking is off for a site, crossed out in red, so it can be turned back on.

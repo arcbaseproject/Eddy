@@ -682,6 +682,8 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             UrlUtils.origin(tab.url) ?: return
         } else UrlUtils.displayHost(tab.url)
         sites.set(host, feature, value, tab.incognito)
+        // A reload keeps the URL, so onPageStarted would carry the old count over to the new blocking state.
+        if (feature == SiteFeature.CONTENT_BLOCKING) { tab.blockedRaw = 0; tab.blockedCount = 0 }
         tab.webView?.let { factory.prepare(tab, it, tab.url) }
         if (feature == SiteFeature.JAVASCRIPT || feature == SiteFeature.CONTENT_BLOCKING || feature == SiteFeature.THIRD_PARTY_COOKIES) {
             tab.webView?.reload()

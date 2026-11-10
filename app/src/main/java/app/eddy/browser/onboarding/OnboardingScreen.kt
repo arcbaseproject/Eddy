@@ -100,6 +100,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import app.eddy.browser.BuildConfig
 import app.eddy.browser.R
 import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.data.models.Settings
@@ -131,7 +132,7 @@ fun OnboardingScreen(vm: BrowserViewModel, settings: Settings, modifier: Modifie
     val scope = rememberCoroutineScope()
     val haptics = rememberHaptics()
     val scheme = MaterialTheme.colorScheme
-    fun finish() { haptics.confirm(); vm.launchSettings { it.copy(onboardingCompleted = true) } }
+    fun finish() { haptics.confirm(); vm.launchSettings { it.copy(onboardingCompleted = true, changelogSeen = BuildConfig.VERSION_CODE) } }
 
     BackHandler(enabled = true) {
         if (pager.currentPage > 0) scope.launch { pager.animateScrollToPage(pager.currentPage - 1) }

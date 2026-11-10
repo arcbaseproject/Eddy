@@ -211,6 +211,8 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         val blockingAllowed = site?.contentBlocking != SiteSettings.BLOCK
         tab.blockingActive = s.adBlock && blockingAllowed
         tab.trackerBlockingActive = s.trackerProtection && blockingAllowed
+        tab.shieldShown = s.adBlock || s.trackerProtection
+        tab.siteBlockingOff = !blockingAllowed
         applyCosmetic(view, tab.blockingActive)
         // Offline: prefer whatever the HTTP cache has instead of failing outright.
         view.settings.cacheMode = when {

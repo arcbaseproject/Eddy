@@ -1,0 +1,4 @@
+* Novedades: la primera vez que Eddy se abre después de una actualización, un panel muestra los cambios de esa versión.
+* La lista aparece en español cuando Eddy está en español.
+* Se elimina la pantalla blanca que lo cubría todo mientras cargan los resultados de búsqueda.
+* El escudo de la barra de direcciones sigue visible cuando el bloqueo de anuncios y rastreadores está desactivado en un sitio, tachado en rojo, para poder volver a activarlo.

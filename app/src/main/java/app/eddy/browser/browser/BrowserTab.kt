@@ -74,6 +74,12 @@ class BrowserTab(
     var lastHistoryUrl = ""
     var lastHistoryAt = 0L
     var openerId: String? = null
+    /** Ad or tracker blocking is on in settings, so the toolbar shows the shield. */
+    var shieldShown by mutableStateOf(false)
+    /** The user turned blocking off for this site; the shield stays, crossed out, so it can be turned back on. */
+    var siteBlockingOff by mutableStateOf(false)
+    /** False from leaving the start page until the page first draws, so the WebView's blank white is not shown. */
+    var painted by mutableStateOf(true)
     /** Tab-switcher folder name; null means ungrouped. */
     var group by mutableStateOf<String?>(null)
     /** Opened by the page through window.open; closes itself if it lands on a blocked ad host. */

@@ -153,7 +153,12 @@ class EddyWebViewClient(
         syncNav(view)
     }
 
+    override fun onPageCommitVisible(view: WebView, url: String) {
+        tab.painted = true
+    }
+
     override fun onPageFinished(view: WebView, url: String) {
+        tab.painted = true // fallback for loads that never report a visible commit
         if (url.startsWith(ERROR_SCHEME)) return
         tab.isLoading = false
         tab.progress = 100

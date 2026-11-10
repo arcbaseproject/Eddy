@@ -1,6 +1,18 @@
 package app.eddy.browser.browser
 
 import app.eddy.browser.R
+import app.eddy.browser.BuildConfig
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 import app.eddy.browser.util.str
 import android.view.View
 import android.view.ViewGroup
@@ -223,6 +235,43 @@ fun BrowserRoot(vm: BrowserViewModel) {
                     )
                 }
 
+                // Once per update, after the tour and the Discord announcement. Fresh installs are marked seen when the tour ends.
+                if (settings.onboardingCompleted && settings.discordAnnounced && settings.changelogSeen < BuildConfig.VERSION_CODE) {
+                    // Stays null offline or when GitHub has no changelog for this build; the next launch tries again.
+                    val notes by produceState<String?>(null) { value = fetchChangelog() }
+                    notes?.let { text ->
+                        val dismiss = { vm.launchSettings { it.copy(changelogSeen = BuildConfig.VERSION_CODE) } }
+                        val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                        val scope = rememberCoroutineScope()
+                        ModalBottomSheet(onDismissRequest = dismiss, sheetState = sheet) {
+                            Column(
+                                Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = Dimens.gutterLarge).padding(bottom = 16.dp),
+                            ) {
+                                Text(str(R.string.changelog_title), style = MaterialTheme.typography.headlineSmall)
+                                Text(
+                                    str(R.string.version, BuildConfig.VERSION_NAME),
+                                    Modifier.padding(top = 4.dp, bottom = 20.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                // The fastlane files are "* " bullet lists; draw real bullets instead of the asterisks.
+                                text.lines().filter { it.isNotBlank() }.forEach { line ->
+                                    val bullet = line.startsWith("* ") || line.startsWith("- ")
+                                    Row(Modifier.padding(bottom = 12.dp)) {
+                                        if (bullet) Box(Modifier.padding(top = 9.dp, end = 14.dp).size(6.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+                                        Text(if (bullet) line.drop(2) else line, style = MaterialTheme.typography.bodyLarge)
+                                    }
+                                }
+                                // Slide the sheet away before marking it seen, which removes it.
+                                Button(
+                                    onClick = { scope.launch { sheet.hide() }.invokeOnCompletion { dismiss() } },
+                                    Modifier.fillMaxWidth().padding(top = 12.dp).heightIn(min = Dimens.touchTarget),
+                                ) { Text(str(R.string.done)) }
+                            }
+                        }
+                    }
+                }
+
                 PromptHost(vm)
                 if (vm.menuVisible) MenuSheet(vm, selected, vm.isBookmarked.collectAsStateWithLifecycle().value) { vm.menuVisible = false }
                 if (vm.siteInfoVisible && selected != null) SiteInfoSheet(vm, selected) { vm.siteInfoVisible = false }
@@ -237,6 +286,26 @@ fun BrowserRoot(vm: BrowserViewModel) {
 }
 
 private const val DiscordInvite = "https://discord.gg/Q5NXwwwDph"
+
+/**
+ * The same per-versionCode notes F-Droid shows, read from the repo so they need no extra release step. Tries the
+ * fastlane folder for the app's language first, then falls back to English when that translation is missing.
+ */
+private suspend fun fetchChangelog(): String? = withContext(Dispatchers.IO) {
+    listOf(str(R.string.changelog_locale), "en-US").distinct().firstNotNullOfOrNull { locale ->
+        runCatching {
+            val url = "https://raw.githubusercontent.com/arcbaseproject/Eddy/main/fastlane/metadata/android/$locale/changelogs/${BuildConfig.VERSION_CODE}.txt"
+            val conn = URL(url).openConnection() as HttpURLConnection
+            try {
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 10_000
+                conn.inputStream.bufferedReader().use { it.readText() }.trim().ifEmpty { null }
+            } finally {
+                conn.disconnect()
+            }
+        }.getOrNull()
+    }
+}
 
 @Composable
 private fun Overlay(visible: Boolean, modifier: Modifier, content: @Composable () -> Unit) {
@@ -317,6 +386,8 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                         HomeScreen(vm, settings, tab.incognito, contentPaddingFor(atTop))
                     } else {
                         WebContent(tab, visible = browsing, modifier = if (atTop) Modifier else Modifier.statusBarsPadding())
+                        // Covers the new WebView's empty white until the page draws; the toolbar shows the progress.
+                        if (!tab.painted) Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                     }
                     PullIndicator(tab)
                     tab.error?.let { err ->
