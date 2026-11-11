@@ -1,0 +1,2 @@
+* Changing a site's permission twice in a row no longer brings back the earlier choice.
+* When a download that a page created itself cannot be saved, Eddy now says "Could not save" instead of "Saved".

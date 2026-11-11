@@ -1,0 +1,2 @@
+* Cambiar dos veces seguidas un permiso de un sitio ya no recupera la elección anterior.
+* Cuando una descarga creada por la propia página no se puede guardar, Eddy ahora dice "No se pudo guardar" en lugar de "guardado".
