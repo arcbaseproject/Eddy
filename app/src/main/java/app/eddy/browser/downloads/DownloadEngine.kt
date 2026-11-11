@@ -335,6 +335,7 @@ class DownloadEngine(
             publish(d, part)
         } catch (e: Exception) {
             dao.update(d.copy(status = DownloadStatus.FAILED, error = e.message.orEmpty()))
+            throw e
         }
         id
     }

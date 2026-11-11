@@ -294,6 +294,22 @@ class BrowserAuditTest {
         }
     }
 
+    @Test fun failedBlobPublishDoesNotReturnSuccess() = runBlocking {
+        val context = object : android.content.ContextWrapper(instrumentation.targetContext) {
+            override fun getContentResolver(): android.content.ContentResolver = throw java.io.IOException("publish refused")
+        }
+        val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
+        val engine = app.eddy.browser.downloads.DownloadEngine(context, this, dao, { vm.settingsState.value })
+        val source = File(context.cacheDir, "failed-blob.txt").apply { writeText("test") }
+        try {
+            val result = runCatching { engine.importFile(source, "failed-blob.txt", "text/plain") }
+            assertEquals("publish refused", result.exceptionOrNull()?.message)
+            val row = dao.all().first().first { it.fileName == "failed-blob.txt" }
+            assertEquals(app.eddy.browser.data.database.DownloadStatus.FAILED, row.status)
+            engine.delete(row.id, false)
+        } finally { source.delete() }
+    }
+
     @Test fun privateBlobDownloadRetainsPrivateFlag() = runBlocking {
         val source = File(instrumentation.targetContext.cacheDir, "audit-blob.txt").apply { writeText("private") }
         val id = vm.downloads.importFile(source, "audit-blob.txt", "text/plain", incognito = true)

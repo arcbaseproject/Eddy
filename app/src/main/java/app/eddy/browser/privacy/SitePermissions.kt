@@ -52,6 +52,7 @@ class SitePermissions(private val dao: SiteSettingsDao, private val scope: Corou
     private val loaded = CompletableDeferred<Unit>()
     // Writes run one at a time against the stored row, so a stale snapshot never drops a newer choice.
     private val writes = Mutex()
+    private val revisions = ConcurrentHashMap<String, Any>()
 
     init {
         scope.launch {
@@ -72,13 +73,17 @@ class SitePermissions(private val dao: SiteSettingsDao, private val scope: Corou
             return
         }
         // Update the mirror first so a synchronous read right after sees the change.
+        val mine = Any().also { revisions[host] = it }
         cache.compute(host) { _, old -> (old ?: SiteSettings(host)).with(feature, value).takeUnless { it.isEmpty } }
         scope.launch {
             writes.withLock {
                 loaded.await()
                 val updated = (dao.get(host) ?: SiteSettings(host)).with(feature, value)
                 if (updated.isEmpty) dao.delete(host) else dao.upsert(updated)
-                if (updated.isEmpty) cache.remove(host) else cache[host] = updated
+                // A suspended write must not replace a newer optimistic choice.
+                if (revisions[host] === mine) {
+                    if (updated.isEmpty) cache.remove(host) else cache[host] = updated
+                }
             }
         }
     }
@@ -91,14 +96,16 @@ class SitePermissions(private val dao: SiteSettingsDao, private val scope: Corou
             private[host] = SiteSettings(host)
             return
         }
+        val mine = Any().also { revisions[host] = it }
         cache.remove(host)
         private.remove(host)
-        scope.launch { writes.withLock { loaded.await(); dao.delete(host); cache.remove(host) } }
+        scope.launch { writes.withLock { loaded.await(); dao.delete(host); if (revisions[host] === mine) cache.remove(host) } }
     }
 
     fun resetAll() {
+        revisions.clear()
         cache.clear()
         private.clear()
-        scope.launch { writes.withLock { loaded.await(); dao.clear(); cache.clear() } }
+        scope.launch { writes.withLock { loaded.await(); dao.clear(); cache.keys.removeAll { !revisions.containsKey(it) } } }
     }
 }
