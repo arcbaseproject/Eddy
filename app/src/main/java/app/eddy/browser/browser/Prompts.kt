@@ -51,7 +51,7 @@ sealed interface UiEffect {
     class RequestPermissions(val permissions: List<String>, val result: CompletableDeferred<Map<String, Boolean>>) : UiEffect
     class ShowCustomView(val view: View, val callback: WebChromeClient.CustomViewCallback) : UiEffect
     data object HideCustomView : UiEffect
-    class Launch(val intent: Intent, val onFailure: (() -> Unit)? = null) : UiEffect
+    class Launch(val intent: Intent, val onSuccess: (() -> Unit)? = null, val onFailure: (() -> Unit)? = null) : UiEffect
     class OpenFile(val uri: String, val mime: String) : UiEffect
     class Print(val adapter: PrintDocumentAdapter, val jobName: String) : UiEffect
 }

@@ -970,7 +970,9 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     private fun launchExternal(tab: BrowserTab, intent: Intent, fallback: String?) {
-        effects.trySend(UiEffect.Launch(intent) {
+        // An empty new tab opened only to reach the app is useless once the app has it.
+        val closeEmptyPopup = { if (tab.popup && !UrlUtils.isWebUrl(tab.url)) tabs.close(tab, remember = false) }
+        effects.trySend(UiEffect.Launch(intent, onSuccess = closeEmptyPopup) {
             if (fallback != null && UrlUtils.isWebUrl(fallback)) externalFallback(tab, fallback)
             else snackbar(str(R.string.no_app_can_open_this))
         })

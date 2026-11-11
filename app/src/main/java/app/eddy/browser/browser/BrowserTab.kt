@@ -80,6 +80,8 @@ class BrowserTab(
     var siteBlockingOff by mutableStateOf(false)
     /** False from leaving the start page until the page first draws, so the WebView's blank white is not shown. */
     var painted by mutableStateOf(true)
+    /** The unpainted page was opened from the start page, which stays on screen until it draws. */
+    var leftHome by mutableStateOf(false)
     /** Tab-switcher folder name; null means ungrouped. */
     var group by mutableStateOf<String?>(null)
     /** Opened by the page through window.open; closes itself if it lands on a blocked ad host. */

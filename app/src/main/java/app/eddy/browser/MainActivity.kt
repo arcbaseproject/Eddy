@@ -199,6 +199,7 @@ class MainActivity : ComponentActivity() {
             UiEffect.HideCustomView -> hideCustomView()
             is UiEffect.Launch -> try {
                 startActivity(effect.intent)
+                effect.onSuccess?.invoke()
             } catch (_: ActivityNotFoundException) {
                 effect.onFailure?.invoke() ?: vm.snackbar(str(R.string.no_app_can_open_this))
             } catch (_: SecurityException) {

@@ -146,6 +146,8 @@ fun ShortcutGrid(
                                                 if (order.map { it.id } != shortcuts.map { it.id }) onReorder(order)
                                             },
                                             onDragCancel = {
+                                                // The tile's click consumes the release, so a still long press ends here, not in onDragEnd.
+                                                if (total.getDistance() < viewConfiguration.touchSlop) menuFor = item.id
                                                 draggingId = null
                                                 if (order.map { it.id } != shortcuts.map { it.id }) onReorder(order)
                                             },
@@ -161,7 +163,8 @@ fun ShortcutGrid(
                                     translation = {
                                         if (isDragging) pointerRoot - grab - (bounds[item.id]?.topLeft ?: pointerRoot - grab) else Offset.Zero
                                     },
-                                    onClick = { onOpen(item) },
+                                    // A long press also ends in a click on release; it opens the menu, not the site.
+                                    onClick = { if (draggingId != item.id) onOpen(item) },
                                 )
                                 DropdownMenu(expanded = menuFor == item.id, onDismissRequest = { menuFor = null }) {
                                     DropdownMenuItem(

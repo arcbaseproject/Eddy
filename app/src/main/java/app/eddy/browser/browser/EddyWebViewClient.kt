@@ -111,7 +111,10 @@ class EddyWebViewClient(
         val intent = Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)
             .addFlags(Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER or Intent.FLAG_ACTIVITY_NEW_TASK)
         // Throws ActivityNotFoundException when only browsers handle the link.
-        return runCatching { view.context.startActivity(intent) }.isSuccess
+        if (runCatching { view.context.startActivity(intent) }.isFailure) return false
+        // A new tab opened only to reach the app would be left empty behind it, like Chrome closes it.
+        if (tab.popup && !UrlUtils.isWebUrl(tab.url)) view.post { (view as? EddyWebView)?.let(host::closeWindow) }
+        return true
     }
 
     /**

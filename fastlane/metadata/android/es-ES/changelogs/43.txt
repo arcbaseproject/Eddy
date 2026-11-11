@@ -1,0 +1,4 @@
+* Los enlaces que abren otra app, como WhatsApp o YouTube, ya no dejan una pestaña vacía detrás.
+* Al abrir un enlace desde la página de inicio, esta sigue visible hasta que aparece la página, sin pantalla negra ni blanca de por medio.
+* Las pestañas nuevas abiertas desde enlaces ya no muestran un destello blanco mientras cargan.
+* Mantener pulsado un acceso directo de la página de inicio vuelve a mostrar Editar, Quitar y Ocultar accesos directos.

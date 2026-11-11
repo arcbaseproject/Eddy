@@ -118,6 +118,8 @@ class TabManager(
 
     private fun createView(tab: BrowserTab, state: Bundle?, loadUrl: Boolean = true): EddyWebView {
         val view = factory().create(tab)
+        tab.painted = false
+        tab.leftHome = false
         val restored = state != null && view.restoreState(state) != null
         tab.canGoBack = view.canGoBack()
         tab.canGoForward = view.canGoForward()
@@ -126,6 +128,7 @@ class TabManager(
     }
 
     fun load(tab: BrowserTab, url: String) {
+        val fromHome = tab.isHome
         tab.restoreVersion++
         tab.savedState = null
         tab.hasPersistedState = false
@@ -134,7 +137,8 @@ class TabManager(
         tab.url = url
         tab.title = ""
         tab.isLoading = true
-        val view = tab.webView ?: createView(tab, null, loadUrl = false).also { tab.webView = it; tab.painted = false }
+        val view = tab.webView ?: createView(tab, null, loadUrl = false).also { tab.webView = it }
+        tab.leftHome = fromHome
         factory().load(tab, view, url)
         requestPersist()
     }
@@ -163,6 +167,9 @@ class TabManager(
         val tab = BrowserTab(incognito = parent.incognito, initialUrl = "about:blank").also { it.openerId = parent.id; it.popup = true; it.group = parent.group }
         tabs.add(tabs.indexOf(parent) + 1, tab)
         val view = factory().create(tab)
+        tab.painted = false
+        // A popup a script fills with document.write reports no load at all; show it once nothing has started loading.
+        view.postDelayed({ if (tab.progress == 0) tab.painted = true }, 500)
         tab.webView = view
         transport.webView = view
         resultMsg.sendToTarget()

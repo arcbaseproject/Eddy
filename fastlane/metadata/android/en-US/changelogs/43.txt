@@ -1,0 +1,4 @@
+* Links that open another app, like WhatsApp or YouTube, no longer leave an empty tab behind.
+* Opening a link from the start page keeps the start page on screen until the page appears, with no black or white screen in between.
+* New tabs opened by links no longer flash white while they load.
+* Holding a shortcut on the start page shows Edit, Remove and Hide shortcuts again.

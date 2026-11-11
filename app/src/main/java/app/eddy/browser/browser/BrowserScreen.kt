@@ -382,12 +382,14 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                     TabPeek(vm, it, if (atTop) Modifier else Modifier.statusBarsPadding()) { swipe.value - swipeDir * pageWidth }
                 }
                 if (tab != null) Box(Modifier.fillMaxSize().graphicsLayer { translationX = swipe.value }.background(MaterialTheme.colorScheme.background)) {
-                    if (tab.isHome) {
+                    if (!tab.isHome) WebContent(tab, visible = browsing, modifier = if (atTop) Modifier else Modifier.statusBarsPadding())
+                    // A link from the start page keeps the start page up until the page draws, like Chrome, so no blank
+                    // frame shows between them. Same slot as before the load, so the start page does not re-animate.
+                    if (tab.isHome || (!tab.painted && tab.leftHome)) {
                         HomeScreen(vm, settings, tab.incognito, contentPaddingFor(atTop))
-                    } else {
-                        WebContent(tab, visible = browsing, modifier = if (atTop) Modifier else Modifier.statusBarsPadding())
+                    } else if (!tab.painted) {
                         // Covers the new WebView's empty white until the page draws; the toolbar shows the progress.
-                        if (!tab.painted) Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                     }
                     PullIndicator(tab)
                     tab.error?.let { err ->
