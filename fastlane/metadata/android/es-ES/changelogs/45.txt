@@ -1,0 +1,2 @@
+* Pantalla completa: actívala desde el menú para ocultar la barra y las barras del sistema. Desplázate hacia arriba para volver a ver la barra; Atrás sale de la pantalla completa.
+* Exporta a un archivo tus ajustes, los accesos directos de la página de inicio y los motores de búsqueda, e impórtalos de nuevo, desde Ajustes > Avanzado.

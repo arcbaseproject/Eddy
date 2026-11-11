@@ -1,0 +1,2 @@
+* Full screen: turn it on from the menu to hide the toolbar and the system bars. Scroll up to bring the toolbar back; Back leaves full screen.
+* Export your settings, start page shortcuts and search engines to a file, and import them again, from Settings > Advanced.
