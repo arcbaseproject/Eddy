@@ -27,6 +27,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import android.print.PrintAttributes
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
                 window.isNavigationBarContrastEnforced = false
                 onDispose {}
             }
+            LaunchedEffect(vm.fullscreen) { if (customView == null) applySystemBars() }
             BrowserRoot(vm)
         }
         lifecycleScope.launch {
@@ -299,7 +301,13 @@ class MainActivity : ComponentActivity() {
         customViewCallback?.onCustomViewHidden()
         customViewCallback = null
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        WindowCompat.getInsetsController(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
+        // Leaving a full-screen video keeps the bars hidden if Eddy itself is in full screen.
+        applySystemBars()
         vm.onCustomViewClosed()
+    }
+
+    private fun applySystemBars() = WindowCompat.getInsetsController(window, window.decorView).run {
+        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (vm.fullscreen) hide(WindowInsetsCompat.Type.systemBars()) else show(WindowInsetsCompat.Type.systemBars())
     }
 }

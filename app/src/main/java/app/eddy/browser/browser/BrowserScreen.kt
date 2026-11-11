@@ -450,7 +450,8 @@ private fun contentPaddingFor(atTop: Boolean): PaddingValues =
 private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidden: Boolean, swipe: Modifier) {
     val home = tab?.isHome != false
     val expanded = vm.chromeVisible || home
-    if (hidden) return
+    // Full screen leaves only the page; scrolling up brings the whole toolbar back.
+    if (hidden || vm.fullscreen && !expanded) return
     Column(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
             .then(if (atTop) Modifier.statusBarsPadding() else Modifier.navigationBarsPadding())

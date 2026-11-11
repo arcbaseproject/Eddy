@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.automirrored.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
@@ -120,6 +121,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDis
             if (webPage) {
                 Group {
                     SwitchRow(Icons.Rounded.DesktopWindows, str(R.string.desktop_site), tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
+                    SwitchRow(Icons.Rounded.Fullscreen, str(R.string.full_screen), vm.fullscreen, true) { onDismiss(); vm.toggleFullscreen() }
                     if (tab?.webView != null && tab.error == null) Box {
                         var speedOpen by remember { mutableStateOf(false) }
                         Row(Icons.Rounded.Speed, str(R.string.playback_speed), { speedOpen = true })

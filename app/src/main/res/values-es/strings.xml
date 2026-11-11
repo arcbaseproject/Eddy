@@ -177,6 +177,8 @@
     <string name="new_incognito_tab">Pestaña de incógnito nueva</string>
     <string name="reopen_closed_tab">Reabrir pestaña cerrada</string>
     <string name="desktop_site">Versión para ordenador</string>
+    <string name="full_screen">Pantalla completa</string>
+    <string name="full_screen_hint">Desplázate hacia arriba para volver a ver la barra. Atrás sale de la pantalla completa.</string>
     <string name="translate">Traducir</string>
     <string name="add_to_start_page">Añadir a la página de inicio</string>
     <string name="view_source">Ver código fuente</string>

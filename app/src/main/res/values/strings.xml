@@ -177,6 +177,8 @@
     <string name="new_incognito_tab">New incognito tab</string>
     <string name="reopen_closed_tab">Reopen closed tab</string>
     <string name="desktop_site">Desktop site</string>
+    <string name="full_screen">Full screen</string>
+    <string name="full_screen_hint">Scroll up to bring back the toolbar. Back leaves full screen.</string>
     <string name="translate">Translate</string>
     <string name="add_to_start_page">Add to start page</string>
     <string name="view_source">View source</string>

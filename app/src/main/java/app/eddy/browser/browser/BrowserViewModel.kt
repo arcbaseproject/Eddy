@@ -151,6 +151,9 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
         private set
     var chromeVisible by mutableStateOf(true)
         private set
+    /** Hides the system bars and the toolbar. Scrolling up still brings the toolbar back; Back leaves full screen. */
+    var fullscreen by mutableStateOf(false)
+        private set
     var find by mutableStateOf<FindState?>(null)
         private set
     var linkTarget by mutableStateOf<HitTarget?>(null)
@@ -404,6 +407,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
             screen == Screen.PDF -> { closePdf(); true }
             screen == Screen.SOURCE -> { closeSource(); true }
             screen != Screen.BROWSER -> { screen = Screen.BROWSER; true }
+            fullscreen -> { toggleFullscreen(); true }
             tab == null -> false
             tab.canGoBack || !tab.isHome -> { goBack(); true }
             tab.openerId != null && tabs.tabs.any { it.id == tab.openerId } -> { tabs.close(tab, remember = false); true }
@@ -414,7 +418,7 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     val canHandleBack: Boolean
         get() {
             val tab = tabs.selected
-            return customViewActive || linkTarget != null || siteInfoVisible || menuVisible || find != null || editing ||
+            return customViewActive || fullscreen || linkTarget != null || siteInfoVisible || menuVisible || find != null || editing ||
                 screen != Screen.BROWSER || tab != null && (tab.canGoBack || !tab.isHome ||
                 tab.openerId?.let { opener -> tabs.tabs.any { it.id == opener } } == true)
         }
@@ -496,6 +500,12 @@ class BrowserViewModel(private val app: Application) : AndroidViewModel(app), Br
     }
 
     fun showChrome() = setChrome(true)
+
+    fun toggleFullscreen() {
+        fullscreen = !fullscreen
+        setChrome(!fullscreen)
+        if (fullscreen) snackbar(str(R.string.full_screen_hint))
+    }
 
     // ---- find in page ---------------------------------------------------------------------
 
