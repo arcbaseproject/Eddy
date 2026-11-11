@@ -355,7 +355,7 @@
     <string name="comfortable">Cómodo</string>
     <string name="compact">Compacto</string>
     <string name="shortcuts_themselves_are_added_and_reord">Los accesos directos se añaden y reordenan en la página de inicio.</string>
-    <string name="last_updated_october_2026">Última actualización: octubre de 2026</string>
+    <string name="last_updated_november_2026">Última actualización: noviembre de 2026</string>
     <string name="last_updated_september_2026">Última actualización: septiembre de 2026</string>
     <string name="the_short_version">En resumen</string>
     <string name="eddy_does_not_collect_sell_or_share_your">Eddy no recopila, vende ni comparte tus datos personales. No tiene cuentas, publicidad, analíticas ni informes de fallos. </string>
@@ -370,7 +370,9 @@
 • Una lista de tus descargas. Los archivos en sí van a tu carpeta Descargas.
 • Inicios de sesión guardados. Eddy guarda la dirección del sitio y el nombre de usuario, y cifra cada contraseña con una clave que permanece en el Android Keystore.
 
-Puedes eliminar todo esto en cualquier momento en Ajustes &gt; Privacidad y seguridad &gt; Borrar datos de navegación, o desinstalando la app.</string>
+Puedes eliminar todo esto en cualquier momento en Ajustes &gt; Privacidad y seguridad &gt; Borrar datos de navegación, o desinstalando la app.
+
+Si exportas tus ajustes (Ajustes &gt; Avanzado &gt; Exportar ajustes), Eddy los guarda, incluidos los accesos directos de la página de inicio y los motores de búsqueda, en un archivo en el lugar que elijas. Eddy no lo sube a ningún sitio y no puede borrarlo por ti.</string>
     <string name="network_requests_eddy_makes">Solicitudes de red que hace Eddy</string>
     <string name="besides_loading_the_pages_you_ask_for_ed">Además de cargar las páginas que pides, Eddy hace estas solicitudes:
 • Sugerencias de búsqueda: mientras escribes, Eddy envía tu texto a tu buscador para obtener sugerencias. Desactívalo en Ajustes &gt; General.
@@ -548,6 +550,14 @@ Cada sitio, buscador y servidor de listas con el que contactas puede ver tu dire
     <string name="recent_log_output_from_eddy_for_bug_repo">Registros recientes de Eddy, para informes de errores</string>
     <string name="reset_all_settings">Restablecer todos los ajustes</string>
     <string name="restores_defaults_bookmarks_and_history">Restaura los valores predeterminados. Los marcadores y el historial se conservan.</string>
+    <string name="back_up">Copia de seguridad</string>
+    <string name="export_settings">Exportar ajustes</string>
+    <string name="export_settings_hint">Guarda tus ajustes, los accesos directos de la página de inicio y los motores de búsqueda en un archivo</string>
+    <string name="import_settings">Importar ajustes</string>
+    <string name="import_settings_hint">Los restaura desde un archivo que exportaste. Las contraseñas y los marcadores tienen su propia exportación.</string>
+    <string name="settings_exported">Ajustes exportados</string>
+    <string name="settings_imported">Ajustes importados</string>
+    <string name="not_an_eddy_settings_file">Este archivo no es de ajustes de Eddy</string>
     <string name="user_agent_string">Cadena de user agent</string>
     <string name="reset_all_settings_2">¿Restablecer todos los ajustes?</string>
     <string name="eddy_restores_every_setting_to_its_defau">Eddy restaurará todos los ajustes a su valor predeterminado.</string>

@@ -1,6 +1,11 @@
 package app.eddy.browser.settings
 
 import app.eddy.browser.util.str
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import app.eddy.browser.util.readTextCapped
 import android.content.Intent
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
@@ -238,6 +243,27 @@ private fun TabSettings(vm: BrowserViewModel, s: Settings) {
 private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
     var editUa by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val json = vm.store.exportJson()
+            runCatching { withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) } ?: error("no stream") } }
+                .onSuccess { vm.snackbar(str(R.string.settings_exported)) }.onFailure { vm.snackbar(str(R.string.export_failed)) }
+        }
+    }
+    val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = runCatching { withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.readTextCapped() } }.getOrNull()
+            when {
+                text == null -> vm.snackbar(str(R.string.could_not_read_the_file_files_over_16_mb))
+                vm.store.importJson(text) -> vm.snackbar(str(R.string.settings_imported))
+                else -> vm.snackbar(str(R.string.not_an_eddy_settings_file))
+            }
+        }
+    }
     SettingsGroup(str(R.string.compatibility)) {
         ChoiceRow(
             str(R.string.user_agent), UserAgentMode.entries, s.userAgentMode,
@@ -248,6 +274,11 @@ private fun AdvancedSettings(vm: BrowserViewModel, s: Settings) {
             GroupDivider()
             ActionRow(str(R.string.custom_user_agent), { editUa = true }, s.customUserAgent.ifBlank { str(R.string.not_set_uses_mobile_default) })
         }
+    }
+    SettingsGroup(str(R.string.back_up)) {
+        ActionRow(str(R.string.export_settings), { export.launch("eddy-settings.json") }, str(R.string.export_settings_hint))
+        GroupDivider()
+        ActionRow(str(R.string.import_settings), { import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, str(R.string.import_settings_hint))
     }
     SettingsGroup(str(R.string.developer)) {
         SwitchRow(str(R.string.web_debugging), s.webDebugging, { v -> vm.launchSettings { it.copy(webDebugging = v) } }, str(R.string.web_debugging_hint))

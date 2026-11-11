@@ -69,6 +69,8 @@ internal val settingsIndex = listOf(
     SettingEntry(R.string.clear_when_i_leave, listOf(PRIVACY), "clear on exit quit delete data swipe recents"),
     SettingEntry(R.string.app_logs, listOf(ADVANCED), "logcat debug crash bug report"),
     SettingEntry(R.string.reset_all_settings, listOf(ADVANCED), "defaults restore"),
+    SettingEntry(R.string.export_settings, listOf(ADVANCED), "backup save file json transfer"),
+    SettingEntry(R.string.import_settings, listOf(ADVANCED), "backup restore file json transfer"),
 
     SettingEntry(R.string.github, listOf(ABOUT), "version build about source code website"),
     SettingEntry(R.string.replay_welcome_tour, listOf(ABOUT), "onboarding intro"),

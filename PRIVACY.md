@@ -1,6 +1,6 @@
 # Eddy Privacy Policy
 
-_Last updated October 2026_
+_Last updated November 2026_
 
 ## The short version
 
@@ -17,6 +17,8 @@ Eddy does not collect, sell or share your personal data. It has no accounts, adv
 - Saved logins. Eddy stores the site address and username, and encrypts each password with a key that stays in the Android Keystore.
 
 You can delete all of this at any time in Settings > Privacy and security > Clear browsing data, or by uninstalling the app.
+
+If you export your settings (Settings > Advanced > Export settings), Eddy writes them, including your start page shortcuts and search engines, to a file in the place you choose. Eddy does not upload it and cannot delete it for you.
 
 ## Network requests Eddy makes
 

@@ -310,6 +310,40 @@ class BrowserAuditTest {
         } finally { source.delete() }
     }
 
+    @Test fun settingsExportImportRoundTripsAndRejectsBadValues() = runBlocking {
+        val store = (instrumentation.targetContext.applicationContext as EddyApp).container.settingsStore
+        val original = store.settings.first()
+        try {
+            val shortcut = app.eddy.browser.data.models.Shortcut("s1", "Example", "https://example.com", 0, 0, "auto")
+            store.update { it.copy(amoled = true, homeColumns = 4, shortcuts = listOf(shortcut)) }
+            val file = store.exportJson()
+            assertFalse("Install state leaked into the export", file.contains("onboarding_done"))
+            store.update { it.copy(amoled = false, homeColumns = 0, shortcuts = emptyList()) }
+            assertTrue(store.importJson(file))
+            store.settings.first().let {
+                assertTrue(it.amoled)
+                assertEquals(4, it.homeColumns)
+                assertEquals(listOf(shortcut), it.shortcuts)
+            }
+
+            val onboarded = store.settings.first().onboardingCompleted
+            val hostile = """{"eddySettingsFormat":1,"amoled":"yes","home_columns":99,"text_zoom":5,"theme":"NEON","onboarding_done":${!onboarded},"shortcuts":"not json"}"""
+            assertTrue(store.importJson(hostile))
+            store.settings.first().let {
+                assertTrue("Wrong type replaced a boolean", it.amoled)
+                assertEquals(6, it.homeColumns)
+                assertEquals(75, it.textZoom)
+                assertEquals(app.eddy.browser.data.models.ThemeMode.SYSTEM, it.themeMode)
+                assertEquals(onboarded, it.onboardingCompleted)
+                assertTrue(it.shortcuts.isEmpty())
+            }
+            assertFalse(store.importJson("not json"))
+            assertFalse("A file without the format marker was accepted", store.importJson("""{"amoled":false}"""))
+        } finally {
+            store.update { original }
+        }
+    }
+
     @Test fun privateBlobDownloadRetainsPrivateFlag() = runBlocking {
         val source = File(instrumentation.targetContext.cacheDir, "audit-blob.txt").apply { writeText("private") }
         val id = vm.downloads.importFile(source, "audit-blob.txt", "text/plain", incognito = true)

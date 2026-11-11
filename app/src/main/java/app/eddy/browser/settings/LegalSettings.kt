@@ -15,7 +15,7 @@ import app.eddy.browser.ui.theme.Dimens
 private class Section(val heading: String, val body: String)
 
 @Composable
-fun PrivacyPolicyPage() = LegalPage(str(R.string.last_updated_october_2026), PrivacySections)
+fun PrivacyPolicyPage() = LegalPage(str(R.string.last_updated_november_2026), PrivacySections)
 
 @Composable
 fun TermsPage() = LegalPage(str(R.string.last_updated_september_2026), TermsSections)

@@ -355,7 +355,7 @@
     <string name="comfortable">Comfortable</string>
     <string name="compact">Compact</string>
     <string name="shortcuts_themselves_are_added_and_reord">Shortcuts themselves are added and reordered on the start page.</string>
-    <string name="last_updated_october_2026">Last updated October 2026</string>
+    <string name="last_updated_november_2026">Last updated November 2026</string>
     <string name="last_updated_september_2026">Last updated September 2026</string>
     <string name="the_short_version">The short version</string>
     <string name="eddy_does_not_collect_sell_or_share_your">Eddy does not collect, sell or share your personal data. It has no accounts, advertising, analytics or crash reporting. </string>
@@ -370,7 +370,9 @@
 • A list of your downloads. The files themselves go to your Downloads folder.
 • Saved logins. Eddy stores the site address and username, and encrypts each password with a key that stays in the Android Keystore.
 
-You can delete all of this at any time in Settings &gt; Privacy and security &gt; Clear browsing data, or by uninstalling the app.</string>
+You can delete all of this at any time in Settings &gt; Privacy and security &gt; Clear browsing data, or by uninstalling the app.
+
+If you export your settings (Settings &gt; Advanced &gt; Export settings), Eddy writes them, including your start page shortcuts and search engines, to a file in the place you choose. Eddy does not upload it and cannot delete it for you.</string>
     <string name="network_requests_eddy_makes">Network requests Eddy makes</string>
     <string name="besides_loading_the_pages_you_ask_for_ed">Besides loading the pages you ask for, Eddy makes these requests:
 • Search suggestions: as you type, Eddy sends your text to your search engine to fetch suggestions. Turn this off in Settings &gt; General.
@@ -548,6 +550,14 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="recent_log_output_from_eddy_for_bug_repo">Recent log output from Eddy, for bug reports</string>
     <string name="reset_all_settings">Reset all settings</string>
     <string name="restores_defaults_bookmarks_and_history">Restores defaults. Bookmarks and history stay.</string>
+    <string name="back_up">Back up</string>
+    <string name="export_settings">Export settings</string>
+    <string name="export_settings_hint">Saves your settings, start page shortcuts and search engines to a file</string>
+    <string name="import_settings">Import settings</string>
+    <string name="import_settings_hint">Restores them from a file you exported. Passwords and bookmarks have their own export.</string>
+    <string name="settings_exported">Settings exported</string>
+    <string name="settings_imported">Settings imported</string>
+    <string name="not_an_eddy_settings_file">This is not an Eddy settings file</string>
     <string name="user_agent_string">User agent string</string>
     <string name="reset_all_settings_2">Reset all settings?</string>
     <string name="eddy_restores_every_setting_to_its_defau">Eddy restores every setting to its default.</string>

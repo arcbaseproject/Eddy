@@ -7,12 +7,14 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import app.eddy.browser.data.models.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
@@ -35,6 +37,38 @@ class SettingsStore(private val context: Context) {
 
     suspend fun update(block: (Settings) -> Settings) {
         context.dataStore.edit { prefs -> prefs.write(block(prefs.toSettings())) }
+    }
+
+    /** The user's settings, shortcuts and custom engines as JSON, without state that only describes this install. */
+    suspend fun exportJson(): String {
+        val json = JSONObject().put(FORMAT_KEY, FORMAT)
+        context.dataStore.data.first().asMap().forEach { (key, value) -> if (key.name !in InstallState) json.put(key.name, value) }
+        return json.toString(2)
+    }
+
+    /**
+     * Applies a file from [exportJson]. The file comes from outside the app, so only known keys with the type Eddy
+     * stores for them are taken (a wrong type would make every later read throw), and the result is passed through
+     * the normal decoder so unknown choices fall back to their defaults. Keys the file lacks keep their value.
+     */
+    suspend fun importJson(text: String): Boolean {
+        val json = runCatching { JSONObject(text) }.getOrNull()?.takeIf { it.optInt(FORMAT_KEY) == FORMAT } ?: return false
+        val expected = mutablePreferencesOf().apply { write(Settings()) }.asMap()
+        context.dataStore.edit { prefs ->
+            expected.forEach { (key, default) ->
+                if (key.name in InstallState || !json.has(key.name)) return@forEach
+                @Suppress("UNCHECKED_CAST")
+                when (val v = json.get(key.name)) {
+                    is Boolean -> if (default is Boolean) prefs[key as Preferences.Key<Boolean>] = v
+                    is Int -> if (default is Int) prefs[key as Preferences.Key<Int>] = v
+                    is String -> if (default is String) prefs[key as Preferences.Key<String>] = v
+                }
+            }
+            val s = prefs.toSettings()
+            // Values the settings sliders cannot produce would break the start page grid or page text size.
+            prefs.write(s.copy(homeColumns = s.homeColumns.coerceIn(0, 6).let { if (it in 1..2) 3 else it }, textZoom = s.textZoom.coerceIn(75, 200)))
+        }
+        return true
     }
 
     private object K {
@@ -207,6 +241,11 @@ class SettingsStore(private val context: Context) {
     }
 
     companion object {
+        private const val FORMAT_KEY = "eddySettingsFormat"
+        private const val FORMAT = 1
+        /** Describes this install rather than the user's choices, so it is neither exported nor imported. */
+        private val InstallState = setOf("onboarding_done", "discord_announced", "changelog_seen", "filter_updated", "filter_defaults_seen")
+
         val DefaultShortcuts = emptyList<Shortcut>()
 
         val DefaultFilterLists = listOf(
