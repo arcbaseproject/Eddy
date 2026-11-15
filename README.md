@@ -21,22 +21,14 @@ Bugs can also be reported as [GitHub issues](https://github.com/arcbaseproject/E
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="180" alt="New-tab page">
-  <img src="docs/screenshots/browsing.png" width="180" alt="Browsing with the single bottom bar">
-  <img src="docs/screenshots/tabs.png" width="180" alt="Tab switcher">
+  <img src="docs/store/1.png" width="180" alt="Start page with the search bar and the floating bottom bar">
+  <img src="docs/store/2.png" width="180" alt="Site panel with ad and tracker blocking, text size and permissions">
+  <img src="docs/store/3.png" width="180" alt="Privacy settings: ad blocking, tracker protection, HTTPS-only and passwords">
 </p>
 <p align="center">
-  <img src="docs/screenshots/menu.png" width="180" alt="Page menu">
-  <img src="docs/screenshots/incognito.png" width="180" alt="Incognito tab">
-  <img src="docs/screenshots/settings.png" width="180" alt="Settings">
-</p>
-
-The welcome tour on first launch:
-
-<p align="center">
-  <img src="docs/screenshots/tour-welcome.png" width="180" alt="Welcome tour, first slide">
-  <img src="docs/screenshots/tour-private.png" width="180" alt="Welcome tour, privacy slide">
-  <img src="docs/screenshots/tour-customize.png" width="180" alt="Welcome tour, theme and search engine picker">
+  <img src="docs/store/4.png" width="180" alt="Page menu within thumb reach">
+  <img src="docs/store/5.png" width="180" alt="Tab switcher with live previews">
+  <img src="docs/store/6.png" width="180" alt="Reader mode">
 </p>
 
 ## Install and update
