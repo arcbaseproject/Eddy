@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,9 +32,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +62,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.eddy.browser.browser.BrowserViewModel
+import app.eddy.browser.browser.Screen
+import app.eddy.browser.settings.SettingsPage
+import app.eddy.browser.ui.components.EddyIconButton
 import app.eddy.browser.data.database.SiteVisit
 import app.eddy.browser.data.models.HomeDensity
 import app.eddy.browser.data.models.Settings
@@ -96,7 +104,11 @@ fun HomeScreen(
                     Spacer(Modifier.height(if (compact) 20.dp else 32.dp))
                 }
                 if (settings.homeShowSearch) {
-                    HomeSearchBar(settings.searchEngine.name, incognito, vm::startEditing, Modifier.entrance(1))
+                    HomeSearchBar(
+                        settings, incognito, vm::startEditing,
+                        onPickEngine = { id -> vm.launchSettings { it.copy(searchEngineId = id) } },
+                        modifier = Modifier.entrance(1),
+                    )
                     Spacer(Modifier.height(if (compact) 24.dp else 40.dp))
                 }
 
@@ -127,6 +139,15 @@ fun HomeScreen(
                 Spacer(Modifier.height(32.dp))
             }
         }
+        if (!incognito) EddyIconButton(
+            Icons.Rounded.Tune, str(R.string.customize),
+            {
+                vm.settingsStack.clear()
+                vm.settingsStack.addAll(listOf(SettingsPage.APPEARANCE, SettingsPage.START_PAGE))
+                vm.screen = Screen.SETTINGS
+            },
+            Modifier.align(Alignment.TopEnd).padding(contentPadding).padding(8.dp),
+        )
       }
     }
 
@@ -160,7 +181,14 @@ private fun Wordmark(incognito: Boolean, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HomeSearchBar(engineName: String, incognito: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun HomeSearchBar(
+    settings: Settings,
+    incognito: Boolean,
+    onClick: () -> Unit,
+    onPickEngine: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var picking by remember { mutableStateOf(false) }
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().heightIn(min = 64.dp),
@@ -179,7 +207,25 @@ private fun HomeSearchBar(engineName: String, incognito: Boolean, onClick: () ->
                 overflow = TextOverflow.Ellipsis,
             )
             // With big system fonts the placeholder needs the room more than the engine name does.
-            if (LocalDensity.current.fontScale <= 1.3f) Text(engineName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+            if (LocalDensity.current.fontScale <= 1.3f) Box {
+                Text(
+                    settings.searchEngine.name,
+                    Modifier.clip(CircleShape)
+                        .clickable(onClickLabel = str(R.string.default_search_engine), role = Role.Button) { picking = true }
+                        .heightIn(min = Dimens.touchTarget).wrapContentHeight().padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                DropdownMenu(expanded = picking, onDismissRequest = { picking = false }) {
+                    settings.allEngines.forEach { engine ->
+                        DropdownMenuItem(
+                            text = { Text(engine.name) },
+                            trailingIcon = { if (engine.id == settings.searchEngineId) Icon(Icons.Rounded.Check, null) },
+                            onClick = { picking = false; onPickEngine(engine.id) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
