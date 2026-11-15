@@ -21,14 +21,14 @@ Bugs can also be reported as [GitHub issues](https://github.com/arcbaseproject/E
 ## Screenshots
 
 <p align="center">
-  <img src="docs/store/1.png" width="180" alt="Start page with the search bar and the floating bottom bar">
-  <img src="docs/store/2.png" width="180" alt="Site panel with ad and tracker blocking, text size and permissions">
-  <img src="docs/store/3.png" width="180" alt="Privacy settings: ad blocking, tracker protection, HTTPS-only and passwords">
+  <img src="docs/screenshots/home.png" width="180" alt="Start page with the search bar and the floating bottom bar">
+  <img src="docs/screenshots/browsing.png" width="180" alt="Browsing a page with the single bottom bar">
+  <img src="docs/screenshots/menu.png" width="180" alt="Page menu with full screen, playback speed and translate">
 </p>
 <p align="center">
-  <img src="docs/store/4.png" width="180" alt="Page menu within thumb reach">
-  <img src="docs/store/5.png" width="180" alt="Tab switcher with live previews">
-  <img src="docs/store/6.png" width="180" alt="Reader mode">
+  <img src="docs/screenshots/tabs.png" width="180" alt="Tab switcher with live previews and folders">
+  <img src="docs/screenshots/site.png" width="180" alt="Site panel with ad and tracker blocking and permissions">
+  <img src="docs/screenshots/privacy.png" width="180" alt="Privacy settings: ad blocking, tracker protection, HTTPS-only and incognito">
 </p>
 
 ## Install and update
