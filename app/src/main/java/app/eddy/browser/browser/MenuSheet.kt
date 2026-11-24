@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.automirrored.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.Bookmark
@@ -51,11 +52,14 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,92 +79,144 @@ import app.eddy.browser.util.UrlUtils
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, onDismiss: () -> Unit) {
+fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidden: Set<String>, onDismiss: () -> Unit) {
     val webPage = tab != null && UrlUtils.isWebUrl(tab.url)
     fun act(block: () -> Unit): () -> Unit = { onDismiss(); block() }
     // Big system fonts cannot fit four buttons in a row without breaking words.
     val perRow = if (LocalDensity.current.fontScale > 1.3f) 2 else 4
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(
-            Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = Dimens.gutter).padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val devToolsAvailable = DevTools.available(LocalContext.current)
+    val ready = tab?.webView != null
+    val healthy = ready && tab?.error == null
+    val actions = buildList {
+        fun item(
+            action: MenuItem, icon: ImageVector, available: Boolean = true,
+            enabled: Boolean = true, active: Boolean = false, displayLabel: Int = action.label,
+            click: () -> Unit,
         ) {
-            if (webPage) {
-                val quick = listOf(
-                    Quick(Icons.AutoMirrored.Rounded.ArrowForward, str(R.string.forward), tab?.canGoForward == true, false, act { vm.goForward() }),
-                    Quick(Icons.Rounded.Refresh, str(R.string.reload), tab?.webView != null, false, act { vm.reload() }),
-                    Quick(
-                        if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
-                        if (bookmarked) str(R.string.saved_2) else str(R.string.bookmark), true, bookmarked, act { vm.toggleBookmark() },
-                    ),
-                    Quick(Icons.Rounded.Share, str(R.string.share_2), true, false, act { vm.share() }),
-                    Quick(Icons.Rounded.Search, str(R.string.find), tab?.webView != null && tab.error == null, false, { vm.openFind() }),
-                    Quick(
-                        Icons.AutoMirrored.Rounded.ChromeReaderMode, str(R.string.reader), tab?.webView != null, tab?.readerActive == true,
-                        act { vm.toggleReader() },
-                    ),
-                    Quick(
-                        if (vm.readingAloud) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.VolumeUp,
-                        if (vm.readingAloud) str(R.string.stop) else str(R.string.read_aloud),
-                        tab?.webView != null && tab.error == null, vm.readingAloud, act { vm.toggleReadAloud() },
-                    ),
-                    Quick(Icons.Rounded.Print, str(R.string.print), tab?.webView != null && tab.error == null, false, act { vm.printPage() }),
-                )
-                quick.chunked(perRow).forEach { row ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { QuickButton(it, Modifier.weight(1f)) } }
-                }
+            if (editing || (available && action.name !in hidden)) {
+                add(MenuAction(action, str(if (editing) action.label else displayLabel), icon, enabled, active, click))
             }
+        }
+        item(MenuItem.Forward, Icons.AutoMirrored.Rounded.ArrowForward, webPage, tab?.canGoForward == true, click = act { vm.goForward() })
+        item(MenuItem.Reload, Icons.Rounded.Refresh, webPage, ready, click = act { vm.reload() })
+        item(MenuItem.Bookmark, if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, webPage,
+            active = bookmarked, displayLabel = if (bookmarked) R.string.saved_2 else R.string.bookmark, click = act { vm.toggleBookmark() })
+        item(MenuItem.Share, Icons.Rounded.Share, webPage, click = act { vm.share() })
+        item(MenuItem.Find, Icons.Rounded.Search, webPage, healthy) { vm.openFind() }
+        item(MenuItem.Reader, Icons.AutoMirrored.Rounded.ChromeReaderMode, webPage, ready, tab?.readerActive == true, click = act { vm.toggleReader() })
+        item(MenuItem.ReadAloud, if (vm.readingAloud) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.VolumeUp, webPage, healthy,
+            vm.readingAloud, if (vm.readingAloud) R.string.stop else R.string.read_aloud, act { vm.toggleReadAloud() })
+        item(MenuItem.Print, Icons.Rounded.Print, webPage, healthy, click = act { vm.printPage() })
+        item(MenuItem.NewTab, Icons.Rounded.Add, click = act { vm.newTab() })
+        item(MenuItem.NewIncognitoTab, Icons.Rounded.VisibilityOff, click = act { vm.newTab(incognito = true) })
+        item(MenuItem.ReopenClosedTab, Icons.Rounded.Restore, vm.tabs.closedCount > 0, click = act { vm.restoreClosedTab() })
+        item(MenuItem.DesktopSite, Icons.Rounded.DesktopWindows, webPage, ready, tab?.desktopActive == true, click = act { vm.toggleDesktop() })
+        item(MenuItem.FullScreen, Icons.Rounded.Fullscreen, webPage, active = vm.fullscreen, click = act { vm.toggleFullscreen() })
+        item(MenuItem.PlaybackSpeed, Icons.Rounded.Speed, webPage && healthy) {}
+        item(MenuItem.Translate, Icons.Rounded.Translate, webPage && ready, click = act { vm.translateVisible = true })
+        item(MenuItem.AddToStartPage, Icons.Rounded.Home, webPage, click = act { tab?.let(vm::addShortcut) })
+        item(MenuItem.ViewSource, Icons.Rounded.Code, webPage && healthy, click = act { vm.viewPageSource() })
+        item(MenuItem.AddToHomeScreen, Icons.AutoMirrored.Rounded.AddToHomeScreen, webPage && tab?.incognito == false, click = act { tab?.let(vm::addToLauncher) })
+        if (devToolsAvailable) {
+            item(MenuItem.DeveloperTools, Icons.Rounded.Code, webPage, ready, tab?.devToolsActive == true, click = act { vm.toggleDevTools() })
+        }
+        item(MenuItem.Downloads, Icons.Rounded.Download, click = act { vm.screen = Screen.DOWNLOADS })
+        item(MenuItem.History, Icons.Rounded.History, click = act { vm.screen = Screen.HISTORY })
+        item(MenuItem.Bookmarks, Icons.Rounded.Bookmarks, click = act { vm.screen = Screen.BOOKMARKS })
+        item(MenuItem.Passwords, Icons.Rounded.Key, click = act { vm.screen = Screen.PASSWORDS })
+        item(MenuItem.Settings, Icons.Rounded.Settings, click = act { vm.screen = Screen.SETTINGS })
+    }
 
-            Group {
-                Row(Icons.Rounded.Add, str(R.string.new_tab), act { vm.newTab() })
-                Row(Icons.Rounded.VisibilityOff, str(R.string.new_incognito_tab), act { vm.newTab(incognito = true) })
-                if (vm.tabs.closedCount > 0) Row(Icons.Rounded.Restore, str(R.string.reopen_closed_tab), act { vm.restoreClosedTab() })
-            }
-
-            if (webPage) {
-                Group {
-                    SwitchRow(Icons.Rounded.DesktopWindows, str(R.string.desktop_site), tab?.desktopActive == true, tab?.webView != null) { onDismiss(); vm.toggleDesktop() }
-                    SwitchRow(Icons.Rounded.Fullscreen, str(R.string.full_screen), vm.fullscreen, true) { onDismiss(); vm.toggleFullscreen() }
-                    if (tab?.webView != null && tab.error == null) Box {
-                        var speedOpen by remember { mutableStateOf(false) }
-                        Row(Icons.Rounded.Speed, str(R.string.playback_speed), { speedOpen = true })
-                        DropdownMenu(expanded = speedOpen, onDismissRequest = { speedOpen = false }) {
-                            listOf(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0).forEach { rate ->
-                                DropdownMenuItem(text = { Text(rate.toString().removeSuffix(".0") + "×") }, onClick = act { vm.setPlaybackSpeed(rate) })
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        if (editing) Row(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.gutter),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(str(R.string.edit_menu), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = { editing = false }) { Text(str(R.string.done)) }
+        }
+        key(editing) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = Dimens.gutter).padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                actions.groupBy { it.action.section }.forEach { (section, items) ->
+                    if (!editing && (section == Section.Quick || section == Section.Library)) {
+                        items.chunked(perRow).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                row.forEach { QuickButton(it, Modifier.weight(1f)) }
+                            }
+                        }
+                    } else Group {
+                        items.forEach { item ->
+                            when {
+                                editing -> SwitchRow(item.icon, item.label, item.action.name !in hidden, true) {
+                                    vm.launchSettings { it.copy(hiddenMenuItems = it.hiddenMenuItems.toggleMenuItem(item.action.name)) }
+                                }
+                                item.action == MenuItem.PlaybackSpeed -> Box {
+                                    var speedOpen by remember { mutableStateOf(false) }
+                                    Row(item.icon, item.label, { speedOpen = true })
+                                    DropdownMenu(expanded = speedOpen, onDismissRequest = { speedOpen = false }) {
+                                        listOf(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0).forEach { rate ->
+                                            DropdownMenuItem(text = { Text(rate.toString().removeSuffix(".0") + "×") }, onClick = act { vm.setPlaybackSpeed(rate) })
+                                        }
+                                    }
+                                }
+                                item.action in setOf(MenuItem.DesktopSite, MenuItem.FullScreen, MenuItem.DeveloperTools) ->
+                                    SwitchRow(item.icon, item.label, item.highlighted, item.enabled, item.onClick)
+                                else -> Row(item.icon, item.label, item.onClick, item.enabled)
                             }
                         }
                     }
-                    if (tab?.webView != null) Row(Icons.Rounded.Translate, str(R.string.translate), act { vm.translateVisible = true })
-                    Row(Icons.Rounded.Home, str(R.string.add_to_start_page), act { tab?.let(vm::addShortcut) })
-                    if (tab?.webView != null && tab.error == null) Row(Icons.Rounded.Code, str(R.string.view_source), act { vm.viewPageSource() })
-                    if (tab?.incognito == false) Row(Icons.AutoMirrored.Rounded.AddToHomeScreen, str(R.string.add_to_home_screen), act { vm.addToLauncher(tab) })
-                    if (DevTools.available(LocalContext.current)) {
-                        SwitchRow(Icons.Rounded.Code, str(R.string.developer_tools), tab?.devToolsActive == true, tab?.webView != null) { onDismiss(); vm.toggleDevTools() }
-                    }
                 }
+                if (!editing) Group { Row(Icons.Rounded.Edit, str(R.string.edit_menu), { editing = true }) }
             }
-
-            val library = listOf(
-                Quick(Icons.Rounded.Download, str(R.string.downloads), true, false, act { vm.screen = Screen.DOWNLOADS }),
-                Quick(Icons.Rounded.History, str(R.string.history), true, false, act { vm.screen = Screen.HISTORY }),
-                Quick(Icons.Rounded.Bookmarks, str(R.string.bookmarks), true, false, act { vm.screen = Screen.BOOKMARKS }),
-                Quick(Icons.Rounded.Key, str(R.string.passwords), true, false, act { vm.screen = Screen.PASSWORDS }),
-            )
-            library.chunked(perRow).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEach { QuickButton(it, Modifier.weight(1f)) } }
-            }
-
-            Group { Row(Icons.Rounded.Settings, str(R.string.settings), act { vm.screen = Screen.SETTINGS }) }
         }
     }
 }
 
-private class Quick(val icon: ImageVector, val label: String, val enabled: Boolean, val highlighted: Boolean, val onClick: () -> Unit)
+internal fun Set<String>.toggleMenuItem(id: String): Set<String> = if (id in this) this - id else this + id
+
+private enum class Section { Quick, Tabs, Page, Library, Settings }
+
+// Names are persisted in settings and exported backups.
+private enum class MenuItem(val label: Int, val section: Section) {
+    Forward(R.string.forward, Section.Quick),
+    Reload(R.string.reload, Section.Quick),
+    Bookmark(R.string.bookmark, Section.Quick),
+    Share(R.string.share_2, Section.Quick),
+    Find(R.string.find, Section.Quick),
+    Reader(R.string.reader, Section.Quick),
+    ReadAloud(R.string.read_aloud, Section.Quick),
+    Print(R.string.print, Section.Quick),
+    NewTab(R.string.new_tab, Section.Tabs),
+    NewIncognitoTab(R.string.new_incognito_tab, Section.Tabs),
+    ReopenClosedTab(R.string.reopen_closed_tab, Section.Tabs),
+    DesktopSite(R.string.desktop_site, Section.Page),
+    FullScreen(R.string.full_screen, Section.Page),
+    PlaybackSpeed(R.string.playback_speed, Section.Page),
+    Translate(R.string.translate, Section.Page),
+    AddToStartPage(R.string.add_to_start_page, Section.Page),
+    ViewSource(R.string.view_source, Section.Page),
+    AddToHomeScreen(R.string.add_to_home_screen, Section.Page),
+    DeveloperTools(R.string.developer_tools, Section.Page),
+    Downloads(R.string.downloads, Section.Library),
+    History(R.string.history, Section.Library),
+    Bookmarks(R.string.bookmarks, Section.Library),
+    Passwords(R.string.passwords, Section.Library),
+    Settings(R.string.settings, Section.Settings)
+}
+
+private class MenuAction(
+    val action: MenuItem, val label: String, val icon: ImageVector,
+    val enabled: Boolean, val highlighted: Boolean, val onClick: () -> Unit,
+)
 
 /** Icon over label, used for the page actions and the library shortcuts. */
 @Composable
-private fun QuickButton(q: Quick, modifier: Modifier) {
+private fun QuickButton(q: MenuAction, modifier: Modifier) {
     Surface(
         onClick = q.onClick,
         enabled = q.enabled,

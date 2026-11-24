@@ -1,0 +1,1 @@
+* Toca Editar menú al final del menú del navegador para ocultar o volver a mostrar acciones individuales.

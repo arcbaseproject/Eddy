@@ -366,7 +366,7 @@
     <string name="what_eddy_stores_on_your_device">What Eddy stores on your device</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Browsing history. Eddy deletes entries older than 90 days and never saves history for incognito tabs.
 • Bookmarks, folders and home-page shortcuts.
-• Your settings and the choices you make for individual sites, such as camera or location access.
+• Your settings, including which menu items you show, and the choices you make for individual sites, such as camera or location access.
 • Open tabs and their page previews, so Eddy can restore them when you reopen the app. Eddy never saves incognito tabs.
 • Site icons, and the cookies, site data and cache that web pages create through the browser engine.
 • A list of your downloads. The files themselves go to your Downloads folder.
@@ -742,4 +742,5 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="show_new_tab_button">Show new tab button</string>
     <string name="show_blocking_badge">Show blocking badge</string>
     <string name="compact_list">Compact list</string>
+    <string name="edit_menu">Edit menu</string>
 </resources>

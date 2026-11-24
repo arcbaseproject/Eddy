@@ -365,7 +365,7 @@
     <string name="what_eddy_stores_on_your_device">Was Eddy auf deinem Gerät speichert</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Browserverlauf. Eddy löscht Einträge, die älter als 90 Tage sind, und speichert nie Verlauf für Inkognito-Tabs.
 • Lesezeichen, Ordner und Verknüpfungen auf der Startseite.
-• Deine Einstellungen und die Entscheidungen, die du für einzelne Websites triffst, etwa Kamera- oder Standortzugriff.
+• Deine Einstellungen, einschließlich der sichtbaren Menüeinträge, und die Entscheidungen, die du für einzelne Websites triffst, etwa Kamera- oder Standortzugriff.
 • Offene Tabs und ihre Seitenvorschauen, damit Eddy sie beim erneuten Öffnen der App wiederherstellen kann. Eddy speichert nie Inkognito-Tabs.
 • Website-Symbole sowie die Cookies, Websitedaten und den Cache, die Webseiten über die Browser-Engine anlegen.
 • Eine Liste deiner Downloads. Die Dateien selbst landen in deinem Download-Ordner.
@@ -739,4 +739,5 @@ Jede Website, Suchmaschine und jeder Listenanbieter, den du kontaktierst, kann d
     <string name="show_new_tab_button">Schaltfläche für neuen Tab anzeigen</string>
     <string name="show_blocking_badge">Blockiersymbol anzeigen</string>
     <string name="compact_list">Kompakte Liste</string>
+    <string name="edit_menu">Menü bearbeiten</string>
 </resources>

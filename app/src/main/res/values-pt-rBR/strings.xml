@@ -366,7 +366,7 @@
     <string name="what_eddy_stores_on_your_device">O que o Eddy armazena no seu dispositivo</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Histórico de navegação. O Eddy exclui entradas com mais de 90 dias e nunca salva histórico de guias anônimas.
 • Favoritos, pastas e atalhos da página inicial.
-• Suas configurações e as escolhas que você faz para cada site, como acesso à câmera ou à localização.
+• Suas configurações, incluindo os itens visíveis no menu, e as escolhas que você faz para cada site, como acesso à câmera ou à localização.
 • Guias abertas e suas prévias, para que o Eddy possa restaurá-las quando você reabrir o app. O Eddy nunca salva guias anônimas.
 • Ícones de sites e os cookies, dados de sites e cache que as páginas criam pelo mecanismo do navegador.
 • Uma lista dos seus downloads. Os arquivos em si vão para a pasta Downloads.
@@ -746,4 +746,5 @@ Cada site, mecanismo de pesquisa e host de lista que você contata pode ver seu 
     <string name="show_new_tab_button">Mostrar botão de nova aba</string>
     <string name="show_blocking_badge">Mostrar indicador de bloqueio</string>
     <string name="compact_list">Lista compacta</string>
+    <string name="edit_menu">Editar menu</string>
 </resources>

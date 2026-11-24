@@ -366,7 +366,7 @@
     <string name="what_eddy_stores_on_your_device">Qué guarda Eddy en tu dispositivo</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Historial de navegación. Eddy elimina las entradas de más de 90 días y nunca guarda historial de las pestañas de incógnito.
 • Marcadores, carpetas y accesos directos de la página de inicio.
-• Tus ajustes y las elecciones que hagas para cada sitio, como el acceso a la cámara o a la ubicación.
+• Tus ajustes, incluidos los elementos visibles del menú, y las elecciones que hagas para cada sitio, como el acceso a la cámara o a la ubicación.
 • Las pestañas abiertas y sus vistas previas, para que Eddy pueda restaurarlas cuando vuelvas a abrir la app. Eddy nunca guarda las pestañas de incógnito.
 • Iconos de sitios, y las cookies, datos de sitios y caché que las páginas web crean a través del motor del navegador.
 • Una lista de tus descargas. Los archivos en sí van a tu carpeta Descargas.
@@ -746,4 +746,5 @@ Cada sitio, buscador y servidor de listas con el que contactas puede ver tu dire
     <string name="show_new_tab_button">Mostrar botón de pestaña nueva</string>
     <string name="show_blocking_badge">Mostrar indicador de bloqueo</string>
     <string name="compact_list">Lista compacta</string>
+    <string name="edit_menu">Editar menú</string>
 </resources>

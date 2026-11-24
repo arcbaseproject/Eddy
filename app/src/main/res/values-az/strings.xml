@@ -365,7 +365,7 @@
     <string name="what_eddy_stores_on_your_device">Eddy cihazınızda nələri saxlayır</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Brauzer tarixçəsi. Eddy 90 gündən köhnə qeydləri silir və gizli tablar üçün heç vaxt tarixçə saxlamır.
 • Əlfəcinlər, qovluqlar və başlanğıc səhifəsi qısayolları.
-• Ayarlarınız və ayrı-ayrı saytlar üçün etdiyiniz seçimlər, məsələn kamera və ya məkan icazəsi.
+• Menyuda göstərilən elementlər daxil olmaqla ayarlarınız və ayrı-ayrı saytlar üçün etdiyiniz seçimlər, məsələn kamera və ya məkan icazəsi.
 • Açıq tablar və onların səhifə önizləmələri, tətbiqi yenidən açdıqda Eddy onları bərpa edə bilsin deyə. Eddy heç vaxt gizli tabları saxlamır.
 • Sayt ikonaları, həmçinin veb səhifələrin brauzer mühərriki vasitəsilə yaratdığı kukilər, sayt məlumatları və keş.
 • Endirmələrinizin siyahısı. Faylların özləri Endirmələr qovluğuna düşür.
@@ -739,4 +739,5 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="show_new_tab_button">Yeni vərəq düyməsini göstər</string>
     <string name="show_blocking_badge">Bloklama nişanını göstər</string>
     <string name="compact_list">Yığcam siyahı</string>
+    <string name="edit_menu">Menyunu redaktə et</string>
 </resources>

@@ -1,0 +1,1 @@
+* Tap Edit menu at the bottom of the browser menu to hide or restore individual actions.

@@ -10,7 +10,7 @@ Eddy does not collect, sell or share your personal data. It has no accounts, adv
 
 - Browsing history. Eddy deletes entries older than 90 days and never saves history for incognito tabs.
 - Bookmarks, folders and home-page shortcuts.
-- Your settings and the choices you make for individual sites, such as camera or location access.
+- Your settings, including which menu items you show, and the choices you make for individual sites, such as camera or location access.
 - Open tabs and their page previews, so Eddy can restore them when you reopen the app. Eddy never saves incognito tabs.
 - Site icons, and the cookies, site data and cache that web pages create through the browser engine.
 - A list of your downloads. The files themselves go to your Downloads folder.

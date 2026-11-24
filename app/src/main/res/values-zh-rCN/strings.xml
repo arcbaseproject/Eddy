@@ -364,7 +364,7 @@
     <string name="what_eddy_stores_on_your_device">Eddy 在你的设备上存储的内容</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• 浏览历史记录。Eddy 会删除超过 90 天的条目，并且从不保存无痕标签页的历史记录。
 • 书签、文件夹和起始页快捷方式。
-• 你的设置以及你为各个网站所做的选择，例如相机或位置权限。
+• 你的设置（包括显示哪些菜单项）以及你为各个网站所做的选择，例如相机或位置权限。
 • 打开的标签页及其页面预览，以便你重新打开应用时 Eddy 可以恢复它们。Eddy 从不保存无痕标签页。
 • 网站图标，以及网页通过浏览器引擎创建的 Cookie、网站数据和缓存。
 • 你的下载列表。文件本身保存在“下载”文件夹中。
@@ -732,4 +732,5 @@
     <string name="show_new_tab_button">显示新建标签页按钮</string>
     <string name="show_blocking_badge">显示拦截标记</string>
     <string name="compact_list">紧凑列表</string>
+    <string name="edit_menu">编辑菜单</string>
 </resources>

@@ -366,7 +366,7 @@
     <string name="what_eddy_stores_on_your_device">Ce qu’Eddy stocke sur votre appareil</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Historique de navigation. Eddy supprime les entrées de plus de 90 jours et n’enregistre jamais l’historique des onglets privés.
 • Favoris, dossiers et raccourcis de la page d’accueil.
-• Vos paramètres et les choix que vous faites pour chaque site, comme l’accès à la caméra ou à la position.
+• Vos paramètres, dont les éléments visibles du menu, et les choix que vous faites pour chaque site, comme l’accès à la caméra ou à la position.
 • Les onglets ouverts et leurs aperçus, pour qu’Eddy les restaure quand vous rouvrez l’appli. Eddy n’enregistre jamais les onglets privés.
 • Les icônes des sites, ainsi que les cookies, données de site et cache que les pages web créent via le moteur du navigateur.
 • Une liste de vos téléchargements. Les fichiers eux-mêmes vont dans votre dossier Téléchargements.
@@ -746,4 +746,5 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="show_new_tab_button">Afficher le bouton de nouvel onglet</string>
     <string name="show_blocking_badge">Afficher l’indicateur de blocage</string>
     <string name="compact_list">Liste compacte</string>
+    <string name="edit_menu">Modifier le menu</string>
 </resources>

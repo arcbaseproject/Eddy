@@ -47,6 +47,7 @@ data class Settings(
     val amoled: Boolean = false,
     val dynamicColor: Boolean = true,
     val palette: Int = 0,
+    val hiddenMenuItems: Set<String> = emptySet(),
     val showBackButton: Boolean = true,
     val showNewTabButton: Boolean = true,
     val showBlockingBadge: Boolean = false,
