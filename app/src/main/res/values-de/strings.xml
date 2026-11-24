@@ -735,4 +735,8 @@ Jede Website, Suchmaschine und jeder Listenanbieter, den du kontaktierst, kann d
     <string name="move_to_folder">In Ordner verschieben</string>
     <string name="move_tab_to_folder">%1$s in einen Ordner verschieben</string>
     <string name="close_folder_tabs">Alle Tabs in %1$s schließen?</string>
+    <string name="show_back_button">Zurück-Schaltfläche anzeigen</string>
+    <string name="show_new_tab_button">Schaltfläche für neuen Tab anzeigen</string>
+    <string name="show_blocking_badge">Blockiersymbol anzeigen</string>
+    <string name="compact_list">Kompakte Liste</string>
 </resources>

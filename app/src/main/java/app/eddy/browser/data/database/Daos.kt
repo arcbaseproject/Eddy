@@ -61,6 +61,9 @@ interface HistoryDao {
 
 @Dao
 interface BookmarkDao {
+    @Query("SELECT MAX(COALESCE((SELECT MAX(position) FROM bookmarks), 0), COALESCE((SELECT MAX(position) FROM bookmark_folders), 0))")
+    suspend fun lastPosition(): Long
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(bookmark: Bookmark): Long
 
@@ -74,7 +77,7 @@ interface BookmarkDao {
     @Query("DELETE FROM bookmarks WHERE url = :url")
     suspend fun deleteByUrl(url: String)
 
-    @Query("SELECT * FROM bookmarks ORDER BY createdAt DESC")
+    @Query("SELECT * FROM bookmarks ORDER BY position, createdAt DESC, id DESC")
     fun all(): Flow<List<Bookmark>>
 
     @Query("SELECT * FROM bookmarks WHERE title LIKE '%' || :q || '%' OR url LIKE '%' || :q || '%' ORDER BY title LIMIT :limit")
@@ -89,7 +92,7 @@ interface BookmarkDao {
     @Update
     suspend fun updateFolder(folder: BookmarkFolder)
 
-    @Query("SELECT * FROM bookmark_folders ORDER BY name")
+    @Query("SELECT * FROM bookmark_folders ORDER BY position, name, id")
     fun folders(): Flow<List<BookmarkFolder>>
 
     @Query("DELETE FROM bookmark_folders WHERE id = :id")

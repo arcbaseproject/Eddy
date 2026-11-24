@@ -452,6 +452,22 @@ class BrowserAuditTest {
         }
     }
 
+    @Test fun phpDownloadUsesRedirectedFileName() = runBlocking {
+        val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
+        HttpFixture().use { server ->
+            val id = vm.downloads.enqueue(DownloadRequest(server.origin + "/download.php", "", "", "", "application/octet-stream", -1))
+            try {
+                val result = kotlinx.coroutines.withTimeout(15000) {
+                    dao.all().first { rows -> rows.any { it.id == id && it.status in setOf(
+                        app.eddy.browser.data.database.DownloadStatus.COMPLETED, app.eddy.browser.data.database.DownloadStatus.FAILED,
+                    ) } }.first { it.id == id }
+                }
+                assertEquals(result.error, app.eddy.browser.data.database.DownloadStatus.COMPLETED, result.status)
+                assertEquals("report.txt", result.fileName)
+            } finally { vm.downloads.delete(id, true) }
+        }
+    }
+
     @Test fun redirectedDownloadUsesDestinationCookies() = runBlocking {
         val dao = (instrumentation.targetContext.applicationContext as EddyApp).container.database.downloads()
         HttpFixture().use { server ->

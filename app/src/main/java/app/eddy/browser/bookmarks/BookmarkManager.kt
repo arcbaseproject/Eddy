@@ -3,14 +3,16 @@ package app.eddy.browser.bookmarks
 import app.eddy.browser.R
 import app.eddy.browser.util.str
 import app.eddy.browser.data.database.Bookmark
-import app.eddy.browser.data.database.BookmarkDao
+import androidx.room.withTransaction
+import app.eddy.browser.data.database.EddyDatabase
 import app.eddy.browser.data.database.BookmarkFolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class BookmarkManager(private val dao: BookmarkDao, private val scope: CoroutineScope) {
+class BookmarkManager(private val database: EddyDatabase, private val scope: CoroutineScope) {
+    private val dao = database.bookmarks()
     val bookmarks: Flow<List<Bookmark>> = dao.all()
     val folders: Flow<List<BookmarkFolder>> = dao.folders()
 
@@ -38,48 +40,58 @@ class BookmarkManager(private val dao: BookmarkDao, private val scope: Coroutine
     }
 
     /** Netscape bookmark HTML, the format every major browser can import. */
-    suspend fun exportHtml(): String {
+    suspend fun exportHtml(): String = database.withTransaction {
         val all = dao.all().first()
         val folders = dao.folders().first()
-        return buildString {
+        buildString {
             append("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n")
             append("<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n")
             fun link(b: Bookmark, indent: String) =
                 append("$indent<DT><A HREF=\"${b.url.escape()}\" ADD_DATE=\"${b.createdAt / 1000}\">${b.title.escape()}</A>\n")
-            all.filter { it.folderId == Bookmark.ROOT_FOLDER }.forEach { link(it, "    ") }
-            for (f in folders) {
-                append("    <DT><H3>${f.name.escape()}</H3>\n    <DL><p>\n")
-                all.filter { it.folderId == f.id }.forEach { link(it, "        ") }
-                append("    </DL><p>\n")
+            val byFolder = all.groupBy { it.folderId }
+            val root = folders + byFolder[Bookmark.ROOT_FOLDER].orEmpty()
+            for (f in root.sortedBy { it.position }) when (f) {
+                is Bookmark -> link(f, "    ")
+                is BookmarkFolder -> {
+                    append("    <DT><H3>${f.name.escape()}</H3>\n    <DL><p>\n")
+                    byFolder[f.id].orEmpty().forEach { link(it, "        ") }
+                    append("    </DL><p>\n")
+                }
             }
             append("</DL><p>\n")
         }
     }
 
     /** Imports Netscape HTML; nested folders are flattened into one level. Returns the count added. */
-    suspend fun importHtml(html: String): Int {
+    suspend fun importHtml(html: String): Int = database.withTransaction {
         val token = Regex("<H3[^>]*>(.*?)</H3>|<A\\s[^>]*?HREF=\"([^\"]*)\"[^>]*>(.*?)</A>|</DL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
         val existingFolders = dao.folders().first().associateBy { it.name }.toMutableMap()
         // Each folder's own </DL> returns to the folder around it; nested folders become top-level ones.
         val open = ArrayDeque<Long>()
+        var position = dao.lastPosition()
         var count = 0
         for (m in token.findAll(html)) {
             val (folderName, href, title) = m.destructured
             when {
                 href.isNotEmpty() -> if (href.startsWith("http", true)) {
-                    dao.insert(Bookmark(title = title.unescape().ifBlank { href }, url = href.unescape(), folderId = open.lastOrNull() ?: Bookmark.ROOT_FOLDER))
+                    dao.insert(Bookmark(title = title.unescape().ifBlank { href }, url = href.unescape(), position = ++position, folderId = open.lastOrNull() ?: Bookmark.ROOT_FOLDER))
                     count++
                 }
                 m.value.startsWith("<H3", true) -> {
                     val name = folderName.unescape().trim().ifBlank { str(R.string.imported) }
-                    open.addLast(existingFolders.getOrPut(name) {
-                        BookmarkFolder(id = dao.insertFolder(BookmarkFolder(name = name)), name = name)
-                    }.id)
+                    val folder = existingFolders[name]
+                    val ordered = (folder ?: BookmarkFolder(name = name)).copy(position = ++position)
+                    val id = if (folder == null) dao.insertFolder(ordered) else {
+                        dao.updateFolder(ordered)
+                        folder.id
+                    }
+                    existingFolders[name] = ordered.copy(id = id)
+                    open.addLast(id)
                 }
                 else -> open.removeLastOrNull()
             }
         }
-        return count
+        count
     }
 
     private fun String.escape() = replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")

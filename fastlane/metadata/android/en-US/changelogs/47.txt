@@ -1,0 +1,5 @@
+* Keep bookmarks and folders in their original order when importing and exporting HTML.
+* Save downloads from PHP links with the filename or file type the site provides.
+* Choose a compact tab list with previews and URLs. Find tab actions beside New tab.
+* Choose which buttons appear in the address bar. Tap the domain in site settings to see the full URL.
+* Switch search engines and open start page settings from the start page.

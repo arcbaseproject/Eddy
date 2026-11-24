@@ -81,6 +81,12 @@ fun AppearanceSettings(vm: BrowserViewModel, s: Settings) {
         NavRow(str(R.string.start_page), { vm.settingsStack.add(SettingsPage.START_PAGE) }, str(R.string.title_sections_shortcut_columns))
         GroupDivider()
         ChoiceRow(str(R.string.toolbar_position), ToolbarPosition.entries, s.toolbarPosition, { if (it == ToolbarPosition.BOTTOM) str(R.string.bottom) else str(R.string.top) }, { v -> vm.launchSettings { it.copy(toolbarPosition = v) } })
+        GroupDivider()
+        SwitchRow(str(R.string.show_back_button), s.showBackButton, { v -> vm.launchSettings { it.copy(showBackButton = v) } })
+        GroupDivider()
+        SwitchRow(str(R.string.show_new_tab_button), s.showNewTabButton, { v -> vm.launchSettings { it.copy(showNewTabButton = v) } })
+        GroupDivider()
+        SwitchRow(str(R.string.show_blocking_badge), s.showBlockingBadge, { v -> vm.launchSettings { it.copy(showBlockingBadge = v) } })
     }
     SettingsGroup(str(R.string.motion_and_feedback)) {
         // System "Remove animations" wins over this setting, so say so instead of showing "Full".

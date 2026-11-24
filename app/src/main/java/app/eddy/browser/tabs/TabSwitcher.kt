@@ -49,9 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -114,7 +111,7 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
     val incognitoCount = all.count { it.incognito }
     var menu by remember { mutableStateOf(false) }
     var confirmCloseAll by remember { mutableStateOf(false) }
-    val columns = if (settings.tabLayout == TabLayout.LIST) 1 else 2
+    val columns = if (settings.tabLayout == TabLayout.GRID) 2 else 1
     // Long-press drag to reorder, tracked in root coordinates like the start page's shortcut grid.
     val slots = remember { mutableStateMapOf<String, Rect>() }
     var draggingId by remember { mutableStateOf<String?>(null) }
@@ -125,29 +122,16 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
     Box(modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.gutter, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
-                    SegmentedButton(
-                        selected = !incognito, onClick = { vm.switcherIncognito = false; haptics.tick() },
-                        shape = SegmentedButtonDefaults.itemShape(0, 2),
-                    ) { Text(str(R.string.tabs, normalCount)) }
-                    SegmentedButton(
-                        selected = incognito, onClick = { vm.switcherIncognito = true; haptics.tick() },
-                        shape = SegmentedButtonDefaults.itemShape(1, 2),
-                        icon = { Icon(Icons.Rounded.VisibilityOff, null, Modifier.size(18.dp)) },
-                    ) { Text(str(R.string.incognito, incognitoCount)) }
-                }
-                Box {
-                    EddyIconButton(Icons.Rounded.MoreVert, str(R.string.more_tab_actions), { menu = true })
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(str(R.string.close_all_tabs)) }, enabled = shown.isNotEmpty(),
-                            leadingIcon = { Icon(Icons.Rounded.Close, null) }, onClick = { menu = false; confirmCloseAll = true },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(str(R.string.reopen_closed_tab)) }, enabled = vm.tabs.closedCount > 0,
-                            leadingIcon = { Icon(Icons.Rounded.Restore, null) }, onClick = { menu = false; vm.restoreClosedTab() },
-                        )
-                    }
+                for (privateMode in listOf(false, true)) {
+                    androidx.compose.material3.Tab(
+                        selected = incognito == privateMode,
+                        onClick = { vm.switcherIncognito = privateMode; haptics.tick() },
+                        modifier = Modifier.weight(1f),
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = { Text(if (privateMode) str(R.string.incognito, incognitoCount) else str(R.string.tabs, normalCount),
+                            fontWeight = if (incognito == privateMode) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal) },
+                    )
                 }
             }
 
@@ -194,6 +178,7 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
                             vm = vm,
                             tab = tab,
                             selected = tab.id == vm.tabs.selectedId,
+                            compact = settings.tabLayout == TabLayout.COMPACT,
                             thumbHeight = if (columns == 1) 120.dp else Dimens.tabCardThumbHeight,
                             dragging = dragging,
                             onFolder = { folderFor = tab },
@@ -233,15 +218,28 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
             }
         }
 
-        Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).fillMaxWidth()) {
-            TextButton(onClick = { vm.screen = app.eddy.browser.browser.Screen.BROWSER }, Modifier.align(Alignment.CenterStart).height(Dimens.touchTarget)) { Text(str(R.string.done)) }
+        Row(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { vm.screen = app.eddy.browser.browser.Screen.BROWSER }, Modifier.height(Dimens.touchTarget)) { Text(str(R.string.done)) }
             ExtendedFloatingActionButton(
                 onClick = { haptics.confirm(); vm.newTab(incognito, group) },
                 icon = { Icon(Icons.Rounded.Add, null) },
                 text = { Text(if (incognito) str(R.string.new_incognito_tab) else str(R.string.new_tab)) },
-                modifier = Modifier.align(Alignment.Center),
                 containerColor = if (incognito) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer,
             )
+
+            Box {
+                EddyIconButton(Icons.Rounded.MoreVert, str(R.string.more_tab_actions), { menu = true })
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(str(R.string.close_all_tabs)) }, enabled = shown.isNotEmpty(),
+                        leadingIcon = { Icon(Icons.Rounded.Close, null) }, onClick = { menu = false; confirmCloseAll = true },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(str(R.string.reopen_closed_tab)) }, enabled = vm.tabs.closedCount > 0,
+                        leadingIcon = { Icon(Icons.Rounded.Restore, null) }, onClick = { menu = false; vm.restoreClosedTab() },
+                    )
+                }
+            }
         }
     }
 
@@ -283,13 +281,27 @@ fun TabSwitcher(vm: BrowserViewModel, settings: Settings, modifier: Modifier = M
 }
 
 @Composable
-private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, thumbHeight: androidx.compose.ui.unit.Dp, dragging: Boolean, onFolder: () -> Unit, modifier: Modifier = Modifier) {
+private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, compact: Boolean, thumbHeight: androidx.compose.ui.unit.Dp, dragging: Boolean, onFolder: () -> Unit, modifier: Modifier = Modifier) {
     val haptics = rememberHaptics()
     val thumb by produceState(vm.thumbnails.peek(tab.id), tab.id, tab.thumbVersion) { value = vm.thumbnails.load(tab.id) }
     val scheme = MaterialTheme.colorScheme
     val border by animateFloatAsState(if (selected) 3f else 0f, spatialSpring(), label = "selected")
     val lift by animateFloatAsState(if (dragging) 1.05f else 1f, spatialSpring(), label = "lift")
     val title = tab.displayTitle(if (tab.isHome) str(R.string.new_tab) else str(R.string.tab))
+
+    val preview: @Composable (Modifier) -> Unit = { size ->
+        Box(
+            size.clip(RoundedCornerShape(22.dp)).background(scheme.surfaceContainerLowest),
+            contentAlignment = Alignment.Center,
+        ) {
+            val bmp = thumb
+            when {
+                bmp != null -> Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+                tab.isHome -> Icon(Icons.Rounded.Home, null, Modifier.size(40.dp), tint = scheme.outline)
+                else -> SiteIcon(tab.host, size = 56.dp, live = tab.favicon)
+            }
+        }
+    }
 
     SwipeToDismissBox(
         rememberSwipeToDismissBoxState(), backgroundContent = {}, modifier.graphicsLayer { scaleX = lift; scaleY = lift },
@@ -303,24 +315,24 @@ private fun TabCard(vm: BrowserViewModel, tab: BrowserTab, selected: Boolean, th
             border = if (border > 0.05f) androidx.compose.foundation.BorderStroke(border.dp, scheme.primary) else null,
             onClick = { vm.selectTab(tab) },
         ) {
-            Column(Modifier.padding(6.dp)) {
+            if (compact) Row(Modifier.fillMaxWidth().padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                preview(Modifier.size(width = 76.dp, height = 64.dp))
+                Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                    Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (tab.isHome) str(R.string.start_page) else tab.url, style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                EddyIconButton(if (tab.group == null) Icons.Rounded.FolderOpen else Icons.Rounded.Folder,
+                    str(R.string.move_tab_to_folder, title), onFolder)
+                EddyIconButton(Icons.Rounded.Close, str(R.string.close, title), { haptics.confirm(); vm.closeTab(tab) })
+            } else Column(Modifier.padding(6.dp)) {
                 Row(Modifier.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (tab.isHome) Icon(Icons.Rounded.Home, null, Modifier.size(20.dp), tint = scheme.primary)
                     else SiteIcon(tab.host, size = 20.dp, live = tab.favicon)
                     Text(title, Modifier.weight(1f).padding(horizontal = 8.dp), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     EddyIconButton(Icons.Rounded.Close, str(R.string.close, title), { haptics.confirm(); vm.closeTab(tab) }, Modifier.size(40.dp))
                 }
-                Box(
-                    Modifier.fillMaxWidth().height(thumbHeight).clip(RoundedCornerShape(22.dp)).background(scheme.surfaceContainerLowest),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val bmp = thumb
-                    when {
-                        bmp != null -> Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
-                        tab.isHome -> Icon(Icons.Rounded.Home, null, Modifier.size(40.dp), tint = scheme.outline)
-                        else -> SiteIcon(tab.host, size = 56.dp, live = tab.favicon)
-                    }
-                }
+                preview(Modifier.fillMaxWidth().height(thumbHeight))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (tab.isHome) str(R.string.start_page) else tab.host,

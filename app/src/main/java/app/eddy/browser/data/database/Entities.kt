@@ -14,6 +14,10 @@ data class HistoryEntry(
     val visitTime: Long,
 )
 
+sealed interface BookmarkItem {
+    val position: Long
+}
+
 @Entity(tableName = "bookmarks", indices = [Index("folderId"), Index(value = ["url", "folderId"], unique = true)])
 data class Bookmark(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -21,7 +25,8 @@ data class Bookmark(
     val url: String,
     val folderId: Long = ROOT_FOLDER,
     val createdAt: Long = System.currentTimeMillis(),
-) {
+    @ColumnInfo(defaultValue = "0") override val position: Long = 0,
+) : BookmarkItem {
     companion object {
         const val ROOT_FOLDER = 0L
     }
@@ -32,7 +37,8 @@ data class BookmarkFolder(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val createdAt: Long = System.currentTimeMillis(),
-)
+    @ColumnInfo(defaultValue = "0") override val position: Long = 0,
+) : BookmarkItem
 
 enum class DownloadStatus { QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELED }
 

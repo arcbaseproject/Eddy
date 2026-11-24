@@ -749,4 +749,8 @@
     <string name="move_to_folder">Переместить в папку</string>
     <string name="move_tab_to_folder">Переместить %1$s в папку</string>
     <string name="close_folder_tabs">Закрыть все вкладки в %1$s?</string>
+    <string name="show_back_button">Показывать кнопку «Назад»</string>
+    <string name="show_new_tab_button">Показывать кнопку новой вкладки</string>
+    <string name="show_blocking_badge">Показывать значок блокировки</string>
+    <string name="compact_list">Компактный список</string>
 </resources>

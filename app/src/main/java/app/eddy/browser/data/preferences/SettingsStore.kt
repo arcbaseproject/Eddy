@@ -76,6 +76,9 @@ class SettingsStore(private val context: Context) {
         val amoled = booleanPreferencesKey("amoled")
         val dynamic = booleanPreferencesKey("dynamic")
         val palette = intPreferencesKey("palette")
+        val showBackButton = booleanPreferencesKey("show_back_button")
+        val showNewTabButton = booleanPreferencesKey("show_new_tab_button")
+        val showBlockingBadge = booleanPreferencesKey("show_blocking_badge")
         val toolbar = stringPreferencesKey("toolbar")
         val density = stringPreferencesKey("density")
         val motion = stringPreferencesKey("motion")
@@ -137,6 +140,9 @@ class SettingsStore(private val context: Context) {
             amoled = this[K.amoled] ?: d.amoled,
             dynamicColor = this[K.dynamic] ?: d.dynamicColor,
             palette = this[K.palette] ?: d.palette,
+            showBackButton = this[K.showBackButton] ?: d.showBackButton,
+            showNewTabButton = this[K.showNewTabButton] ?: d.showNewTabButton,
+            showBlockingBadge = this[K.showBlockingBadge] ?: d.showBlockingBadge,
             toolbarPosition = this[K.toolbar].toEnum(d.toolbarPosition),
             homeDensity = this[K.density].toEnum(d.homeDensity),
             motion = this[K.motion].toEnum(d.motion),
@@ -191,6 +197,9 @@ class SettingsStore(private val context: Context) {
         this[K.amoled] = s.amoled
         this[K.dynamic] = s.dynamicColor
         this[K.palette] = s.palette
+        this[K.showBackButton] = s.showBackButton
+        this[K.showNewTabButton] = s.showNewTabButton
+        this[K.showBlockingBadge] = s.showBlockingBadge
         this[K.toolbar] = s.toolbarPosition.name
         this[K.density] = s.homeDensity.name
         this[K.motion] = s.motion.name

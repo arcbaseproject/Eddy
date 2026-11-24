@@ -229,7 +229,13 @@ private fun TabSettings(vm: BrowserViewModel, s: Settings) {
         GroupDivider()
         SwitchRow(str(R.string.switch_to_tabs_opened_by_links), s.switchToNewTabs, { v -> vm.launchSettings { it.copy(switchToNewTabs = v) } }, str(R.string.when_off_they_open_in_the_background))
         GroupDivider()
-        ChoiceRow(str(R.string.tab_switcher_layout), TabLayout.entries, s.tabLayout, { if (it == TabLayout.GRID) str(R.string.grid) else str(R.string.list) }, { v -> vm.launchSettings { it.copy(tabLayout = v) } })
+        ChoiceRow(str(R.string.tab_switcher_layout), TabLayout.entries, s.tabLayout, { layout ->
+            str(when (layout) {
+                TabLayout.GRID -> R.string.grid
+                TabLayout.LIST -> R.string.list
+                TabLayout.COMPACT -> R.string.compact_list
+            })
+        }, { v -> vm.launchSettings { it.copy(tabLayout = v) } })
         GroupDivider()
         ChoiceRow(
             str(R.string.after_closing_a_tab_show), CloseTabBehavior.entries, s.closeTabBehavior,

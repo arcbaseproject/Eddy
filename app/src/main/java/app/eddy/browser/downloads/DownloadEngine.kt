@@ -226,11 +226,12 @@ class DownloadEngine(
                     throw IOException(str(R.string.the_site_sent_a_web_page_instead_of_the))
                 }
             }
-            val name = if (disposition.isNotEmpty() || d.fileName.startsWith("downloadfile")) {
-                sanitize(DownloadNames.forDownload(d.url, disposition, served))
-                    // The user was only asked about installers under the first name; a later response cannot turn it into one.
-                    .takeUnless { DownloadNames.isExecutable(it) && !DownloadNames.isExecutable(d.fileName) } ?: d.fileName
+            val responseName = DownloadNames.responseName(disposition) ?: if (d.fileName.startsWith("downloadfile")) {
+                DownloadNames.forDownload(d.url, "", served)
             } else d.fileName
+            // The user was only asked about installers under the first name; a later response cannot turn it into one.
+            val name = sanitize(responseName)
+                .takeUnless { DownloadNames.isExecutable(it) && !DownloadNames.isExecutable(d.fileName) } ?: d.fileName
             val mime = DownloadNames.typeFor(name, served)
             d = d.copy(
                 totalBytes = total, mimeType = mime, fileName = name, downloadedBytes = offset,

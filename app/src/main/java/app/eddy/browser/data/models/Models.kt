@@ -5,7 +5,7 @@ enum class ToolbarPosition { BOTTOM, TOP }
 enum class CookieMode { ALLOW_ALL, BLOCK_THIRD_PARTY, BLOCK_ALL }
 enum class HomepageMode { HOME, CUSTOM }
 enum class ExternalLinks { ASK, ALWAYS, NEVER }
-enum class TabLayout { GRID, LIST }
+enum class TabLayout { GRID, LIST, COMPACT }
 enum class MotionPref { FULL, REDUCED }
 enum class HomeDensity { COMFORTABLE, COMPACT }
 enum class ShortcutStyle { MIXED, SQUIRCLE, CIRCLE, FLOWER }
@@ -47,6 +47,9 @@ data class Settings(
     val amoled: Boolean = false,
     val dynamicColor: Boolean = true,
     val palette: Int = 0,
+    val showBackButton: Boolean = true,
+    val showNewTabButton: Boolean = true,
+    val showBlockingBadge: Boolean = false,
     val toolbarPosition: ToolbarPosition = ToolbarPosition.BOTTOM,
     val homeDensity: HomeDensity = HomeDensity.COMFORTABLE,
     val motion: MotionPref = MotionPref.FULL,

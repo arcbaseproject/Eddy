@@ -742,4 +742,8 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="move_to_folder">Déplacer vers un dossier</string>
     <string name="move_tab_to_folder">Déplacer %1$s vers un dossier</string>
     <string name="close_folder_tabs">Fermer tous les onglets de %1$s ?</string>
+    <string name="show_back_button">Afficher le bouton de retour</string>
+    <string name="show_new_tab_button">Afficher le bouton de nouvel onglet</string>
+    <string name="show_blocking_badge">Afficher l’indicateur de blocage</string>
+    <string name="compact_list">Liste compacte</string>
 </resources>

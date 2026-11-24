@@ -1,0 +1,5 @@
+* Conserva el orden de los marcadores y carpetas al importar y exportar HTML.
+* Guarda las descargas de enlaces PHP con el nombre o el tipo de archivo que indique el sitio.
+* Elige una lista compacta de pestañas con vistas previas y direcciones. El menú está junto a Nueva pestaña.
+* Elige qué botones aparecen en la barra de direcciones. Toca el dominio en los ajustes del sitio para ver la URL completa.
+* Cambia de buscador y abre los ajustes de la página de inicio desde la propia página.

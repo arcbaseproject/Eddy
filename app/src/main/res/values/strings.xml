@@ -738,4 +738,8 @@ Each site, search engine and list host you contact can see your IP address and t
     <string name="move_to_folder">Move to folder</string>
     <string name="move_tab_to_folder">Move %1$s to a folder</string>
     <string name="close_folder_tabs">Close all tabs in %1$s?</string>
+    <string name="show_back_button">Show back button</string>
+    <string name="show_new_tab_button">Show new tab button</string>
+    <string name="show_blocking_badge">Show blocking badge</string>
+    <string name="compact_list">Compact list</string>
 </resources>

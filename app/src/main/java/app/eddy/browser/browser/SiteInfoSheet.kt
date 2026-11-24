@@ -3,6 +3,7 @@ package app.eddy.browser.browser
 import app.eddy.browser.R
 import app.eddy.browser.util.plural
 import app.eddy.browser.util.str
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,6 +49,7 @@ import java.text.DateFormat
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) {
+    var fullAddress by remember(tab.url) { mutableStateOf(false) }
     val host = UrlUtils.displayHost(tab.url)
     val site = vm.sites.peek(host, tab.incognito)
     val origin = UrlUtils.origin(tab.url)
@@ -66,8 +68,8 @@ fun SiteInfoSheet(vm: BrowserViewModel, tab: BrowserTab, onDismiss: () -> Unit) 
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SiteIcon(host, size = Dimens.faviconLarge, live = tab.favicon)
-                Column(Modifier.padding(start = 14.dp)) {
-                    Text(host.ifEmpty { str(R.string.this_page) }, style = MaterialTheme.typography.titleLarge)
+                Column(Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { fullAddress = !fullAddress }.padding(start = 14.dp)) {
+                    Text(if (fullAddress) tab.url else host.ifEmpty { str(R.string.this_page) }, style = MaterialTheme.typography.titleLarge)
                     Text(
                         when (tab.security) {
                             Security.SECURE -> str(R.string.connection_is_secure)

@@ -58,7 +58,7 @@ class AppContainer(private val app: Application) {
 
     val database by lazy { EddyDatabase.create(app) }
     val history by lazy { HistoryManager(database.history(), scope) }
-    val bookmarks by lazy { BookmarkManager(database.bookmarks(), scope) }
+    val bookmarks by lazy { BookmarkManager(database, scope) }
     val sites by lazy { SitePermissions(database.sites(), scope) }
     val passwords by lazy { PasswordManager(database.logins(), scope) }
     val favicons by lazy { FaviconCache(app, scope) }

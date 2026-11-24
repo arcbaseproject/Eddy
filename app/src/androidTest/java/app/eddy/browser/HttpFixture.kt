@@ -77,13 +77,15 @@ class HttpFixture(tls: Boolean = false) : AutoCloseable {
                             else -> "<title>Fixture</title>ok"
                         }.toByteArray()
                         val response = when (path) {
+                            "/download.php" -> "HTTP/1.1 302 Found\r\nLocation: /report.txt\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                            "/report.txt" -> "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n"
                             "/redirect" -> "HTTP/1.1 302 Found\r\nLocation: /b\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
                             "/download" -> "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Disposition: attachment; filename=audit.txt\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n"
                             else -> "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n"
                         }
                         runCatching {
                             it.getOutputStream().write(response.toByteArray())
-                            if (path != "/redirect") it.getOutputStream().write(body)
+                            if (path != "/redirect" && path != "/download.php") it.getOutputStream().write(body)
                         }
                     } }
                 }

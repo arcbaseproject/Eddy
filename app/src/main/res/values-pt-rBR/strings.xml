@@ -742,4 +742,8 @@ Cada site, mecanismo de pesquisa e host de lista que você contata pode ver seu 
     <string name="move_to_folder">Mover para pasta</string>
     <string name="move_tab_to_folder">Mover %1$s para uma pasta</string>
     <string name="close_folder_tabs">Fechar todas as guias em %1$s?</string>
+    <string name="show_back_button">Mostrar botão de voltar</string>
+    <string name="show_new_tab_button">Mostrar botão de nova aba</string>
+    <string name="show_blocking_badge">Mostrar indicador de bloqueio</string>
+    <string name="compact_list">Lista compacta</string>
 </resources>

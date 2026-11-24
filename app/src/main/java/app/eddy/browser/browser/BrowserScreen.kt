@@ -375,7 +375,7 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
     Box(Modifier.fillMaxSize().onSizeChanged { pageWidth = it.width }) {
         // While typing into a page the keyboard, not the toolbar, gets the space. The editor manages its own insets.
         Column(Modifier.fillMaxSize().then(if (vm.editing) Modifier else Modifier.imePadding())) {
-            if (atTop) Chrome(vm, tab, atTop = true, hidden = imeVisible && !vm.editing, swipe = tabSwipe)
+            if (atTop) Chrome(vm, tab, settings, atTop = true, hidden = imeVisible && !vm.editing, swipe = tabSwipe)
             Box(Modifier.weight(1f).fillMaxWidth().then(if (atTop) Modifier.navigationBarsPadding() else Modifier)) {
                 // Sits in the page area so the screenshot lines up with the page it replaces.
                 if (swipeDir != 0) vm.adjacentTab(-swipeDir)?.let {
@@ -405,7 +405,7 @@ private fun BrowserPage(vm: BrowserViewModel, settings: Settings, tab: BrowserTa
                 AutofillLayer(vm, tab, imeVisible, Modifier.align(Alignment.BottomCenter))
                 SaveLoginLayer(vm, tab, atTop, Modifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter))
             }
-            if (!atTop) Chrome(vm, tab, atTop = false, hidden = imeVisible && !vm.editing, swipe = tabSwipe)
+            if (!atTop) Chrome(vm, tab, settings, atTop = false, hidden = imeVisible && !vm.editing, swipe = tabSwipe)
         }
 
         AnimatedVisibility(vm.editing, enter = fadeIn(effectSpring()), exit = fadeOut(effectSpring())) {
@@ -447,7 +447,7 @@ private fun contentPaddingFor(atTop: Boolean): PaddingValues =
 
 /** Address pill plus toolbar. While scrolling down only a slim pill remains, so the page gets the room. */
 @Composable
-private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidden: Boolean, swipe: Modifier) {
+private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, settings: Settings, atTop: Boolean, hidden: Boolean, swipe: Modifier) {
     val home = tab?.isHome != false
     val expanded = vm.chromeVisible || home
     // Full screen leaves only the page; scrolling up brings the whole toolbar back.
@@ -459,6 +459,7 @@ private fun Chrome(vm: BrowserViewModel, tab: BrowserTab?, atTop: Boolean, hidde
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Dimens.chromeGap),
     ) {
         BrowserBar(
+            settings = settings,
             tab = tab,
             tabCount = vm.tabs.tabs.count { it.incognito == (tab?.incognito == true) },
             compact = !expanded,

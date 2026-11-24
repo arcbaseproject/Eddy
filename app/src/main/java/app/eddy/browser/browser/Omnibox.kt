@@ -105,6 +105,7 @@ private val PillShape = RoundedCornerShape(26.dp)
  */
 @Composable
 fun BrowserBar(
+    settings: app.eddy.browser.data.models.Settings,
     tab: BrowserTab?,
     tabCount: Int,
     compact: Boolean,
@@ -151,7 +152,7 @@ fun BrowserBar(
                 )
             } else {
                 Row(Modifier.fillMaxSize().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    EddyIconButton(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.back), onBack, enabled = tab != null && (tab.canGoBack || !tab.isHome))
+                    if (settings.showBackButton) EddyIconButton(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.back), onBack, enabled = tab != null && (tab.canGoBack || !tab.isHome))
                     Row(
                         Modifier.weight(1f).fillMaxHeight().clip(CircleShape)
                             .clickable(role = Role.Button, onClickLabel = str(R.string.edit_address), onClick = onEdit),
@@ -167,11 +168,11 @@ fun BrowserBar(
                             style = UrlTextStyle, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             color = if (home) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         )
-                        if (tab != null && !home && tab.shieldShown) BlockedBadge(tab.blockedCount, tab.siteBlockingOff, onSiteInfo)
+                        if (tab != null && !home && settings.showBlockingBadge && tab.shieldShown) BlockedBadge(tab.blockedCount, tab.siteBlockingOff, onSiteInfo)
                         // Only shown while loading; reload lives in the menu and pull-to-refresh.
                         if (tab?.isLoading == true) EddyIconButton(Icons.Rounded.Close, str(R.string.stop_loading), onStop)
                     }
-                    EddyIconButton(Icons.Rounded.Add, str(R.string.new_tab), onNewTab)
+                    if (settings.showNewTabButton) EddyIconButton(Icons.Rounded.Add, str(R.string.new_tab), onNewTab)
                     TabCountButton(tabCount, tab?.incognito == true, onTabs)
                     EddyIconButton(Icons.Rounded.MoreVert, str(R.string.menu), onMenu)
                 }

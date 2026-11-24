@@ -742,4 +742,8 @@ Cada sitio, buscador y servidor de listas con el que contactas puede ver tu dire
     <string name="move_to_folder">Mover a carpeta</string>
     <string name="move_tab_to_folder">Mover %1$s a una carpeta</string>
     <string name="close_folder_tabs">¿Cerrar todas las pestañas de %1$s?</string>
+    <string name="show_back_button">Mostrar botón Atrás</string>
+    <string name="show_new_tab_button">Mostrar botón de pestaña nueva</string>
+    <string name="show_blocking_badge">Mostrar indicador de bloqueo</string>
+    <string name="compact_list">Lista compacta</string>
 </resources>

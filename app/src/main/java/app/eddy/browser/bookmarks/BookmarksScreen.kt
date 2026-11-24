@@ -135,11 +135,16 @@ fun BookmarksScreen(vm: BrowserViewModel) {
                 EmptyState(Icons.Rounded.Bookmarks, if (searching) str(R.string.no_matches) else str(R.string.no_bookmarks_here), if (searching) str(R.string.try_a_different_search) else str(R.string.tap_bookmark_in_the_page_menu_to_save_a))
             } else {
                 LazyColumn(Modifier.weight(1f).navigationBarsPadding(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
-                    items(shownFolders, key = { "f${it.id}" }) { f ->
-                        FolderRow(f, all.count { it.folderId == f.id }, onOpen = { folder = f }, onRename = { renaming = f }, onDelete = { deletingFolder = f })
-                    }
-                    items(visible, key = { "b${it.id}" }) { b ->
-                        BookmarkRow(vm, b, onEdit = { editing = b })
+                    items((shownFolders + visible).sortedBy { it.position }, key = {
+                        when (it) {
+                            is BookmarkFolder -> "f${it.id}"
+                            is Bookmark -> "b${it.id}"
+                        }
+                    }) { item ->
+                        when (item) {
+                            is BookmarkFolder -> FolderRow(item, all.count { it.folderId == item.id }, onOpen = { folder = item }, onRename = { renaming = item }, onDelete = { deletingFolder = item })
+                            is Bookmark -> BookmarkRow(vm, item, onEdit = { editing = item })
+                        }
                     }
                 }
             }

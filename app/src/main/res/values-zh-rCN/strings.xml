@@ -728,4 +728,8 @@
     <string name="move_to_folder">移至文件夹</string>
     <string name="move_tab_to_folder">将 %1$s 移至文件夹</string>
     <string name="close_folder_tabs">关闭 %1$s 中的所有标签页？</string>
+    <string name="show_back_button">显示返回按钮</string>
+    <string name="show_new_tab_button">显示新建标签页按钮</string>
+    <string name="show_blocking_badge">显示拦截标记</string>
+    <string name="compact_list">紧凑列表</string>
 </resources>

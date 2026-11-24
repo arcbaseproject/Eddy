@@ -735,4 +735,8 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="move_to_folder">Qovluğa köçür</string>
     <string name="move_tab_to_folder">%1$s qovluğa köçür</string>
     <string name="close_folder_tabs">%1$s içindəki bütün tablar bağlansın?</string>
+    <string name="show_back_button">Geri düyməsini göstər</string>
+    <string name="show_new_tab_button">Yeni vərəq düyməsini göstər</string>
+    <string name="show_blocking_badge">Bloklama nişanını göstər</string>
+    <string name="compact_list">Yığcam siyahı</string>
 </resources>

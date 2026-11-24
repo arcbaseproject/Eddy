@@ -33,6 +33,12 @@ class DownloadNamesTest {
         assertEquals("€ rates.pdf", DownloadNames.forResponse("attachment; filename*=UTF-8''%E2%82%AC%20rates.pdf", ""))
     }
 
+    @Test fun phpEndpointUsesExtendedNameEvenAfterPlainFallback() {
+        val header = "attachment; filename = download.php; filename* = UTF-8'en'report%20final.pdf"
+        assertEquals("report final.pdf", DownloadNames.forDownload("https://example.org/get.php", header, "application/octet-stream"))
+        assertEquals("a;b.pdf", DownloadNames.forResponse("attachment; filename=\"a;b.pdf\"", ""))
+    }
+
     @Test fun dispositionNameSurvivesGenericType() {
         // tikcdn.io (ssstik.io) serves its .mp4 files as application/octet-stream.
         assertEquals(
