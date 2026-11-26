@@ -4,6 +4,18 @@
 
 <p align="center"><a href="https://discord.gg/Q5NXwwwDph"><img src="https://img.shields.io/badge/Discord-Join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the Eddy Discord"></a></p>
 
+## Help get Eddy on Google Play
+
+Eddy is coming to Google Play. Before it can be published there, Google requires at least 12 testers
+to keep it installed for 14 days. To help:
+
+1. Join the [Eddy testers group](https://groups.google.com/g/eddy-testing) with the Google account you
+   use on your phone.
+2. When the test opens, the Play link is posted on the [Eddy Discord](https://discord.gg/Q5NXwwwDph).
+   Open it, tap **Become a tester**, then install Eddy from Google Play.
+3. Keep Eddy installed for at least 14 days. Play builds use the same signing key as the GitHub
+   releases, so you can switch between them without uninstalling.
+
 > **Beta.** Eddy is in active development. Expect rough edges.
 
 A fast, lightweight, privacy-focused Android browser built on the system WebView, with a Material 3
