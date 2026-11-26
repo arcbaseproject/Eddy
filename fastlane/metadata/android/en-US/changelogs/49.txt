@@ -1,0 +1,1 @@
+* Fixed an empty black band above the navigation bar on the History, Bookmarks, Downloads, Passwords and Settings screens.

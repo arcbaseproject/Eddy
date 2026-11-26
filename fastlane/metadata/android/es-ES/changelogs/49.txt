@@ -1,0 +1,1 @@
+* Se corrigió una franja negra vacía sobre la barra de navegación en las pantallas de Historial, Marcadores, Descargas, Contraseñas y Ajustes.
