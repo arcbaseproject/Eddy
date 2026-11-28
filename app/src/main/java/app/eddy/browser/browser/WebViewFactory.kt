@@ -283,9 +283,16 @@ class WebViewFactory(private val appContext: Context, private val host: BrowserH
         // third party, so a tab opened from the start page would load its ads unblocked.
         tab.pageHost = UrlUtils.host(url)
         prepare(tab, view, url)
-        view.settings.allowFileAccess = url.startsWith("file:", ignoreCase = true)
-        val headers = if (host.settings.doNotTrack && UrlUtils.isWebUrl(url)) mapOf("DNT" to "1", "Sec-GPC" to "1") else emptyMap()
-        view.loadUrl(url, headers)
+        val clean = stripTracking(tab, url)
+        view.settings.allowFileAccess = clean.startsWith("file:", ignoreCase = true)
+        val headers = if (host.settings.doNotTrack && UrlUtils.isWebUrl(clean)) mapOf("DNT" to "1", "Sec-GPC" to "1") else emptyMap()
+        view.loadUrl(clean, headers)
+    }
+
+    /** Tracking parameters come off main-frame URLs wherever tracker protection is on for the site; call after [prepare]. */
+    fun stripTracking(tab: BrowserTab, url: String): String {
+        if (!tab.trackerBlockingActive) return url
+        return UrlUtils.stripTracking(url).also { if (it != url) host.blocker.strippedTotal.incrementAndGet() }
     }
 
     @SuppressLint("RequiresFeature")

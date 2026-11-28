@@ -90,10 +90,10 @@ fun ActionRow(title: String, onClick: () -> Unit, subtitle: String? = null, icon
 }
 
 @Composable
-fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, icon: ImageVector? = null, enabled: Boolean = true) {
+fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, icon: ImageVector? = null, enabled: Boolean = true, description: ((T) -> String?)? = null) {
     var open by remember { mutableStateOf(false) }
     RowShell(icon, title, label(selected), Modifier.clickable(enabled = enabled, role = Role.Button) { open = true })
-    if (open) ChoiceDialog(title, options, selected, label, { open = false }, onSelect)
+    if (open) ChoiceDialog(title, options, selected, label, { open = false }, onSelect, description)
 }
 
 @Composable

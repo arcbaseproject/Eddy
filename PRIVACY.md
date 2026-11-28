@@ -15,6 +15,7 @@ Eddy does not collect, sell or share your personal data. It has no accounts, adv
 - Site icons, and the cookies, site data and cache that web pages create through the browser engine.
 - A list of your downloads. The files themselves go to your Downloads folder.
 - Saved logins. Eddy stores the site address and username, and encrypts each password with a key that stays in the Android Keystore.
+- Counts of blocked ads, trackers and tracking parameters for the privacy report. Eddy does not record which sites or requests they came from.
 
 You can delete all of this at any time in Settings > Privacy and security > Clear browsing data, or by uninstalling the app.
 
@@ -27,6 +28,7 @@ Besides loading the pages you ask for, Eddy makes these requests:
 - Site icons: Eddy may request /favicon.ico from a site on your home page.
 - Filter lists: Eddy downloads the ad and tracker lists you enable from their publishers about once a day.
 - Downloads you start.
+- Updates: when you tap Check for updates in Settings > About, Eddy asks GitHub for the newest release. After an update, Eddy downloads the notes for the new version from GitHub once.
 - Translation: when you choose Translate in the menu, Eddy opens the page through Google Translate, so Google receives the page address.
 - Support messages: see below.
 

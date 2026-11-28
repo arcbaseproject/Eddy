@@ -133,6 +133,7 @@ fun <T> ChoiceDialog(
     label: (T) -> String,
     onDismiss: () -> Unit,
     onSelect: (T) -> Unit,
+    description: ((T) -> String?)? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -147,7 +148,12 @@ fun <T> ChoiceDialog(
                     ) {
                         RadioButton(selected = option == selected, onClick = null)
                         Spacer(Modifier.width(12.dp))
-                        Text(label(option), style = MaterialTheme.typography.bodyLarge)
+                        val detail = description?.invoke(option)
+                        if (detail == null) Text(label(option), style = MaterialTheme.typography.bodyLarge)
+                        else Column(Modifier.padding(vertical = 10.dp)) {
+                            Text(label(option), style = MaterialTheme.typography.titleMedium)
+                            Text(detail, Modifier.padding(top = 2.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }

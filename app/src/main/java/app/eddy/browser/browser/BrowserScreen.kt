@@ -273,7 +273,7 @@ fun BrowserRoot(vm: BrowserViewModel) {
                 }
 
                 PromptHost(vm)
-                if (vm.menuVisible) MenuSheet(vm, selected, vm.isBookmarked.collectAsStateWithLifecycle().value, settings.hiddenMenuItems) { vm.menuVisible = false }
+                if (vm.menuVisible) MenuSheet(vm, selected, vm.isBookmarked.collectAsStateWithLifecycle().value, settings.hiddenMenuItems, settings.menuOrder) { vm.menuVisible = false }
                 if (vm.siteInfoVisible && selected != null) SiteInfoSheet(vm, selected) { vm.siteInfoVisible = false }
                 if (vm.translateVisible) {
                     val langs = remember { Translate.languages() }

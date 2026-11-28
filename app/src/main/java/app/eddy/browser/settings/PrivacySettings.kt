@@ -2,6 +2,7 @@ package app.eddy.browser.settings
 
 import app.eddy.browser.R
 import app.eddy.browser.util.str
+import app.eddy.browser.util.plural
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,9 @@ import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Https
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.LinkOff
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Code
@@ -50,6 +54,7 @@ import app.eddy.browser.browser.Screen
 import app.eddy.browser.data.database.SiteSettings
 import app.eddy.browser.data.models.CookieMode
 import app.eddy.browser.data.models.FilterList
+import app.eddy.browser.data.models.ProtectionLevel
 import app.eddy.browser.data.models.Settings
 import app.eddy.browser.privacy.SiteFeature
 import app.eddy.browser.privacy.get
@@ -67,6 +72,12 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
     val rules by vm.blockerRules.collectAsStateWithLifecycle()
 
     SettingsGroup(str(R.string.protection)) {
+        val level = ProtectionLevel.of(s)
+        // Custom is what any hand-made mix shows as, not something to pick.
+        ChoiceRow(str(R.string.protection_level), ProtectionLevel.entries.filter { it != ProtectionLevel.CUSTOM || it == level }, level, ::levelLabel, { l -> vm.launchSettings { l.applyTo(it) } }, Icons.Rounded.Security, description = ::levelDescription)
+        GroupDivider()
+        NavRow(str(R.string.privacy_report), { vm.settingsStack.add(SettingsPage.PRIVACY_REPORT) }, str(R.string.privacy_report_summary), Icons.Rounded.Insights)
+        GroupDivider()
         SwitchRow(str(R.string.ad_blocking), s.adBlock, { v -> vm.launchSettings { it.copy(adBlock = v) } }, str(R.string.blocks_requests_to_known_ad_servers_doma, rules), Icons.Rounded.Shield)
         GroupDivider()
         SwitchRow(str(R.string.tracker_protection), s.trackerProtection, { v -> vm.launchSettings { it.copy(trackerProtection = v) } }, str(R.string.blocks_analytics_and_tracking_domains), Icons.Rounded.VisibilityOff)
@@ -108,6 +119,39 @@ fun PrivacySettings(vm: BrowserViewModel, s: Settings) {
     if (clearing) ClearDataDialog(vm) { clearing = false }
 }
 
+private fun levelLabel(l: ProtectionLevel) = when (l) {
+    ProtectionLevel.BALANCED -> str(R.string.level_balanced)
+    ProtectionLevel.STRICT -> str(R.string.level_strict)
+    ProtectionLevel.CUSTOM -> str(R.string.level_custom)
+}
+
+private fun levelDescription(l: ProtectionLevel) = when (l) {
+    ProtectionLevel.BALANCED -> str(R.string.level_balanced_desc)
+    ProtectionLevel.STRICT -> str(R.string.level_strict_desc)
+    ProtectionLevel.CUSTOM -> str(R.string.level_custom_desc)
+}
+
+/** Totals only: Eddy keeps no record of which sites or requests were blocked. */
+@Composable
+fun PrivacyReport(vm: BrowserViewModel, s: Settings) {
+    val rules by vm.blockerRules.collectAsStateWithLifecycle()
+    val sites by remember { vm.sites.all() }.collectAsStateWithLifecycle(emptyList())
+    val enabled = s.filterLists.count { it.enabled }
+    SettingsGroup(str(R.string.since_date, DateUtils.formatDateTime(null, vm.blocker.statsSince, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR))) {
+        ActionRow(str(R.string.ads_and_trackers_blocked), {}, "%,d".format(vm.blocker.blockedTotal.get()), Icons.Rounded.Shield)
+        GroupDivider()
+        ActionRow(str(R.string.tracking_parameters_removed), {}, "%,d".format(vm.blocker.strippedTotal.get()), Icons.Rounded.LinkOff)
+    }
+    SettingsGroup(str(R.string.status)) {
+        ActionRow(str(R.string.protection_level), {}, levelLabel(ProtectionLevel.of(s)), Icons.Rounded.Security)
+        GroupDivider()
+        NavRow(str(R.string.filter_lists), { vm.settingsStack.add(SettingsPage.FILTER_LISTS) }, str(R.string.lists_on_domains, enabled, s.filterLists.size, rules), Icons.Rounded.Tune)
+        GroupDivider()
+        NavRow(str(R.string.sites_with_blocking_off), { vm.settingsStack.add(SettingsPage.SITE_PERMISSIONS) }, sites.count { it.contentBlocking == SiteSettings.BLOCK }.toString(), Icons.Rounded.Language)
+    }
+    SettingsFootnote(str(R.string.privacy_report_footnote))
+}
+
 @Composable
 private fun ClearDataDialog(vm: BrowserViewModel, onDismiss: () -> Unit) {
     var types by remember { mutableStateOf(setOf(DataType.HISTORY, DataType.CACHE)) }
@@ -134,7 +178,7 @@ private fun ClearDataDialog(vm: BrowserViewModel, onDismiss: () -> Unit) {
         confirmButton = { TextButton(enabled = types.isNotEmpty(), onClick = { vm.clearBrowsingData(types, range); onDismiss() }) { Text(str(R.string.clear)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.cancel)) } },
     )
-    if (picking) ChoiceDialog(str(R.string.time_range), ranges, range, ::rangeLabel, { picking = false }) { range = it }
+    if (picking) ChoiceDialog(str(R.string.time_range), ranges, range, ::rangeLabel, { picking = false }, { range = it })
 }
 
 @Composable
@@ -192,7 +236,8 @@ fun FilterListsSettings(vm: BrowserViewModel, s: Settings) {
                 Column(Modifier.weight(1f).padding(vertical = 10.dp)) {
                     Text(list.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        str(if (list.tracker) R.string.trackers else R.string.ads) + if (list.builtIn) str(R.string.built_in_suffix) else " · " + list.url.substringAfter("://").substringBefore('/'),
+                        // Android drops leading spaces from string resources, so the separator lives here.
+                        str(if (list.tracker) R.string.trackers else R.string.ads) + " · " + if (list.builtIn) str(R.string.built_in_suffix) else list.url.substringAfter("://").substringBefore('/'),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -212,9 +257,9 @@ fun FilterListsSettings(vm: BrowserViewModel, s: Settings) {
         ActionRow(str(R.string.add_filter_list), { adding = true }, str(R.string.host_or_domain_lists_by_url), Icons.Rounded.Add)
         GroupDivider()
         ActionRow(
-            if (updating) "Updating…" else str(R.string.update_now),
-            { scope.launch { val fail = vm.blocker.update(s.filterLists); vm.launchSettings { it.copy(filterListsUpdatedAt = System.currentTimeMillis()) }; vm.snackbar(if (fail == 0) str(R.string.filter_lists_updated) else "$fail lists failed to update") } },
-            (if (s.filterListsUpdatedAt > 0) str(R.string.last_updated) + DateUtils.getRelativeTimeSpanString(s.filterListsUpdatedAt) else str(R.string.never_updated)) + " · $rules domains active",
+            if (updating) str(R.string.updating) else str(R.string.update_now),
+            { scope.launch { val fail = vm.blocker.update(s.filterLists); vm.launchSettings { it.copy(filterListsUpdatedAt = System.currentTimeMillis()) }; vm.snackbar(if (fail == 0) str(R.string.filter_lists_updated) else plural(R.plurals.lists_failed_to_update, fail)) } },
+            (if (s.filterListsUpdatedAt > 0) str(R.string.last_updated, DateUtils.getRelativeTimeSpanString(s.filterListsUpdatedAt)) else str(R.string.never_updated)) + " · " + plural(R.plurals.domains_active, rules),
             Icons.Rounded.Refresh,
         )
     }

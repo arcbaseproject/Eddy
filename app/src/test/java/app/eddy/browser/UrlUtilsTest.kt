@@ -10,6 +10,14 @@ import org.junit.Test
 class UrlUtilsTest {
     private val engine = SearchEngines.builtIn("https://searx.be").first()
 
+    @Test fun stripsTrackingParams() {
+        assertEquals("https://a.com/p?id=1#top", UrlUtils.stripTracking("https://a.com/p?utm_source=x&id=1&fbclid=y#top"))
+        assertEquals("https://a.com/p", UrlUtils.stripTracking("https://a.com/p?UTM_Medium=x&gclid=z"))
+        assertEquals("https://a.com/#/r?utm_source=x", UrlUtils.stripTracking("https://a.com/#/r?utm_source=x"))
+        assertEquals("https://a.com/?q=utm_source", UrlUtils.stripTracking("https://a.com/?q=utm_source"))
+        assertEquals("file:///x?utm_source=1", UrlUtils.stripTracking("file:///x?utm_source=1"))
+    }
+
     @Test fun detectsUrls() {
         assertTrue(UrlUtils.isUrl("example.com"))
         assertTrue(UrlUtils.isUrl("https://example.com/a?b=c d".replace(" ", "%20")))

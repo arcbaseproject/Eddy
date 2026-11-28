@@ -14,6 +14,7 @@ enum class SettingsPage(@StringRes private val titleRes: Int) {
     START_PAGE(R.string.start_page),
     SITE_PERMISSIONS(R.string.site_permissions),
     FILTER_LISTS(R.string.filter_lists),
+    PRIVACY_REPORT(R.string.privacy_report),
     SEARCH_ENGINES(R.string.search_engines),
     ABOUT(R.string.about),
     SUPPORT(R.string.support),

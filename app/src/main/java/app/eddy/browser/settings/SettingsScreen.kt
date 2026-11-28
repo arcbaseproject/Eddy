@@ -41,6 +41,9 @@ import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.rounded.Tab
 import androidx.compose.material3.MaterialTheme
 import app.eddy.browser.ui.theme.Dimens
@@ -132,6 +135,7 @@ fun SettingsScreen(vm: BrowserViewModel, settings: Settings) {
                     SettingsPage.START_PAGE -> StartPageSettings(vm, settings)
                     SettingsPage.SITE_PERMISSIONS -> SitePermissionsSettings(vm)
                     SettingsPage.FILTER_LISTS -> FilterListsSettings(vm, settings)
+                    SettingsPage.PRIVACY_REPORT -> PrivacyReport(vm, settings)
                     SettingsPage.SEARCH_ENGINES -> SearchSettings(vm, settings)
                     SettingsPage.ABOUT -> AboutSettings(vm)
                     SettingsPage.SUPPORT -> SupportSettings()
@@ -311,10 +315,32 @@ private fun AboutSettings(vm: BrowserViewModel) {
     // The choice is made in a system screen, so re-check whenever we come back to the foreground.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { isDefault = held() }
     val requestRole = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { isDefault = held() }
+    val scope = rememberCoroutineScope()
+    val byStore = remember { updatedByStore(context) }
+    var checking by remember { mutableStateOf(false) }
+    var updateStatus by remember { mutableStateOf<String?>(null) }
+    var release by remember { mutableStateOf<Release?>(null) }
 
     AboutHeader(vm::openInNewTab)
     SettingsGroup {
         ActionRow(str(R.string.replay_welcome_tour), vm::replayOnboarding, str(R.string.walk_through_eddy_s_setup_again))
+        if (!byStore) {
+            GroupDivider()
+            ActionRow(str(R.string.check_for_updates), {
+                if (!checking) {
+                    checking = true
+                    scope.launch {
+                        val r = fetchLatestRelease()
+                        checking = false
+                        updateStatus = when {
+                            r == null -> str(R.string.could_not_check_for_updates)
+                            isNewerVersion(r.version, BuildConfig.VERSION_NAME) -> { release = r; str(R.string.version_available, r.version) }
+                            else -> str(R.string.eddy_is_up_to_date)
+                        }
+                    }
+                }
+            }, if (checking) str(R.string.checking) else updateStatus ?: str(R.string.version, BuildConfig.VERSION_NAME), Icons.Rounded.SystemUpdate)
+        }
         GroupDivider()
         if (isDefault) {
             ActionRow(str(R.string.default_browser), {}, str(R.string.eddy_is_your_default_browser), Icons.Rounded.CheckCircle)
@@ -331,6 +357,16 @@ private fun AboutSettings(vm: BrowserViewModel) {
     SettingsFootnote(
         str(R.string.eddy_has_no_advertising_analytics_or_tra),
     )
+    release?.let { r ->
+        AlertDialog(
+            onDismissRequest = { release = null },
+            title = { Text(str(R.string.version_available, r.version)) },
+            text = { Text(r.notes.ifEmpty { str(R.string.no_release_notes) }, Modifier.verticalScroll(rememberScrollState())) },
+            // The release page lists the signed APK; Android refuses it unless it carries the same signature as this install.
+            confirmButton = { TextButton(onClick = { release = null; vm.openInNewTab(r.url) }) { Text(str(R.string.download)) } },
+            dismissButton = { TextButton(onClick = { release = null }) { Text(str(R.string.not_now)) } },
+        )
+    }
 }
 
 private const val REPO_URL = "https://github.com/arcbaseproject/Eddy"

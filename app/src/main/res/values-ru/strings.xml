@@ -70,7 +70,7 @@
     <string name="create">Создать</string>
     <string name="rename_folder">Переименовать папку</string>
     <string name="delete_3">Удалить «%1$s»?</string>
-    <string name="this_also_deletes_the_bookmarks_inside_i">Закладки внутри неё тоже будут удалены.</string>
+    <string name="this_also_deletes_the_bookmarks_inside_i">Папки и закладки внутри неё тоже будут удалены.</string>
     <string name="delete_4">Удалить</string>
     <string name="more_actions">Другие действия</string>
     <string name="actions_for">Действия для %1$s</string>
@@ -214,8 +214,8 @@
     <string name="open_in_another_app_2">Открыть в другом приложении?</string>
     <string name="stay_here">Остаться здесь</string>
     <string name="download_this_file">Скачать этот файл?</string>
-    <string name="it_is_also_being_sent_over_an_unencrypte"> К тому же он передаётся по незашифрованному соединению.</string>
-    <string name="download_it_only_if_you_trust_this_site"> Скачивайте, только если доверяете этому сайту.</string>
+    <string name="it_is_also_being_sent_over_an_unencrypte">" К тому же он передаётся по незашифрованному соединению."</string>
+    <string name="download_it_only_if_you_trust_this_site">" Скачивайте, только если доверяете этому сайту."</string>
     <string name="download">Скачать</string>
     <string name="paste_from_clipboard">Вставить из буфера обмена?</string>
     <string name="paste">Вставить</string>
@@ -361,8 +361,8 @@
     <string name="last_updated_november_2026">Последнее обновление: ноябрь 2026 г.</string>
     <string name="last_updated_september_2026">Последнее обновление: сентябрь 2026 г.</string>
     <string name="the_short_version">Коротко</string>
-    <string name="eddy_does_not_collect_sell_or_share_your">Eddy не собирает, не продаёт и не передаёт ваши личные данные. В нём нет аккаунтов, рекламы, аналитики и отчётов о сбоях. </string>
-    <string name="the_only_thing_it_sends_to_the_developer">Единственное, что он отправляет разработчику, это сообщение в поддержку, которое вы решили отправить. </string>
+    <string name="eddy_does_not_collect_sell_or_share_your">"Eddy не собирает, не продаёт и не передаёт ваши личные данные. В нём нет аккаунтов, рекламы, аналитики и отчётов о сбоях. "</string>
+    <string name="the_only_thing_it_sends_to_the_developer">"Единственное, что он отправляет разработчику, это сообщение в поддержку, которое вы решили отправить. "</string>
     <string name="your_history_bookmarks_settings_and_down">Ваша история, закладки, настройки и список загрузок остаются на устройстве.</string>
     <string name="what_eddy_stores_on_your_device">Что Eddy хранит на устройстве</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• История просмотров. Eddy удаляет записи старше 90 дней и никогда не сохраняет историю вкладок инкогнито.
@@ -372,6 +372,7 @@
 • Значки сайтов, а также cookie, данные сайтов и кеш, которые веб-страницы создают через движок браузера.
 • Список ваших загрузок. Сами файлы сохраняются в папку «Загрузки».
 • Сохранённые данные для входа. Eddy хранит адрес сайта и имя пользователя и шифрует каждый пароль ключом, который остаётся в Android Keystore.
+• Счётчики заблокированной рекламы, трекеров и параметров отслеживания для отчёта о конфиденциальности. Eddy не записывает, с каких сайтов или запросов они пришли.
 
 Всё это можно удалить в любой момент в разделе Настройки &gt; Конфиденциальность и безопасность &gt; Очистить данные браузера или удалив приложение.
 
@@ -382,6 +383,7 @@
 • Значки сайтов: Eddy может запросить /favicon.ico у сайта на стартовой странице.
 • Списки фильтров: примерно раз в день Eddy загружает включённые вами списки рекламы и трекеров с серверов их издателей.
 • Загрузки, которые вы запускаете.
+• Обновления: когда вы нажимаете «Проверить обновления» в разделе «Настройки» &gt; «О приложении», Eddy запрашивает у GitHub последнюю версию. После обновления Eddy один раз загружает с GitHub описание новой версии.
 • Перевод: когда вы выбираете «Перевести» в меню, Eddy открывает страницу через Google Переводчик, поэтому Google получает адрес страницы.
 • Сообщения в поддержку: см. ниже.
 
@@ -392,38 +394,38 @@
 • Уведомления: показывают ход загрузки.
 • Буфер обмена: когда вы открываете адресную строку, Eddy один раз читает буфер обмена, чтобы предложить «вставить ссылку». Eddy не сохраняет и не отправляет его. Android может показать при этом уведомление.
 • Состояние сети: позволяет Eddy показывать офлайн-страницы и повторять попытку при восстановлении подключения.</string>
-    <string name="when_you_sign_in_or_sign_up_on_a_site_ed_2">Когда вы входите или регистрируетесь на сайте, Eddy спрашивает, сохранить или обновить данные для входа. Он спрашивает только после успешного входа и никогда во вкладках инкогнито. </string>
-    <string name="passwords_stay_on_your_device_eddy_does">Пароли остаются на устройстве: Eddy не синхронизирует, не загружает и не передаёт их. Eddy подставляет сохранённые данные для входа только после того, как вы нажмёте на подсказку, и только на том же адресе сайта, где вы их сохранили. </string>
-    <string name="if_your_device_has_a_screen_lock_eddy_as">Если на устройстве настроена блокировка экрана, Eddy запрашивает её перед показом списка паролей и скрывает этот экран со скриншотов и из списка недавних приложений. </string>
+    <string name="when_you_sign_in_or_sign_up_on_a_site_ed_2">"Когда вы входите или регистрируетесь на сайте, Eddy спрашивает, сохранить или обновить данные для входа. Он спрашивает только после успешного входа и никогда во вкладках инкогнито. "</string>
+    <string name="passwords_stay_on_your_device_eddy_does">"Пароли остаются на устройстве: Eddy не синхронизирует, не загружает и не передаёт их. Eddy подставляет сохранённые данные для входа только после того, как вы нажмёте на подсказку, и только на том же адресе сайта, где вы их сохранили. "</string>
+    <string name="if_your_device_has_a_screen_lock_eddy_as">"Если на устройстве настроена блокировка экрана, Eddy запрашивает её перед показом списка паролей и скрывает этот экран со скриншотов и из списка недавних приложений. "</string>
     <string name="passwords_you_copy_leave_the_clipboard_a">Скопированные пароли удаляются из буфера обмена через минуту. Если вы экспортируете пароли, Eddy записывает CSV-файл с открытым текстом в выбранное место и потом не может его защитить. Сохранение и автозаполнение можно отключить в разделе Настройки &gt; Конфиденциальность и безопасность, а сохранённые данные для входа можно удалить в любой момент.</string>
     <string name="support_messages">Сообщения в поддержку</string>
-    <string name="settings_support_lets_you_send_a_message">В разделе Настройки &gt; Поддержка можно отправить сообщение разработчику. Eddy отправляет его, только когда вы нажмёте «Отправить». </string>
-    <string name="it_includes_your_message_your_email_addr">Оно содержит ваше сообщение, адрес эл. почты, если вы его укажете, и номера версий Eddy и Android. </string>
-    <string name="eddy_delivers_it_through_web3forms_web3f">Eddy доставляет его через Web3Forms (web3forms.com), который пересылает его по эл. почте и применяет собственную политику конфиденциальности. </string>
-    <string name="the_developer_uses_it_only_to_answer_you">Разработчик использует его только для ответа вам и улучшения Eddy и никому его не передаёт. </string>
+    <string name="settings_support_lets_you_send_a_message">"В разделе Настройки &gt; Поддержка можно отправить сообщение разработчику. Eddy отправляет его, только когда вы нажмёте «Отправить». "</string>
+    <string name="it_includes_your_message_your_email_addr">"Оно содержит ваше сообщение, адрес эл. почты, если вы его укажете, и номера версий Eddy и Android. "</string>
+    <string name="eddy_delivers_it_through_web3forms_web3f">"Eddy доставляет его через Web3Forms (web3forms.com), который пересылает его по эл. почте и применяет собственную политику конфиденциальности. "</string>
+    <string name="the_developer_uses_it_only_to_answer_you">"Разработчик использует его только для ответа вам и улучшения Eddy и никому его не передаёт. "</string>
     <string name="to_limit_abuse_eddy_stores_the_time_of_y">Чтобы ограничить злоупотребления, Eddy хранит на устройстве время вашего последнего сообщения и разрешает одно сообщение раз в 10 минут.</string>
     <string name="do_not_track_and_blocking">Do Not Track и блокировка</string>
-    <string name="when_you_enable_it_eddy_sends_the_do_not">Когда эта функция включена, Eddy отправляет сигналы Do Not Track и Global Privacy Control. Сайты могут их игнорировать. </string>
+    <string name="when_you_enable_it_eddy_sends_the_do_not">"Когда эта функция включена, Eddy отправляет сигналы Do Not Track и Global Privacy Control. Сайты могут их игнорировать. "</string>
     <string name="ad_and_tracker_blocking_is_best_effort_a">Блокировка рекламы и трекеров работает по мере возможности и не может остановить все виды отслеживания.</string>
     <string name="incognito_tabs">Вкладки инкогнито</string>
-    <string name="incognito_tabs_save_no_history_page_prev">Вкладки инкогнито не сохраняют историю, превью страниц и решения для сайтов. Eddy удаляет их cookie и данные сайтов, когда закрывается последняя вкладка инкогнито. </string>
-    <string name="on_devices_whose_webview_cannot_keep_tha">На устройствах, где WebView не может разделить это хранилище, вкладки инкогнито делят cookie с обычными вкладками, и раздел Настройки &gt; Конфиденциальность и безопасность сообщает об этом. </string>
+    <string name="incognito_tabs_save_no_history_page_prev">"Вкладки инкогнито не сохраняют историю, превью страниц и решения для сайтов. Eddy удаляет их cookie и данные сайтов, когда закрывается последняя вкладка инкогнито. "</string>
+    <string name="on_devices_whose_webview_cannot_keep_tha">"На устройствах, где WebView не может разделить это хранилище, вкладки инкогнито делят cookie с обычными вкладками, и раздел Настройки &gt; Конфиденциальность и безопасность сообщает об этом. "</string>
     <string name="incognito_does_not_hide_your_activity_fr">Режим инкогнито не скрывает ваши действия от сайтов, вашей сети, работодателя или интернет-провайдера. Eddy сохраняет скачанные файлы и созданные закладки.</string>
     <string name="children">Дети</string>
     <string name="eddy_is_a_general_purpose_browser_and_is">Eddy — браузер общего назначения и не предназначен для детей.</string>
     <string name="changes_and_questions">Изменения и вопросы</string>
-    <string name="when_this_policy_changes_the_new_version">Когда эта политика меняется, новая версия поставляется вместе с приложением, а дата выше обновляется. </string>
+    <string name="when_this_policy_changes_the_new_version">"Когда эта политика меняется, новая версия поставляется вместе с приложением, а дата выше обновляется. "</string>
     <string name="for_questions_use_settings_support_or_co">С вопросами обращайтесь через Настройки &gt; Поддержка или к разработчику через страницу приложения в магазине.</string>
     <string name="beta_software">Бета-версия</string>
-    <string name="eddy_is_in_beta_it_may_contain_bugs_feat">Eddy находится в бета-версии. В нём могут быть ошибки, функции могут меняться или исчезать, и вы можете потерять вкладки, закладки или настройки. </string>
+    <string name="eddy_is_in_beta_it_may_contain_bugs_feat">"Eddy находится в бета-версии. В нём могут быть ошибки, функции могут меняться или исчезать, и вы можете потерять вкладки, закладки или настройки. "</string>
     <string name="keep_your_own_copy_of_anything_important">Храните собственную копию всего важного, например экспортируйте закладки.</string>
     <string name="licence">Лицензия</string>
     <string name="eddy_is_free_software_under_the_apache_l">Eddy — свободное ПО под лицензией Apache License 2.0. Вы можете использовать, изучать, распространять и изменять его для любых целей в соответствии с этой лицензией, и ничто на этой странице её не ограничивает. Вы несёте ответственность за посещаемые сайты и просматриваемый или скачиваемый контент.</string>
     <string name="security_warnings">Предупреждения безопасности</string>
-    <string name="eddy_warns_you_about_connection_and_cert">Eddy предупреждает о проблемах с подключением и сертификатами. Если вы всё равно продолжаете, вы принимаете риск. </string>
+    <string name="eddy_warns_you_about_connection_and_cert">"Eddy предупреждает о проблемах с подключением и сертификатами. Если вы всё равно продолжаете, вы принимаете риск. "</string>
     <string name="blocking_of_ads_trackers_and_dangerous_s">Блокировка рекламы, трекеров и опасных сайтов — вспомогательная функция и ловит не всё.</string>
     <string name="third_party_content_and_software">Сторонний контент и ПО</string>
-    <string name="web_pages_search_engines_filter_lists_an">Веб-страницы, поисковые системы, списки фильтров и скачанные файлы предоставляются третьими сторонами. Eddy не контролирует и не одобряет их, и к ним применяются их собственные условия. </string>
+    <string name="web_pages_search_engines_filter_lists_an">"Веб-страницы, поисковые системы, списки фильтров и скачанные файлы предоставляются третьими сторонами. Eddy не контролирует и не одобряет их, и к ним применяются их собственные условия. "</string>
     <string name="eddy_uses_android_system_webview_and_ope">Eddy использует Android System WebView и библиотеки с открытым исходным кодом, которые остаются под собственными лицензиями.</string>
     <string name="no_warranty">Без гарантий</string>
     <string name="eddy_is_provided_as_is_and_as_available">Eddy предоставляется «как есть» и «по мере доступности», без каких-либо явных или подразумеваемых гарантий, включая пригодность для определённой цели, надёжность или отсутствие ошибок.</string>
@@ -435,7 +437,7 @@
     <string name="ad_blocking">Блокировка рекламы</string>
     <string name="blocks_requests_to_known_ad_servers_doma">Блокирует запросы к известным рекламным серверам · загружено доменов: %1$s</string>
     <string name="tracker_protection">Защита от трекеров</string>
-    <string name="blocks_analytics_and_tracking_domains">Блокирует домены аналитики и отслеживания</string>
+    <string name="blocks_analytics_and_tracking_domains">Блокирует домены аналитики и отслеживания и удаляет параметры отслеживания из ссылок</string>
     <string name="filter_lists">Списки фильтров</string>
     <string name="enable_add_and_update_lists">Включение, добавление и обновление списков</string>
     <string name="do_not_track_and_global_privacy_control">Do Not Track и Global Privacy Control</string>
@@ -481,7 +483,7 @@
     <string name="host_or_domain_lists_by_url">Списки хостов или доменов по URL</string>
     <string name="update_now">Обновить сейчас</string>
     <string name="filter_lists_updated">Списки фильтров обновлены</string>
-    <string name="last_updated">Последнее обновление: </string>
+    <string name="last_updated">Последнее обновление: %1$s</string>
     <string name="never_updated">Не обновлялся</string>
     <string name="eddy_refreshes_lists_about_once_a_day_wh">Eddy обновляет списки примерно раз в день, когда вы в сети. Применяются только правила для доменов.</string>
     <string name="name">Название</string>
@@ -581,7 +583,7 @@
     <string name="email_optional">Эл. почта (необязательно)</string>
     <string name="message">Сообщение</string>
     <string name="send">Отправить</string>
-    <string name="your_message_your_email_if_you_add_one_a">Ваше сообщение, адрес эл. почты, если вы его укажете, и версии Eddy и Android отправляются разработчику через Web3Forms. </string>
+    <string name="your_message_your_email_if_you_add_one_a">"Ваше сообщение, адрес эл. почты, если вы его укажете, и версии Eddy и Android отправляются разработчику через Web3Forms. "</string>
     <string name="see_the_privacy_policy_for_details">Подробнее в политике конфиденциальности.</string>
     <string name="skip">Пропустить</string>
     <string name="welcome_to_eddy">Добро пожаловать в Eddy</string>
@@ -609,9 +611,9 @@
     <string name="shortcuts_hidden_show_them_again_in_sett">Ярлыки скрыты. Снова показать их можно в разделе Настройки &gt; Внешний вид &gt; Стартовая страница</string>
     <string name="incognito_2">Инкогнито</string>
     <string name="private_browsing">Приватный просмотр</string>
-    <string name="eddy_does_not_save_the_pages_you_open_he">Eddy не сохраняет в истории страницы, открытые здесь. </string>
-    <string name="it_erases_cookies_and_site_data_when_you">Он удаляет cookie и данные сайтов, когда вы закрываете последнюю вкладку инкогнито. </string>
-    <string name="this_device_s_webview_shares_cookies_and">WebView на этом устройстве делит cookie и данные сайтов с обычными вкладками, поэтому они не удаляются. </string>
+    <string name="eddy_does_not_save_the_pages_you_open_he">"Eddy не сохраняет в истории страницы, открытые здесь. "</string>
+    <string name="it_erases_cookies_and_site_data_when_you">"Он удаляет cookie и данные сайтов, когда вы закрываете последнюю вкладку инкогнито. "</string>
+    <string name="this_device_s_webview_shares_cookies_and">"WebView на этом устройстве делит cookie и данные сайтов с обычными вкладками, поэтому они не удаляются. "</string>
     <string name="websites_and_your_network_can_still_see">Сайты и ваша сеть всё равно видят, что вы делаете.</string>
     <string name="new_shortcut">Новый ярлык</string>
     <string name="edit_shortcut">Изменить ярлык</string>
@@ -656,13 +658,13 @@
     <string name="page_wants_to_open_app">Эта страница хочет открыть ссылку в другом приложении:\n\n%1$s</string>
     <string name="unknown">неизвестно</string>
     <string name="issued_by">Выдан: %1$s</string>
-    <string name="cert_expires"> · действует до %1$s</string>
+    <string name="cert_expires">" · действует до %1$s"</string>
     <string name="unlock_passwords">Разблокировать пароли</string>
     <string name="confirm_screen_lock_passwords">Подтвердите блокировку экрана, чтобы просмотреть сохранённые пароли.</string>
     <string name="import_from_csv">Импорт из CSV</string>
     <string name="trackers">Трекеры</string>
     <string name="ads">Реклама</string>
-    <string name="built_in_suffix"> · встроенный</string>
+    <string name="built_in_suffix">встроенный</string>
     <string name="instance_url">URL экземпляра</string>
     <string name="web_debugging_hint">Позволяет chrome://inspect подключаться к страницам по USB</string>
     <string name="skipped_suffix">, пропущено: %1$s</string>
@@ -754,4 +756,39 @@
     <string name="show_blocking_badge">Показывать значок блокировки</string>
     <string name="compact_list">Компактный список</string>
     <string name="edit_menu">Настроить меню</string>
+    <string name="check_for_updates">Проверить обновления</string>
+    <string name="protection_level">Уровень защиты</string>
+    <string name="level_balanced">Сбалансированный</string>
+    <string name="level_strict">Строгий</string>
+    <string name="level_custom">Свой</string>
+    <string name="privacy_report">Отчёт о конфиденциальности</string>
+    <string name="privacy_report_summary">Что Eddy заблокировал на данный момент</string>
+    <string name="since_date">С %1$s</string>
+    <string name="ads_and_trackers_blocked">Заблокировано рекламы и трекеров</string>
+    <string name="tracking_parameters_removed">Удалено параметров отслеживания из ссылок</string>
+    <string name="status">Состояние</string>
+    <string name="lists_on_domains">Включено списков: %1$d из %2$d · доменов: %3$d</string>
+    <string name="sites_with_blocking_off">Сайты с отключённой блокировкой</string>
+    <string name="privacy_report_footnote">Эти счётчики хранятся на вашем устройстве. Eddy не записывает, какие сайты или запросы были заблокированы.</string>
+    <string name="checking">Проверка…</string>
+    <string name="could_not_check_for_updates">Не удалось проверить обновления. Попробуйте позже.</string>
+    <string name="eddy_is_up_to_date">У вас последняя версия Eddy</string>
+    <string name="version_available">Доступна версия Eddy %1$s</string>
+    <string name="no_release_notes">Нет описания версии.</string>
+    <string name="level_balanced_desc">Блокирует рекламу, трекеры и сторонние куки. Сайты продолжают работать.</string>
+    <string name="level_strict_desc">Всё из Сбалансированного, и удаляет данные при выходе.</string>
+    <string name="level_custom_desc">Ваше собственное сочетание настроек ниже.</string>
+    <string name="updating">Обновление…</string>
+    <plurals name="domains_active">
+        <item quantity="one">%1$d активный домен</item>
+        <item quantity="few">%1$d активных домена</item>
+        <item quantity="many">%1$d активных доменов</item>
+        <item quantity="other">%1$d активного домена</item>
+    </plurals>
+    <plurals name="lists_failed_to_update">
+        <item quantity="one">Не удалось обновить %1$d список</item>
+        <item quantity="few">Не удалось обновить %1$d списка</item>
+        <item quantity="many">Не удалось обновить %1$d списков</item>
+        <item quantity="other">Не удалось обновить %1$d списка</item>
+    </plurals>
 </resources>

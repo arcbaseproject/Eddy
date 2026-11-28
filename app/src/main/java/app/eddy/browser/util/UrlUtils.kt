@@ -93,6 +93,22 @@ object UrlUtils {
 
     fun isWebUrl(url: String) = url.startsWith("http://", true) || url.startsWith("https://", true)
 
+    private val trackingParams = setOf(
+        "fbclid", "gclid", "dclid", "gbraid", "wbraid", "msclkid", "yclid", "twclid", "ttclid", "igshid",
+        "mc_eid", "_hsenc", "_hsmi", "mkt_tok", "li_fat_id", "oly_anon_id", "oly_enc_id", "vero_id",
+    )
+
+    /** [url] without utm_* and click-ID parameters; the rest of the query and the fragment stay byte for byte. */
+    fun stripTracking(url: String): String {
+        if (!isWebUrl(url)) return url
+        val hash = url.indexOf('#').let { if (it < 0) url.length else it }
+        val q = url.indexOf('?').takeIf { it in 0 until hash } ?: return url
+        val params = url.substring(q + 1, hash).split('&')
+        val kept = params.filterNot { p -> p.substringBefore('=').lowercase().let { it.startsWith("utm_") || it in trackingParams } }
+        if (kept.size == params.size) return url
+        return url.substring(0, q) + (if (kept.isEmpty()) "" else "?" + kept.joinToString("&")) + url.substring(hash)
+    }
+
     /** Registrable-ish comparison used for third-party detection: last two labels. */
     fun sameSite(a: String, b: String): Boolean = siteKey(a) == siteKey(b)
 

@@ -3,6 +3,19 @@ package app.eddy.browser.browser
 import app.eddy.browser.R
 import app.eddy.browser.util.str
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.zIndex
+import app.eddy.browser.ui.animation.rememberHaptics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +56,7 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,6 +84,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.eddy.browser.ui.theme.Dimens
+import app.eddy.browser.ui.components.EddyIconButton
 import app.eddy.browser.util.UrlUtils
 
 /**
@@ -77,11 +92,14 @@ import app.eddy.browser.util.UrlUtils
  * so the new-tab page gets a short menu instead of a wall of greyed-out buttons. Everything else is grouped:
  * tabs, this page, library, settings.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidden: Set<String>, onDismiss: () -> Unit) {
+fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidden: Set<String>, savedOrder: List<String>, onDismiss: () -> Unit) {
     val webPage = tab != null && UrlUtils.isWebUrl(tab.url)
-    fun act(block: () -> Unit): () -> Unit = { onDismiss(); block() }
+    val haptics = rememberHaptics()
+    val reorder = remember { MenuReorder(savedOrder, haptics::longPress) { order -> vm.launchSettings { it.copy(menuOrder = order) } } }
+    // A long press that turns into a drag still ends in a tap on the item under the finger; ignore it.
+    fun act(block: () -> Unit): () -> Unit = { if (reorder.dragging == null) { onDismiss(); block() } }
     // Big system fonts cannot fit four buttons in a row without breaking words.
     val perRow = if (LocalDensity.current.fontScale > 1.3f) 2 else 4
 
@@ -104,7 +122,7 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidde
         item(MenuItem.Bookmark, if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, webPage,
             active = bookmarked, displayLabel = if (bookmarked) R.string.saved_2 else R.string.bookmark, click = act { vm.toggleBookmark() })
         item(MenuItem.Share, Icons.Rounded.Share, webPage, click = act { vm.share() })
-        item(MenuItem.Find, Icons.Rounded.Search, webPage, healthy) { vm.openFind() }
+        item(MenuItem.Find, Icons.Rounded.Search, webPage, healthy) { if (reorder.dragging == null) vm.openFind() }
         item(MenuItem.Reader, Icons.AutoMirrored.Rounded.ChromeReaderMode, webPage, ready, tab?.readerActive == true, click = act { vm.toggleReader() })
         item(MenuItem.ReadAloud, if (vm.readingAloud) Icons.Rounded.Stop else Icons.AutoMirrored.Rounded.VolumeUp, webPage, healthy,
             vm.readingAloud, if (vm.readingAloud) R.string.stop else R.string.read_aloud, act { vm.toggleReadAloud() })
@@ -127,9 +145,22 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidde
         item(MenuItem.Bookmarks, Icons.Rounded.Bookmarks, click = act { vm.screen = Screen.BOOKMARKS })
         item(MenuItem.Passwords, Icons.Rounded.Key, click = act { vm.screen = Screen.PASSWORDS })
         item(MenuItem.Settings, Icons.Rounded.Settings, click = act { vm.screen = Screen.SETTINGS })
-    }
+    }.sortedBy { reorder.rank(it.action) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        dragHandle = {
+            Box(Modifier.fillMaxWidth()) {
+                BottomSheetDefaults.DragHandle(Modifier.align(Alignment.Center))
+                if (!editing) EddyIconButton(
+                    Icons.Rounded.Edit, str(R.string.edit_menu), { editing = true },
+                    Modifier.align(Alignment.CenterEnd).padding(end = Dimens.gutter - 12.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+    ) {
         if (editing) Row(
             Modifier.fillMaxWidth().padding(horizontal = Dimens.gutter),
             verticalAlignment = Alignment.CenterVertically,
@@ -144,20 +175,19 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidde
             ) {
                 actions.groupBy { it.action.section }.forEach { (section, items) ->
                     if (!editing && (section == Section.Quick || section == Section.Library)) {
-                        items.chunked(perRow).forEach { row ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                row.forEach { QuickButton(it, Modifier.weight(1f)) }
-                            }
+                        // One FlowRow, not a Row per line, so a button dragged to another line keeps its gesture.
+                        FlowRow(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp), Arrangement.spacedBy(12.dp), maxItemsInEachRow = perRow) {
+                            items.forEach { key(it.action) { QuickButton(it, Modifier.weight(1f).reorderable(reorder, it.action)) } }
                         }
                     } else Group {
-                        items.forEach { item ->
+                        items.forEach { item -> key(item.action) { Box(if (editing) Modifier else Modifier.reorderable(reorder, item.action)) {
                             when {
                                 editing -> SwitchRow(item.icon, item.label, item.action.name !in hidden, true) {
                                     vm.launchSettings { it.copy(hiddenMenuItems = it.hiddenMenuItems.toggleMenuItem(item.action.name)) }
                                 }
                                 item.action == MenuItem.PlaybackSpeed -> Box {
                                     var speedOpen by remember { mutableStateOf(false) }
-                                    Row(item.icon, item.label, { speedOpen = true })
+                                    Row(item.icon, item.label, { if (reorder.dragging == null) speedOpen = true })
                                     DropdownMenu(expanded = speedOpen, onDismissRequest = { speedOpen = false }) {
                                         listOf(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0).forEach { rate ->
                                             DropdownMenuItem(text = { Text(rate.toString().removeSuffix(".0") + "×") }, onClick = act { vm.setPlaybackSpeed(rate) })
@@ -168,10 +198,9 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidde
                                     SwitchRow(item.icon, item.label, item.highlighted, item.enabled, item.onClick)
                                 else -> Row(item.icon, item.label, item.onClick, item.enabled)
                             }
-                        }
+                        } } }
                     }
                 }
-                if (!editing) Group { Row(Icons.Rounded.Edit, str(R.string.edit_menu), { editing = true }) }
             }
         }
     }
@@ -180,6 +209,70 @@ fun MenuSheet(vm: BrowserViewModel, tab: BrowserTab?, bookmarked: Boolean, hidde
 internal fun Set<String>.toggleMenuItem(id: String): Set<String> = if (id in this) this - id else this + id
 
 private enum class Section { Quick, Tabs, Page, Library, Settings }
+
+/**
+ * Long-press drag to reorder items within their section. Each item reports its bounds; while dragging, the item
+ * follows the finger and swaps places with the item of the same section under it. The order is saved on release.
+ */
+private class MenuReorder(saved: List<String>, private val onPick: () -> Unit, private val save: (List<String>) -> Unit) {
+    var order by mutableStateOf((saved + MenuItem.entries.map { it.name }).distinct())
+    var dragging by mutableStateOf<MenuItem?>(null)
+    val bounds = mutableStateMapOf<MenuItem, Rect>()
+    private var pointer by mutableStateOf(Offset.Zero)
+    private var grab = Offset.Zero
+    private var moved = false
+
+    fun rank(item: MenuItem) = item.section.ordinal * 1000 + order.indexOf(item.name)
+
+    fun offsetOf(item: MenuItem): Offset =
+        if (dragging == item) bounds[item]?.let { pointer - grab - it.topLeft } ?: Offset.Zero else Offset.Zero
+
+    fun start(item: MenuItem, local: Offset) {
+        val b = bounds[item] ?: return
+        onPick()
+        dragging = item
+        grab = local
+        pointer = b.topLeft + local
+        moved = false
+    }
+
+    fun drag(delta: Offset) {
+        val d = dragging ?: return
+        pointer += delta
+        val target = bounds.entries.firstOrNull { (k, r) -> k != d && k.section == d.section && r.contains(pointer) }?.key ?: return
+        // Taking the target's old index puts the dragged item on the far side of it, whichever way it moved.
+        val i = order.indexOf(target.name)
+        order = order.toMutableList().apply { remove(d.name); add(i, d.name) }
+        moved = true
+    }
+
+    fun end() {
+        if (moved) save(order)
+        dragging = null
+    }
+}
+
+@Composable
+private fun Modifier.reorderable(r: MenuReorder, item: MenuItem): Modifier {
+    DisposableEffect(item) { onDispose { r.bounds.remove(item) } }
+    val lifted = r.dragging == item
+    // Bounds come from outside the layer, so they are the item's place in the layout, not where it is drawn.
+    return onGloballyPositioned { r.bounds[item] = it.boundsInRoot() }
+        .zIndex(if (lifted) 1f else 0f)
+        .graphicsLayer {
+            val o = r.offsetOf(item)
+            translationX = o.x
+            translationY = o.y
+            if (lifted) { scaleX = 1.05f; scaleY = 1.05f; shadowElevation = 8.dp.toPx() }
+        }
+        .pointerInput(item) {
+            detectDragGesturesAfterLongPress(
+                onDragStart = { r.start(item, it) },
+                onDragEnd = r::end,
+                onDragCancel = r::end,
+            ) { change, delta -> change.consume(); r.drag(delta) }
+        }
+}
 
 // Names are persisted in settings and exported backups.
 private enum class MenuItem(val label: Int, val section: Section) {

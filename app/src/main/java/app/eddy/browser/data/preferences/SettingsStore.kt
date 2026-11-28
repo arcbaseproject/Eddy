@@ -77,6 +77,7 @@ class SettingsStore(private val context: Context) {
         val dynamic = booleanPreferencesKey("dynamic")
         val palette = intPreferencesKey("palette")
         val hiddenMenuItems = stringPreferencesKey("hidden_menu_items")
+        val menuOrder = stringPreferencesKey("menu_order")
         val showBackButton = booleanPreferencesKey("show_back_button")
         val showNewTabButton = booleanPreferencesKey("show_new_tab_button")
         val showBlockingBadge = booleanPreferencesKey("show_blocking_badge")
@@ -142,6 +143,7 @@ class SettingsStore(private val context: Context) {
             dynamicColor = this[K.dynamic] ?: d.dynamicColor,
             palette = this[K.palette] ?: d.palette,
             hiddenMenuItems = this[K.hiddenMenuItems].orEmpty().split(',').filter { it.isNotEmpty() }.toSet(),
+            menuOrder = this[K.menuOrder].orEmpty().split(',').filter { it.isNotEmpty() },
             showBackButton = this[K.showBackButton] ?: d.showBackButton,
             showNewTabButton = this[K.showNewTabButton] ?: d.showNewTabButton,
             showBlockingBadge = this[K.showBlockingBadge] ?: d.showBlockingBadge,
@@ -200,6 +202,7 @@ class SettingsStore(private val context: Context) {
         this[K.dynamic] = s.dynamicColor
         this[K.palette] = s.palette
         this[K.hiddenMenuItems] = s.hiddenMenuItems.joinToString(",")
+        this[K.menuOrder] = s.menuOrder.joinToString(",")
         this[K.showBackButton] = s.showBackButton
         this[K.showNewTabButton] = s.showNewTabButton
         this[K.showBlockingBadge] = s.showBlockingBadge

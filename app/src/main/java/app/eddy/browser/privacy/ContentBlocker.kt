@@ -16,6 +16,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.GZIPInputStream
 
 /**
@@ -37,6 +38,15 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
     val ruleCount: StateFlow<Int> = _ruleCount
     private val _updating = MutableStateFlow(false)
     val updating: StateFlow<Boolean> = _updating
+
+    /** Lifetime totals for the privacy report: counts only, never hosts or URLs. */
+    private val stats = context.getSharedPreferences("privacy_stats", Context.MODE_PRIVATE)
+    val blockedTotal = AtomicLong(stats.getLong(BLOCKED, 0))
+    val strippedTotal = AtomicLong(stats.getLong(STRIPPED, 0))
+    val statsSince: Long = stats.getLong(SINCE, 0).takeIf { it > 0 }
+        ?: System.currentTimeMillis().also { stats.edit().putLong(SINCE, it).apply() }
+
+    fun saveStats() = stats.edit().putLong(BLOCKED, blockedTotal.get()).putLong(STRIPPED, strippedTotal.get()).apply()
 
     fun isBlocked(host: String, ads: Boolean, trackers: Boolean): Boolean {
         if (!ads && !trackers) return false
@@ -169,6 +179,9 @@ class ContentBlocker(private val context: Context, private val scope: CoroutineS
     companion object {
         const val ASSET_PREFIX = "asset://"
         private const val FIRST_LOAD_TIMEOUT_S = 20L
+        private const val BLOCKED = "blocked"
+        private const val STRIPPED = "stripped"
+        private const val SINCE = "since"
         private val domainRegex = Regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$")
         private val ipRegex = Regex("^[0-9.]+$")
         private val hostsSinks = setOf("0.0.0.0", "127.0.0.1", "::1", "::")

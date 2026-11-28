@@ -77,6 +77,11 @@ class EddyWebViewClient(
                     // Keep the marker for the upgraded URL itself; drop it once the tab moves somewhere else.
                     if (tab.httpsUpgradedFrom?.let { UrlUtils.host(it) != UrlUtils.host(url) } == true) tab.httpsUpgradedFrom = null
                     (view as? EddyWebView)?.let { factory.prepare(tab, it, url) }
+                    val clean = factory.stripTracking(tab, url)
+                    if (clean != url) {
+                        view.loadUrl(clean)
+                        return true
+                    }
                 }
                 return false
             }
@@ -131,6 +136,7 @@ class EddyWebViewClient(
         // Private browsing leaves no hosts in the app log.
         if (!tab.incognito) Log.d("ContentBlocker", "Stopped navigation to $h")
         tab.blockedRaw++
+        host.blocker.blockedTotal.incrementAndGet()
         tab.publishBlocked()
         if (tab.popup) {
             view.stopLoading()
@@ -166,6 +172,7 @@ class EddyWebViewClient(
         tab.isLoading = false
         tab.progress = 100
         tab.publishBlocked()
+        host.blocker.saveStats()
         syncNav(view)
         // The panel lives in the page, so a navigation wipes it; put it back where the user left it on.
         if (tab.devToolsActive) DevTools.show(view.context, view)
@@ -234,6 +241,7 @@ class EddyWebViewClient(
         val pageHost = tab.pageHost
         if (!host.blocker.isRequestBlocked(request.url.toString(), reqHost, pageHost, tab.blockingActive, tab.trackerBlockingActive)) return null
         tab.blockedRaw++
+        host.blocker.blockedTotal.incrementAndGet()
         if (!tab.incognito) Log.d("ContentBlocker", "Blocked $reqHost on $pageHost")
         return blocked(request)
     }

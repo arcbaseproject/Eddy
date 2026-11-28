@@ -69,7 +69,7 @@
     <string name="create">Créer</string>
     <string name="rename_folder">Renommer le dossier</string>
     <string name="delete_3">Supprimer « %1$s » ?</string>
-    <string name="this_also_deletes_the_bookmarks_inside_i">Les favoris qu’il contient seront aussi supprimés.</string>
+    <string name="this_also_deletes_the_bookmarks_inside_i">Les dossiers et favoris qu’il contient seront aussi supprimés.</string>
     <string name="delete_4">Supprimer</string>
     <string name="more_actions">Plus d’actions</string>
     <string name="actions_for">Actions pour %1$s</string>
@@ -213,8 +213,8 @@
     <string name="open_in_another_app_2">Ouvrir dans une autre appli ?</string>
     <string name="stay_here">Rester ici</string>
     <string name="download_this_file">Télécharger ce fichier ?</string>
-    <string name="it_is_also_being_sent_over_an_unencrypte"> De plus, il est envoyé via une connexion non chiffrée.</string>
-    <string name="download_it_only_if_you_trust_this_site"> Ne le téléchargez que si vous faites confiance à ce site.</string>
+    <string name="it_is_also_being_sent_over_an_unencrypte">" De plus, il est envoyé via une connexion non chiffrée."</string>
+    <string name="download_it_only_if_you_trust_this_site">" Ne le téléchargez que si vous faites confiance à ce site."</string>
     <string name="download">Télécharger</string>
     <string name="paste_from_clipboard">Coller depuis le presse-papiers ?</string>
     <string name="paste">Coller</string>
@@ -360,8 +360,8 @@
     <string name="last_updated_november_2026">Dernière mise à jour : novembre 2026</string>
     <string name="last_updated_september_2026">Dernière mise à jour : septembre 2026</string>
     <string name="the_short_version">En bref</string>
-    <string name="eddy_does_not_collect_sell_or_share_your">Eddy ne collecte, ne vend ni ne partage vos données personnelles. Il n’a ni comptes, ni publicité, ni statistiques, ni rapports de plantage. </string>
-    <string name="the_only_thing_it_sends_to_the_developer">La seule chose qu’il envoie au développeur est un message d’assistance que vous choisissez d’envoyer. </string>
+    <string name="eddy_does_not_collect_sell_or_share_your">"Eddy ne collecte, ne vend ni ne partage vos données personnelles. Il n’a ni comptes, ni publicité, ni statistiques, ni rapports de plantage. "</string>
+    <string name="the_only_thing_it_sends_to_the_developer">"La seule chose qu’il envoie au développeur est un message d’assistance que vous choisissez d’envoyer. "</string>
     <string name="your_history_bookmarks_settings_and_down">Votre historique, vos favoris, vos paramètres et la liste de vos téléchargements restent sur votre appareil.</string>
     <string name="what_eddy_stores_on_your_device">Ce qu’Eddy stocke sur votre appareil</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Historique de navigation. Eddy supprime les entrées de plus de 90 jours et n’enregistre jamais l’historique des onglets privés.
@@ -371,6 +371,7 @@
 • Les icônes des sites, ainsi que les cookies, données de site et cache que les pages web créent via le moteur du navigateur.
 • Une liste de vos téléchargements. Les fichiers eux-mêmes vont dans votre dossier Téléchargements.
 • Les identifiants enregistrés. Eddy stocke l’adresse du site et le nom d’utilisateur, et chiffre chaque mot de passe avec une clé qui reste dans l’Android Keystore.
+• Le nombre de publicités, traqueurs et paramètres de suivi bloqués, pour le rapport de confidentialité. Eddy n’enregistre pas de quels sites ou requêtes ils proviennent.
 
 Vous pouvez tout supprimer à tout moment dans Paramètres &gt; Confidentialité et sécurité &gt; Effacer les données de navigation, ou en désinstallant l’appli.
 
@@ -381,6 +382,7 @@ Si vous exportez vos paramètres (Paramètres &gt; Avancé &gt; Exporter les par
 • Icônes des sites : Eddy peut demander /favicon.ico à un site de votre page d’accueil.
 • Listes de filtres : Eddy télécharge les listes de pubs et de traqueurs que vous activez auprès de leurs éditeurs environ une fois par jour.
 • Les téléchargements que vous lancez.
+• Mises à jour : quand vous touchez Rechercher des mises à jour dans Paramètres &gt; À propos, Eddy demande à GitHub la dernière version. Après une mise à jour, Eddy télécharge une fois depuis GitHub les notes de la nouvelle version.
 • Traduction : quand vous choisissez Traduire dans le menu, Eddy ouvre la page via Google Traduction, donc Google reçoit l’adresse de la page.
 • Messages d’assistance : voir ci-dessous.
 
@@ -391,38 +393,38 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
 • Notifications : affichent la progression des téléchargements.
 • Presse-papiers : quand vous ouvrez la barre d’adresse, Eddy lit le presse-papiers une fois pour proposer une suggestion « coller le lien ». Eddy ne le stocke ni ne l’envoie. Android peut afficher une notification à ce moment-là.
 • État du réseau : permet à Eddy d’afficher des pages hors ligne et de réessayer à la reconnexion.</string>
-    <string name="when_you_sign_in_or_sign_up_on_a_site_ed_2">Quand vous vous connectez ou vous inscrivez sur un site, Eddy demande s’il faut enregistrer ou mettre à jour les identifiants. Il ne le demande qu’une fois la connexion réussie, et jamais dans les onglets privés. </string>
-    <string name="passwords_stay_on_your_device_eddy_does">Les mots de passe restent sur votre appareil : Eddy ne les synchronise pas, ne les envoie pas et ne les partage pas. Eddy ne remplit des identifiants qu’après que vous avez appuyé sur la suggestion, et seulement sur l’adresse exacte du site où vous les avez enregistrés. </string>
-    <string name="if_your_device_has_a_screen_lock_eddy_as">Si votre appareil a un verrouillage d’écran, Eddy le demande avant d’afficher la liste des mots de passe, et masque cet écran des captures et de la vue des applis récentes. </string>
+    <string name="when_you_sign_in_or_sign_up_on_a_site_ed_2">"Quand vous vous connectez ou vous inscrivez sur un site, Eddy demande s’il faut enregistrer ou mettre à jour les identifiants. Il ne le demande qu’une fois la connexion réussie, et jamais dans les onglets privés. "</string>
+    <string name="passwords_stay_on_your_device_eddy_does">"Les mots de passe restent sur votre appareil : Eddy ne les synchronise pas, ne les envoie pas et ne les partage pas. Eddy ne remplit des identifiants qu’après que vous avez appuyé sur la suggestion, et seulement sur l’adresse exacte du site où vous les avez enregistrés. "</string>
+    <string name="if_your_device_has_a_screen_lock_eddy_as">"Si votre appareil a un verrouillage d’écran, Eddy le demande avant d’afficher la liste des mots de passe, et masque cet écran des captures et de la vue des applis récentes. "</string>
     <string name="passwords_you_copy_leave_the_clipboard_a">Les mots de passe copiés quittent le presse-papiers au bout d’une minute. Si vous exportez des mots de passe, Eddy écrit un fichier CSV en texte brut à l’endroit choisi et ne peut plus le protéger ensuite. Vous pouvez désactiver l’enregistrement et la saisie automatique dans Paramètres &gt; Confidentialité et sécurité, et supprimer les identifiants enregistrés à tout moment.</string>
     <string name="support_messages">Messages d’assistance</string>
-    <string name="settings_support_lets_you_send_a_message">Paramètres &gt; Assistance vous permet d’envoyer un message au développeur. Eddy ne l’envoie que lorsque vous appuyez sur Envoyer. </string>
-    <string name="it_includes_your_message_your_email_addr">Il contient votre message, votre adresse e-mail si vous en saisissez une, et les numéros de version d’Eddy et d’Android. </string>
-    <string name="eddy_delivers_it_through_web3forms_web3f">Eddy le transmet via Web3Forms (web3forms.com), qui le transfère par e-mail et applique sa propre politique de confidentialité. </string>
-    <string name="the_developer_uses_it_only_to_answer_you">Le développeur l’utilise uniquement pour vous répondre et améliorer Eddy, et ne le partage pas. </string>
+    <string name="settings_support_lets_you_send_a_message">"Paramètres &gt; Assistance vous permet d’envoyer un message au développeur. Eddy ne l’envoie que lorsque vous appuyez sur Envoyer. "</string>
+    <string name="it_includes_your_message_your_email_addr">"Il contient votre message, votre adresse e-mail si vous en saisissez une, et les numéros de version d’Eddy et d’Android. "</string>
+    <string name="eddy_delivers_it_through_web3forms_web3f">"Eddy le transmet via Web3Forms (web3forms.com), qui le transfère par e-mail et applique sa propre politique de confidentialité. "</string>
+    <string name="the_developer_uses_it_only_to_answer_you">"Le développeur l’utilise uniquement pour vous répondre et améliorer Eddy, et ne le partage pas. "</string>
     <string name="to_limit_abuse_eddy_stores_the_time_of_y">Pour limiter les abus, Eddy enregistre l’heure de votre dernier message sur votre appareil et autorise un message toutes les 10 minutes.</string>
     <string name="do_not_track_and_blocking">Do Not Track et blocage</string>
-    <string name="when_you_enable_it_eddy_sends_the_do_not">Quand vous l’activez, Eddy envoie les signaux Do Not Track et Global Privacy Control. Les sites peuvent les ignorer. </string>
+    <string name="when_you_enable_it_eddy_sends_the_do_not">"Quand vous l’activez, Eddy envoie les signaux Do Not Track et Global Privacy Control. Les sites peuvent les ignorer. "</string>
     <string name="ad_and_tracker_blocking_is_best_effort_a">Le blocage des pubs et des traqueurs fait de son mieux et ne peut pas arrêter toutes les formes de pistage.</string>
     <string name="incognito_tabs">Onglets privés</string>
-    <string name="incognito_tabs_save_no_history_page_prev">Les onglets privés n’enregistrent ni historique, ni aperçus de page, ni choix de site. Eddy efface leurs cookies et données de site à la fermeture du dernier onglet privé. </string>
-    <string name="on_devices_whose_webview_cannot_keep_tha">Sur les appareils dont la WebView ne peut pas séparer ce stockage, les onglets privés partagent les cookies avec les onglets normaux, et Paramètres &gt; Confidentialité et sécurité vous l’indique. </string>
+    <string name="incognito_tabs_save_no_history_page_prev">"Les onglets privés n’enregistrent ni historique, ni aperçus de page, ni choix de site. Eddy efface leurs cookies et données de site à la fermeture du dernier onglet privé. "</string>
+    <string name="on_devices_whose_webview_cannot_keep_tha">"Sur les appareils dont la WebView ne peut pas séparer ce stockage, les onglets privés partagent les cookies avec les onglets normaux, et Paramètres &gt; Confidentialité et sécurité vous l’indique. "</string>
     <string name="incognito_does_not_hide_your_activity_fr">Le mode privé ne cache pas votre activité aux sites web, à votre réseau, à votre employeur ou à votre fournisseur d’accès. Eddy conserve les fichiers téléchargés et les favoris créés.</string>
     <string name="children">Enfants</string>
     <string name="eddy_is_a_general_purpose_browser_and_is">Eddy est un navigateur généraliste et ne s’adresse pas aux enfants.</string>
     <string name="changes_and_questions">Modifications et questions</string>
-    <string name="when_this_policy_changes_the_new_version">Quand cette politique change, la nouvelle version est livrée avec l’appli et la date ci-dessus change. </string>
+    <string name="when_this_policy_changes_the_new_version">"Quand cette politique change, la nouvelle version est livrée avec l’appli et la date ci-dessus change. "</string>
     <string name="for_questions_use_settings_support_or_co">Pour toute question, utilisez Paramètres &gt; Assistance ou contactez le développeur via la page de l’appli dans la boutique.</string>
     <string name="beta_software">Logiciel bêta</string>
-    <string name="eddy_is_in_beta_it_may_contain_bugs_feat">Eddy est en bêta. Il peut contenir des bugs, des fonctions peuvent changer ou disparaître, et vous pourriez perdre des onglets, des favoris ou des paramètres. </string>
+    <string name="eddy_is_in_beta_it_may_contain_bugs_feat">"Eddy est en bêta. Il peut contenir des bugs, des fonctions peuvent changer ou disparaître, et vous pourriez perdre des onglets, des favoris ou des paramètres. "</string>
     <string name="keep_your_own_copy_of_anything_important">Gardez votre propre copie de tout ce qui est important, par exemple en exportant vos favoris.</string>
     <string name="licence">Licence</string>
     <string name="eddy_is_free_software_under_the_apache_l">Eddy est un logiciel libre sous licence Apache 2.0. Vous pouvez l’utiliser, l’étudier, le partager et le modifier à toute fin selon cette licence, et rien sur cette page ne la limite. Vous êtes responsable des sites que vous visitez et des contenus que vous consultez ou téléchargez.</string>
     <string name="security_warnings">Avertissements de sécurité</string>
-    <string name="eddy_warns_you_about_connection_and_cert">Eddy vous avertit des problèmes de connexion et de certificat. Si vous continuez quand même, vous acceptez le risque. </string>
+    <string name="eddy_warns_you_about_connection_and_cert">"Eddy vous avertit des problèmes de connexion et de certificat. Si vous continuez quand même, vous acceptez le risque. "</string>
     <string name="blocking_of_ads_trackers_and_dangerous_s">Le blocage des pubs, traqueurs et sites dangereux est une aide et n’attrape pas tout.</string>
     <string name="third_party_content_and_software">Contenus et logiciels tiers</string>
-    <string name="web_pages_search_engines_filter_lists_an">Les pages web, moteurs de recherche, listes de filtres et fichiers téléchargés proviennent de tiers. Eddy ne les contrôle ni ne les cautionne, et leurs propres conditions s’appliquent. </string>
+    <string name="web_pages_search_engines_filter_lists_an">"Les pages web, moteurs de recherche, listes de filtres et fichiers téléchargés proviennent de tiers. Eddy ne les contrôle ni ne les cautionne, et leurs propres conditions s’appliquent. "</string>
     <string name="eddy_uses_android_system_webview_and_ope">Eddy utilise Android System WebView et des bibliothèques open source, qui restent sous leurs propres licences.</string>
     <string name="no_warranty">Aucune garantie</string>
     <string name="eddy_is_provided_as_is_and_as_available">Eddy est fourni « tel quel » et « selon disponibilité », sans garantie d’aucune sorte, expresse ou implicite, y compris d’adéquation à un usage particulier, de fiabilité ou d’absence d’erreurs.</string>
@@ -434,7 +436,7 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="ad_blocking">Blocage des pubs</string>
     <string name="blocks_requests_to_known_ad_servers_doma">Bloque les requêtes vers les serveurs publicitaires connus · %1$s domaines chargés</string>
     <string name="tracker_protection">Protection contre le pistage</string>
-    <string name="blocks_analytics_and_tracking_domains">Bloque les domaines de statistiques et de pistage</string>
+    <string name="blocks_analytics_and_tracking_domains">Bloque les domaines d’analyse et de suivi, et retire les paramètres de suivi des liens</string>
     <string name="filter_lists">Listes de filtres</string>
     <string name="enable_add_and_update_lists">Activer, ajouter et mettre à jour des listes</string>
     <string name="do_not_track_and_global_privacy_control">Do Not Track et Global Privacy Control</string>
@@ -480,7 +482,7 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="host_or_domain_lists_by_url">Listes d’hôtes ou de domaines par URL</string>
     <string name="update_now">Mettre à jour</string>
     <string name="filter_lists_updated">Listes de filtres mises à jour</string>
-    <string name="last_updated">Dernière mise à jour : </string>
+    <string name="last_updated">Dernière mise à jour : %1$s</string>
     <string name="never_updated">Jamais mise à jour</string>
     <string name="eddy_refreshes_lists_about_once_a_day_wh">Eddy actualise les listes environ une fois par jour quand vous êtes en ligne. Il n’applique que les règles de domaine.</string>
     <string name="name">Nom</string>
@@ -580,7 +582,7 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="email_optional">E-mail (facultatif)</string>
     <string name="message">Message</string>
     <string name="send">Envoyer</string>
-    <string name="your_message_your_email_if_you_add_one_a">Votre message, votre e-mail si vous en ajoutez un, et les versions d’Eddy et d’Android sont envoyés au développeur via Web3Forms. </string>
+    <string name="your_message_your_email_if_you_add_one_a">"Votre message, votre e-mail si vous en ajoutez un, et les versions d’Eddy et d’Android sont envoyés au développeur via Web3Forms. "</string>
     <string name="see_the_privacy_policy_for_details">Voir la politique de confidentialité pour plus de détails.</string>
     <string name="skip">Passer</string>
     <string name="welcome_to_eddy">Bienvenue dans Eddy</string>
@@ -608,9 +610,9 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="shortcuts_hidden_show_them_again_in_sett">Raccourcis masqués. Réaffichez-les dans Paramètres &gt; Apparence &gt; Page d’accueil</string>
     <string name="incognito_2">Privé</string>
     <string name="private_browsing">Navigation privée</string>
-    <string name="eddy_does_not_save_the_pages_you_open_he">Eddy n’enregistre pas dans l’historique les pages que vous ouvrez ici. </string>
-    <string name="it_erases_cookies_and_site_data_when_you">Il efface les cookies et les données de site quand vous fermez le dernier onglet privé. </string>
-    <string name="this_device_s_webview_shares_cookies_and">La WebView de cet appareil partage les cookies et données de site avec les onglets normaux, ils ne sont donc pas effacés. </string>
+    <string name="eddy_does_not_save_the_pages_you_open_he">"Eddy n’enregistre pas dans l’historique les pages que vous ouvrez ici. "</string>
+    <string name="it_erases_cookies_and_site_data_when_you">"Il efface les cookies et les données de site quand vous fermez le dernier onglet privé. "</string>
+    <string name="this_device_s_webview_shares_cookies_and">"La WebView de cet appareil partage les cookies et données de site avec les onglets normaux, ils ne sont donc pas effacés. "</string>
     <string name="websites_and_your_network_can_still_see">Les sites web et votre réseau peuvent toujours voir ce que vous faites.</string>
     <string name="new_shortcut">Nouveau raccourci</string>
     <string name="edit_shortcut">Modifier le raccourci</string>
@@ -655,13 +657,13 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="page_wants_to_open_app">Cette page veut ouvrir un lien dans une autre appli :\n\n%1$s</string>
     <string name="unknown">inconnu</string>
     <string name="issued_by">Émis par %1$s</string>
-    <string name="cert_expires"> · expire le %1$s</string>
+    <string name="cert_expires">" · expire le %1$s"</string>
     <string name="unlock_passwords">Déverrouiller les mots de passe</string>
     <string name="confirm_screen_lock_passwords">Confirmez le verrouillage de l’écran pour voir les mots de passe enregistrés.</string>
     <string name="import_from_csv">Importer depuis un CSV</string>
     <string name="trackers">Traqueurs</string>
     <string name="ads">Pubs</string>
-    <string name="built_in_suffix"> · intégré</string>
+    <string name="built_in_suffix">intégré</string>
     <string name="instance_url">URL de l’instance</string>
     <string name="web_debugging_hint">Permet à chrome://inspect de se connecter aux pages via USB</string>
     <string name="skipped_suffix">, %1$s ignorés</string>
@@ -747,4 +749,35 @@ Chaque site, moteur de recherche et hébergeur de liste que vous contactez peut 
     <string name="show_blocking_badge">Afficher l’indicateur de blocage</string>
     <string name="compact_list">Liste compacte</string>
     <string name="edit_menu">Modifier le menu</string>
+    <string name="check_for_updates">Rechercher des mises à jour</string>
+    <string name="protection_level">Niveau de protection</string>
+    <string name="level_balanced">Équilibré</string>
+    <string name="level_strict">Strict</string>
+    <string name="level_custom">Personnalisé</string>
+    <string name="privacy_report">Rapport de confidentialité</string>
+    <string name="privacy_report_summary">Ce qu’Eddy a bloqué jusqu’ici</string>
+    <string name="since_date">Depuis le %1$s</string>
+    <string name="ads_and_trackers_blocked">Publicités et traqueurs bloqués</string>
+    <string name="tracking_parameters_removed">Paramètres de suivi retirés des liens</string>
+    <string name="status">État</string>
+    <string name="lists_on_domains">%1$d listes actives sur %2$d · %3$d domaines</string>
+    <string name="sites_with_blocking_off">Sites avec le blocage désactivé</string>
+    <string name="privacy_report_footnote">Ces chiffres restent sur votre appareil. Eddy n’enregistre pas quels sites ou requêtes ont été bloqués.</string>
+    <string name="checking">Recherche…</string>
+    <string name="could_not_check_for_updates">Impossible de rechercher des mises à jour. Réessayez plus tard.</string>
+    <string name="eddy_is_up_to_date">Eddy est à jour</string>
+    <string name="version_available">Eddy %1$s est disponible</string>
+    <string name="no_release_notes">Aucune note de version.</string>
+    <string name="level_balanced_desc">Bloque les publicités, les traqueurs et les cookies tiers. Les sites continuent de fonctionner.</string>
+    <string name="level_strict_desc">Tout ce que fait Équilibré, et efface vos données quand vous quittez.</string>
+    <string name="level_custom_desc">Votre propre combinaison des réglages ci-dessous.</string>
+    <string name="updating">Mise à jour…</string>
+    <plurals name="domains_active">
+        <item quantity="one">%1$d domaine actif</item>
+        <item quantity="other">%1$d domaines actifs</item>
+    </plurals>
+    <plurals name="lists_failed_to_update">
+        <item quantity="one">%1$d liste n’a pas pu être mise à jour</item>
+        <item quantity="other">%1$d listes n’ont pas pu être mises à jour</item>
+    </plurals>
 </resources>

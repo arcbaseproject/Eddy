@@ -68,7 +68,7 @@
     <string name="create">Yarat</string>
     <string name="rename_folder">Qovluğun adını dəyiş</string>
     <string name="delete_3">“%1$s” silinsin?</string>
-    <string name="this_also_deletes_the_bookmarks_inside_i">Bu, içindəki əlfəcinləri də silir.</string>
+    <string name="this_also_deletes_the_bookmarks_inside_i">Bu, içindəki qovluqları və əlfəcinləri də silir.</string>
     <string name="delete_4">Sil</string>
     <string name="more_actions">Digər əməliyyatlar</string>
     <string name="actions_for">%1$s üçün əməliyyatlar</string>
@@ -212,8 +212,8 @@
     <string name="open_in_another_app_2">Başqa tətbiqdə açılsın?</string>
     <string name="stay_here">Burada qal</string>
     <string name="download_this_file">Bu fayl endirilsin?</string>
-    <string name="it_is_also_being_sent_over_an_unencrypte"> Üstəlik, o şifrələnməmiş bağlantı ilə göndərilir.</string>
-    <string name="download_it_only_if_you_trust_this_site"> Yalnız bu sayta etibar edirsinizsə endirin.</string>
+    <string name="it_is_also_being_sent_over_an_unencrypte">" Üstəlik, o şifrələnməmiş bağlantı ilə göndərilir."</string>
+    <string name="download_it_only_if_you_trust_this_site">" Yalnız bu sayta etibar edirsinizsə endirin."</string>
     <string name="download">Endir</string>
     <string name="paste_from_clipboard">Mübadilə buferindən yapışdırılsın?</string>
     <string name="paste">Yapışdır</string>
@@ -359,8 +359,8 @@
     <string name="last_updated_november_2026">Son yenilənmə: noyabr 2026</string>
     <string name="last_updated_september_2026">Son yenilənmə: sentyabr 2026</string>
     <string name="the_short_version">Qısaca</string>
-    <string name="eddy_does_not_collect_sell_or_share_your">Eddy şəxsi məlumatlarınızı toplamır, satmır və paylaşmır. Onda hesablar, reklam, analitika və ya qəza hesabatları yoxdur. </string>
-    <string name="the_only_thing_it_sends_to_the_developer">Tərtibatçıya göndərdiyi yeganə şey sizin göndərməyi seçdiyiniz dəstək mesajıdır. </string>
+    <string name="eddy_does_not_collect_sell_or_share_your">"Eddy şəxsi məlumatlarınızı toplamır, satmır və paylaşmır. Onda hesablar, reklam, analitika və ya qəza hesabatları yoxdur. "</string>
+    <string name="the_only_thing_it_sends_to_the_developer">"Tərtibatçıya göndərdiyi yeganə şey sizin göndərməyi seçdiyiniz dəstək mesajıdır. "</string>
     <string name="your_history_bookmarks_settings_and_down">Tarixçəniz, əlfəcinləriniz, ayarlarınız və endirmə siyahınız cihazınızda qalır.</string>
     <string name="what_eddy_stores_on_your_device">Eddy cihazınızda nələri saxlayır</string>
     <string name="you_can_delete_all_of_this_at_any_time_i">• Brauzer tarixçəsi. Eddy 90 gündən köhnə qeydləri silir və gizli tablar üçün heç vaxt tarixçə saxlamır.
@@ -370,6 +370,7 @@
 • Sayt ikonaları, həmçinin veb səhifələrin brauzer mühərriki vasitəsilə yaratdığı kukilər, sayt məlumatları və keş.
 • Endirmələrinizin siyahısı. Faylların özləri Endirmələr qovluğuna düşür.
 • Yadda saxlanılmış giriş məlumatları. Eddy sayt ünvanını və istifadəçi adını saxlayır və hər parolu Android Keystore-da qalan açarla şifrələyir.
+• Məxfilik hesabatı üçün bloklanmış reklam, izləyici və izləmə parametrlərinin sayı. Eddy onların hansı saytlardan və ya sorğulardan gəldiyini qeyd etmir.
 
 Bütün bunları istənilən vaxt Ayarlar &gt; Məxfilik və təhlükəsizlik &gt; Brauzer məlumatlarını təmizlə bölməsində və ya tətbiqi silməklə silə bilərsiniz.
 
@@ -380,6 +381,7 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
 • Sayt ikonaları: Eddy başlanğıc səhifənizdəki saytdan /favicon.ico tələb edə bilər.
 • Filtr siyahıları: Eddy aktivləşdirdiyiniz reklam və izləyici siyahılarını təxminən gündə bir dəfə naşirlərindən endirir.
 • Başlatdığınız endirmələr.
+• Yeniləmələr: Parametrlər &gt; Haqqında bölməsində Yeniləmələri yoxla düyməsinə toxunduqda Eddy GitHub-dan ən yeni buraxılışı soruşur. Yeniləmədən sonra Eddy yeni versiyanın qeydlərini GitHub-dan bir dəfə endirir.
 • Tərcümə: menyuda Tərcümə et seçdikdə Eddy səhifəni Google Tərcümə vasitəsilə açır, buna görə Google səhifə ünvanını alır.
 • Dəstək mesajları: aşağıya baxın.
 
@@ -390,38 +392,38 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
 • Bildirişlər: endirmə gedişatını göstərir.
 • Mübadilə buferi: ünvan sətrini açdıqda Eddy “linki yapışdır” təklifi üçün buferi bir dəfə oxuyur. Eddy onu saxlamır və göndərmir. Bu zaman Android bildiriş göstərə bilər.
 • Şəbəkə vəziyyəti: Eddy-yə oflayn səhifələri göstərməyə və yenidən qoşulduqda təkrar cəhd etməyə imkan verir.</string>
-    <string name="when_you_sign_in_or_sign_up_on_a_site_ed_2">Saytda daxil olduqda və ya qeydiyyatdan keçdikdə Eddy giriş məlumatını saxlamağı və ya yeniləməyi soruşur. O, yalnız giriş uğurlu olduqdan sonra soruşur və gizli tablarda heç vaxt soruşmur. </string>
-    <string name="passwords_stay_on_your_device_eddy_does">Parollar cihazınızda qalır: Eddy onları sinxronlaşdırmır, yükləmir və paylaşmır. Eddy yadda saxlanılmış girişi yalnız siz təklifə toxunduqdan sonra və yalnız onu saxladığınız dəqiq sayt ünvanında doldurur. </string>
-    <string name="if_your_device_has_a_screen_lock_eddy_as">Cihazınızda ekran kilidi varsa, Eddy parol siyahısını göstərməzdən əvvəl onu tələb edir və həmin ekranı skrinşotlardan və son tətbiqlər görünüşündən gizlədir. </string>
+    <string name="when_you_sign_in_or_sign_up_on_a_site_ed_2">"Saytda daxil olduqda və ya qeydiyyatdan keçdikdə Eddy giriş məlumatını saxlamağı və ya yeniləməyi soruşur. O, yalnız giriş uğurlu olduqdan sonra soruşur və gizli tablarda heç vaxt soruşmur. "</string>
+    <string name="passwords_stay_on_your_device_eddy_does">"Parollar cihazınızda qalır: Eddy onları sinxronlaşdırmır, yükləmir və paylaşmır. Eddy yadda saxlanılmış girişi yalnız siz təklifə toxunduqdan sonra və yalnız onu saxladığınız dəqiq sayt ünvanında doldurur. "</string>
+    <string name="if_your_device_has_a_screen_lock_eddy_as">"Cihazınızda ekran kilidi varsa, Eddy parol siyahısını göstərməzdən əvvəl onu tələb edir və həmin ekranı skrinşotlardan və son tətbiqlər görünüşündən gizlədir. "</string>
     <string name="passwords_you_copy_leave_the_clipboard_a">Kopyaladığınız parollar bir dəqiqədən sonra mübadilə buferindən silinir. Parolları ixrac etsəniz, Eddy seçdiyiniz yerə adi mətnli CSV faylı yazır və sonra onu qoruya bilmir. Saxlamanı və avtomatik doldurmanı Ayarlar &gt; Məxfilik və təhlükəsizlik bölməsində deaktiv edə və yadda saxlanılmış girişləri istənilən vaxt silə bilərsiniz.</string>
     <string name="support_messages">Dəstək mesajları</string>
-    <string name="settings_support_lets_you_send_a_message">Ayarlar &gt; Dəstək bölməsi tərtibatçıya mesaj göndərməyə imkan verir. Eddy onu yalnız siz Göndərə toxunduqda göndərir. </string>
-    <string name="it_includes_your_message_your_email_addr">Ona mesajınız, daxil etsəniz e-poçt ünvanınız, həmçinin Eddy və Android versiya nömrələri daxildir. </string>
-    <string name="eddy_delivers_it_through_web3forms_web3f">Eddy onu Web3Forms (web3forms.com) vasitəsilə çatdırır, o da mesajı e-poçtla yönləndirir və öz məxfilik siyasətini tətbiq edir. </string>
-    <string name="the_developer_uses_it_only_to_answer_you">Tərtibatçı ondan yalnız sizə cavab vermək və Eddy-ni təkmilləşdirmək üçün istifadə edir və onu paylaşmır. </string>
+    <string name="settings_support_lets_you_send_a_message">"Ayarlar &gt; Dəstək bölməsi tərtibatçıya mesaj göndərməyə imkan verir. Eddy onu yalnız siz Göndərə toxunduqda göndərir. "</string>
+    <string name="it_includes_your_message_your_email_addr">"Ona mesajınız, daxil etsəniz e-poçt ünvanınız, həmçinin Eddy və Android versiya nömrələri daxildir. "</string>
+    <string name="eddy_delivers_it_through_web3forms_web3f">"Eddy onu Web3Forms (web3forms.com) vasitəsilə çatdırır, o da mesajı e-poçtla yönləndirir və öz məxfilik siyasətini tətbiq edir. "</string>
+    <string name="the_developer_uses_it_only_to_answer_you">"Tərtibatçı ondan yalnız sizə cavab vermək və Eddy-ni təkmilləşdirmək üçün istifadə edir və onu paylaşmır. "</string>
     <string name="to_limit_abuse_eddy_stores_the_time_of_y">Sui-istifadəni məhdudlaşdırmaq üçün Eddy son mesajınızın vaxtını cihazınızda saxlayır və hər 10 dəqiqədə bir mesaja icazə verir.</string>
     <string name="do_not_track_and_blocking">Do Not Track və bloklama</string>
-    <string name="when_you_enable_it_eddy_sends_the_do_not">Aktivləşdirdikdə Eddy Do Not Track və Global Privacy Control siqnallarını göndərir. Saytlar onlara məhəl qoymaya bilər. </string>
+    <string name="when_you_enable_it_eddy_sends_the_do_not">"Aktivləşdirdikdə Eddy Do Not Track və Global Privacy Control siqnallarını göndərir. Saytlar onlara məhəl qoymaya bilər. "</string>
     <string name="ad_and_tracker_blocking_is_best_effort_a">Reklam və izləyici bloklama imkan daxilində işləyir və izləmənin bütün formalarını dayandıra bilməz.</string>
     <string name="incognito_tabs">Gizli tablar</string>
-    <string name="incognito_tabs_save_no_history_page_prev">Gizli tablar tarixçə, səhifə önizləmələri və ya sayt seçimləri saxlamır. Son gizli tab bağlandıqda Eddy onların kukilərini və sayt məlumatlarını silir. </string>
-    <string name="on_devices_whose_webview_cannot_keep_tha">WebView-u bu yaddaşı ayrı saxlaya bilməyən cihazlarda gizli tablar kukiləri adi tablarla paylaşır və Ayarlar &gt; Məxfilik və təhlükəsizlik bölməsi bunu sizə bildirir. </string>
+    <string name="incognito_tabs_save_no_history_page_prev">"Gizli tablar tarixçə, səhifə önizləmələri və ya sayt seçimləri saxlamır. Son gizli tab bağlandıqda Eddy onların kukilərini və sayt məlumatlarını silir. "</string>
+    <string name="on_devices_whose_webview_cannot_keep_tha">"WebView-u bu yaddaşı ayrı saxlaya bilməyən cihazlarda gizli tablar kukiləri adi tablarla paylaşır və Ayarlar &gt; Məxfilik və təhlükəsizlik bölməsi bunu sizə bildirir. "</string>
     <string name="incognito_does_not_hide_your_activity_fr">Gizli rejim fəaliyyətinizi saytlardan, şəbəkənizdən, işəgötürəninizdən və ya internet provayderinizdən gizlətmir. Eddy endirdiyiniz faylları və yaratdığınız əlfəcinləri saxlayır.</string>
     <string name="children">Uşaqlar</string>
     <string name="eddy_is_a_general_purpose_browser_and_is">Eddy ümumi təyinatlı brauzerdir və uşaqlar üçün nəzərdə tutulmayıb.</string>
     <string name="changes_and_questions">Dəyişikliklər və suallar</string>
-    <string name="when_this_policy_changes_the_new_version">Bu siyasət dəyişdikdə yeni versiya tətbiqlə birlikdə gəlir və yuxarıdakı tarix dəyişir. </string>
+    <string name="when_this_policy_changes_the_new_version">"Bu siyasət dəyişdikdə yeni versiya tətbiqlə birlikdə gəlir və yuxarıdakı tarix dəyişir. "</string>
     <string name="for_questions_use_settings_support_or_co">Suallar üçün Ayarlar &gt; Dəstək bölməsindən istifadə edin və ya tətbiqin mağaza səhifəsi vasitəsilə tərtibatçı ilə əlaqə saxlayın.</string>
     <string name="beta_software">Beta proqram</string>
-    <string name="eddy_is_in_beta_it_may_contain_bugs_feat">Eddy beta mərhələsindədir. Onda xətalar ola bilər, funksiyalar dəyişə və ya yox ola bilər, siz tabları, əlfəcinləri və ya ayarları itirə bilərsiniz. </string>
+    <string name="eddy_is_in_beta_it_may_contain_bugs_feat">"Eddy beta mərhələsindədir. Onda xətalar ola bilər, funksiyalar dəyişə və ya yox ola bilər, siz tabları, əlfəcinləri və ya ayarları itirə bilərsiniz. "</string>
     <string name="keep_your_own_copy_of_anything_important">Vacib olan hər şeyin öz nüsxəsini saxlayın, məsələn əlfəcinlərinizi ixrac edin.</string>
     <string name="licence">Lisenziya</string>
     <string name="eddy_is_free_software_under_the_apache_l">Eddy Apache License 2.0 altında azad proqramdır. Bu lisenziyaya əsasən ondan istənilən məqsədlə istifadə edə, onu öyrənə, paylaşa və dəyişə bilərsiniz və bu səhifədəki heç nə onu məhdudlaşdırmır. Ziyarət etdiyiniz saytlara və baxdığınız və ya endirdiyiniz məzmuna görə siz cavabdehsiniz.</string>
     <string name="security_warnings">Təhlükəsizlik xəbərdarlıqları</string>
-    <string name="eddy_warns_you_about_connection_and_cert">Eddy sizi bağlantı və sertifikat problemləri barədə xəbərdar edir. Yenə də davam etsəniz, riski qəbul etmiş olursunuz. </string>
+    <string name="eddy_warns_you_about_connection_and_cert">"Eddy sizi bağlantı və sertifikat problemləri barədə xəbərdar edir. Yenə də davam etsəniz, riski qəbul etmiş olursunuz. "</string>
     <string name="blocking_of_ads_trackers_and_dangerous_s">Reklamların, izləyicilərin və təhlükəli saytların bloklanması köməkçi funksiyadır və hər şeyi tutmur.</string>
     <string name="third_party_content_and_software">Üçüncü tərəf məzmunu və proqramı</string>
-    <string name="web_pages_search_engines_filter_lists_an">Veb səhifələr, axtarış sistemləri, filtr siyahıları və endirilmiş fayllar üçüncü tərəflərdən gəlir. Eddy onlara nəzarət etmir və onları təsdiqləmir, onların öz şərtləri tətbiq olunur. </string>
+    <string name="web_pages_search_engines_filter_lists_an">"Veb səhifələr, axtarış sistemləri, filtr siyahıları və endirilmiş fayllar üçüncü tərəflərdən gəlir. Eddy onlara nəzarət etmir və onları təsdiqləmir, onların öz şərtləri tətbiq olunur. "</string>
     <string name="eddy_uses_android_system_webview_and_ope">Eddy Android System WebView və öz lisenziyaları altında qalan açıq mənbəli kitabxanalardan istifadə edir.</string>
     <string name="no_warranty">Zəmanət yoxdur</string>
     <string name="eddy_is_provided_as_is_and_as_available">Eddy “olduğu kimi” və “mövcud olduğu kimi”, müəyyən məqsədə uyğunluq, etibarlılıq və ya xətasızlıq daxil olmaqla, açıq və ya nəzərdə tutulan heç bir zəmanət olmadan təqdim olunur.</string>
@@ -433,7 +435,7 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="ad_blocking">Reklam bloklama</string>
     <string name="blocks_requests_to_known_ad_servers_doma">Məlum reklam serverlərinə sorğuları bloklayır · %1$s domen yükləndi</string>
     <string name="tracker_protection">İzləyicidən qoruma</string>
-    <string name="blocks_analytics_and_tracking_domains">Analitika və izləmə domenlərini bloklayır</string>
+    <string name="blocks_analytics_and_tracking_domains">Analitika və izləmə domenlərini bloklayır, keçidlərdən izləmə parametrlərini silir</string>
     <string name="filter_lists">Filtr siyahıları</string>
     <string name="enable_add_and_update_lists">Siyahıları aktivləşdir, əlavə et və yenilə</string>
     <string name="do_not_track_and_global_privacy_control">Do Not Track və Global Privacy Control</string>
@@ -479,7 +481,7 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="host_or_domain_lists_by_url">URL ilə host və ya domen siyahıları</string>
     <string name="update_now">İndi yenilə</string>
     <string name="filter_lists_updated">Filtr siyahıları yeniləndi</string>
-    <string name="last_updated">Son yenilənmə: </string>
+    <string name="last_updated">Son yenilənmə: %1$s</string>
     <string name="never_updated">Heç vaxt yenilənməyib</string>
     <string name="eddy_refreshes_lists_about_once_a_day_wh">Onlayn olduqda Eddy siyahıları təxminən gündə bir dəfə yeniləyir. O, yalnız domen qaydalarını tətbiq edir.</string>
     <string name="name">Ad</string>
@@ -579,7 +581,7 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="email_optional">E-poçt (istəyə bağlı)</string>
     <string name="message">Mesaj</string>
     <string name="send">Göndər</string>
-    <string name="your_message_your_email_if_you_add_one_a">Mesajınız, əlavə etsəniz e-poçtunuz, həmçinin Eddy və Android versiyaları Web3Forms vasitəsilə tərtibatçıya gedir. </string>
+    <string name="your_message_your_email_if_you_add_one_a">"Mesajınız, əlavə etsəniz e-poçtunuz, həmçinin Eddy və Android versiyaları Web3Forms vasitəsilə tərtibatçıya gedir. "</string>
     <string name="see_the_privacy_policy_for_details">Ətraflı məlumat üçün məxfilik siyasətinə baxın.</string>
     <string name="skip">Ötür</string>
     <string name="welcome_to_eddy">Eddy-yə xoş gəlmisiniz</string>
@@ -607,9 +609,9 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="shortcuts_hidden_show_them_again_in_sett">Qısayollar gizlədildi. Onları yenidən Ayarlar &gt; Görünüş &gt; Başlanğıc səhifəsi bölməsində göstərin</string>
     <string name="incognito_2">Gizli</string>
     <string name="private_browsing">Məxfi gəzmə</string>
-    <string name="eddy_does_not_save_the_pages_you_open_he">Eddy burada açdığınız səhifələri tarixçədə saxlamır. </string>
-    <string name="it_erases_cookies_and_site_data_when_you">Son gizli tabı bağladıqda o, kukiləri və sayt məlumatlarını silir. </string>
-    <string name="this_device_s_webview_shares_cookies_and">Bu cihazın WebView-u kukiləri və sayt məlumatlarını adi tablarla paylaşır, ona görə də onlar silinmir. </string>
+    <string name="eddy_does_not_save_the_pages_you_open_he">"Eddy burada açdığınız səhifələri tarixçədə saxlamır. "</string>
+    <string name="it_erases_cookies_and_site_data_when_you">"Son gizli tabı bağladıqda o, kukiləri və sayt məlumatlarını silir. "</string>
+    <string name="this_device_s_webview_shares_cookies_and">"Bu cihazın WebView-u kukiləri və sayt məlumatlarını adi tablarla paylaşır, ona görə də onlar silinmir. "</string>
     <string name="websites_and_your_network_can_still_see">Saytlar və şəbəkəniz yenə də nə etdiyinizi görə bilər.</string>
     <string name="new_shortcut">Yeni qısayol</string>
     <string name="edit_shortcut">Qısayolu redaktə et</string>
@@ -654,13 +656,13 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="page_wants_to_open_app">Bu səhifə linki başqa tətbiqdə açmaq istəyir:\n\n%1$s</string>
     <string name="unknown">naməlum</string>
     <string name="issued_by">Verən: %1$s</string>
-    <string name="cert_expires"> · bitmə tarixi %1$s</string>
+    <string name="cert_expires">" · bitmə tarixi %1$s"</string>
     <string name="unlock_passwords">Parolları kiliddən çıxar</string>
     <string name="confirm_screen_lock_passwords">Yadda saxlanılmış parollara baxmaq üçün ekran kilidinizi təsdiqləyin.</string>
     <string name="import_from_csv">CSV-dən idxal et</string>
     <string name="trackers">İzləyicilər</string>
     <string name="ads">Reklamlar</string>
-    <string name="built_in_suffix"> · daxili</string>
+    <string name="built_in_suffix">daxili</string>
     <string name="instance_url">Nüsxə URL-i</string>
     <string name="web_debugging_hint">chrome://inspect-ə USB vasitəsilə səhifələrə qoşulmağa icazə verir</string>
     <string name="skipped_suffix">, %1$s ötürüldü</string>
@@ -740,4 +742,35 @@ Ayarlarınızı ixrac etsəniz (Ayarlar &gt; Əlavə &gt; Ayarları ixrac et), E
     <string name="show_blocking_badge">Bloklama nişanını göstər</string>
     <string name="compact_list">Yığcam siyahı</string>
     <string name="edit_menu">Menyunu redaktə et</string>
+    <string name="check_for_updates">Yeniləmələri yoxla</string>
+    <string name="protection_level">Qoruma səviyyəsi</string>
+    <string name="level_balanced">Balanslı</string>
+    <string name="level_strict">Sərt</string>
+    <string name="level_custom">Fərdi</string>
+    <string name="privacy_report">Məxfilik hesabatı</string>
+    <string name="privacy_report_summary">Eddy indiyədək nələri bloklayıb</string>
+    <string name="since_date">%1$s tarixindən</string>
+    <string name="ads_and_trackers_blocked">Bloklanmış reklam və izləyicilər</string>
+    <string name="tracking_parameters_removed">Keçidlərdən silinmiş izləmə parametrləri</string>
+    <string name="status">Vəziyyət</string>
+    <string name="lists_on_domains">%2$d siyahıdan %1$d aktiv · %3$d domen</string>
+    <string name="sites_with_blocking_off">Bloklaması söndürülmüş saytlar</string>
+    <string name="privacy_report_footnote">Bu saylar cihazınızda qalır. Eddy hansı saytların və ya sorğuların bloklandığını qeyd etmir.</string>
+    <string name="checking">Yoxlanılır…</string>
+    <string name="could_not_check_for_updates">Yeniləmələri yoxlamaq alınmadı. Sonra yenidən cəhd edin.</string>
+    <string name="eddy_is_up_to_date">Eddy aktualdır</string>
+    <string name="version_available">Eddy %1$s mövcuddur</string>
+    <string name="no_release_notes">Buraxılış qeydləri yoxdur.</string>
+    <string name="level_balanced_desc">Reklamları, izləyiciləri və üçüncü tərəf kukilərini bloklayır. Saytlar işləməyə davam edir.</string>
+    <string name="level_strict_desc">Balanslıdakı hər şey, və çıxanda məlumatlarınızı silir.</string>
+    <string name="level_custom_desc">Aşağıdakı parametrlərin öz birləşməniz.</string>
+    <string name="updating">Yenilənir…</string>
+    <plurals name="domains_active">
+        <item quantity="one">%1$d aktiv domen</item>
+        <item quantity="other">%1$d aktiv domen</item>
+    </plurals>
+    <plurals name="lists_failed_to_update">
+        <item quantity="one">%1$d siyahı yenilənmədi</item>
+        <item quantity="other">%1$d siyahı yenilənmədi</item>
+    </plurals>
 </resources>

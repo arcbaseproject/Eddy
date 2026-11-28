@@ -47,6 +47,8 @@ internal val settingsIndex = listOf(
     SettingEntry(R.string.haptic_feedback, listOf(APPEARANCE), "vibration"),
     SettingEntry(R.string.page_text_size, listOf(APPEARANCE), "font zoom scale"),
 
+    SettingEntry(R.string.protection_level, listOf(PRIVACY), "mode balanced strict custom preset"),
+    SettingEntry(R.string.privacy_report, listOf(PRIVACY, PRIVACY_REPORT), "dashboard stats statistics blocked count"),
     SettingEntry(R.string.ad_blocking, listOf(PRIVACY), "ads block adblock"),
     SettingEntry(R.string.tracker_protection, listOf(PRIVACY), "trackers analytics"),
     SettingEntry(R.string.filter_lists, listOf(PRIVACY, FILTER_LISTS), "blocklist hosts update custom"),
@@ -72,6 +74,7 @@ internal val settingsIndex = listOf(
     SettingEntry(R.string.clear_when_i_leave, listOf(PRIVACY), "clear on exit quit delete data swipe recents"),
     SettingEntry(R.string.app_logs, listOf(ADVANCED), "logcat debug crash bug report"),
     SettingEntry(R.string.reset_all_settings, listOf(ADVANCED), "defaults restore"),
+    SettingEntry(R.string.check_for_updates, listOf(ABOUT), "update new version release download apk"),
     SettingEntry(R.string.export_settings, listOf(ADVANCED), "backup save file json transfer"),
     SettingEntry(R.string.import_settings, listOf(ADVANCED), "backup restore file json transfer"),
 

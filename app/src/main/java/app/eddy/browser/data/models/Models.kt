@@ -3,6 +3,20 @@ package app.eddy.browser.data.models
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 enum class ToolbarPosition { BOTTOM, TOP }
 enum class CookieMode { ALLOW_ALL, BLOCK_THIRD_PARTY, BLOCK_ALL }
+
+/** Presets over the privacy switches. The level is derived, never stored: any other mix of switches reads as CUSTOM. */
+enum class ProtectionLevel {
+    BALANCED, STRICT, CUSTOM;
+
+    fun applyTo(s: Settings): Settings = if (this == CUSTOM) s else s.copy(
+        adBlock = true, trackerProtection = true, doNotTrack = true, httpsOnly = true,
+        cookieMode = CookieMode.BLOCK_THIRD_PARTY, clearOnExit = this == STRICT,
+    )
+
+    companion object {
+        fun of(s: Settings) = entries.firstOrNull { it != CUSTOM && it.applyTo(s) == s } ?: CUSTOM
+    }
+}
 enum class HomepageMode { HOME, CUSTOM }
 enum class ExternalLinks { ASK, ALWAYS, NEVER }
 enum class TabLayout { GRID, LIST, COMPACT }
@@ -48,6 +62,8 @@ data class Settings(
     val dynamicColor: Boolean = true,
     val palette: Int = 0,
     val hiddenMenuItems: Set<String> = emptySet(),
+    /** Menu item names in the order the user dragged them into; items missing from it keep their built-in place. */
+    val menuOrder: List<String> = emptyList(),
     val showBackButton: Boolean = true,
     val showNewTabButton: Boolean = true,
     val showBlockingBadge: Boolean = false,
