@@ -1,0 +1,7 @@
+* Nivel de protección en los ajustes de Privacidad: Equilibrado o Estricto.
+* Se quitan de los enlaces los parámetros de rastreo como utm_ y fbclid.
+* Nuevo informe de privacidad con cuántos anuncios, rastreadores y parámetros de rastreo ha bloqueado Eddy.
+* Buscar actualizaciones en Ajustes > Acerca de.
+* Las carpetas de marcadores ahora pueden contener otras carpetas, y las importaciones las conservan.
+* Mantén pulsado y arrastra un botón o una fila del menú para reordenarlo. Edita el menú con el icono del lápiz.
+* Se corrigieron espacios que faltaban en algunos textos.

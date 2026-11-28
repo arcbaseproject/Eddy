@@ -1,0 +1,7 @@
+* Protection level in Privacy settings: Balanced or Strict.
+* Tracking parameters such as utm_ and fbclid are removed from links.
+* New privacy report shows how many ads, trackers and tracking parameters Eddy has blocked.
+* Check for updates in Settings > About.
+* Bookmark folders can now hold other folders, and imports keep them.
+* Hold and drag a menu button or row to rearrange the menu. Edit the menu with the pen icon.
+* Fixed missing spaces in some text.
