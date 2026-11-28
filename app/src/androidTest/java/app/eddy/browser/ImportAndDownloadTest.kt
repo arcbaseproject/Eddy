@@ -37,6 +37,34 @@ class ImportAndDownloadTest {
         }
     }
 
+    @Test fun nestedFoldersSurviveReimportAndExport() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.inMemoryDatabaseBuilder(context, EddyDatabase::class.java).build()
+        try {
+            val manager = BookmarkManager(database, this)
+            val html = """
+                <DL><DT><H3>Work</H3><DL>
+                <DT><H3>Docs</H3><DL>
+                <DT><A HREF="https://example.org/deep">Deep</A></DL>
+                <DT><A HREF="https://example.org/work">InWork</A></DL>
+                <DT><H3>Docs</H3><DL></DL></DL>
+            """.trimIndent()
+            repeat(2) {
+                manager.importHtml(if (it == 0) html else manager.exportHtml())
+                val folders = manager.folders.first()
+                // Two different "Docs": one inside Work, one at the top. A re-import merges instead of adding more.
+                assertEquals(3, folders.size)
+                val work = folders.single { f -> f.name == "Work" }
+                val inner = folders.single { f -> f.name == "Docs" && f.parentId == work.id }
+                val marks = manager.bookmarks.first().associateBy { b -> b.title }
+                assertEquals(inner.id, marks.getValue("Deep").folderId)
+                assertEquals(work.id, marks.getValue("InWork").folderId)
+            }
+        } finally {
+            database.close()
+        }
+    }
+
     @Test fun unnamedPhpResponseUsesServedType() {
         val url = "https://example.org/download.php?id=123"
         assertTrue(DownloadNames.forDownload(url, "", "application/pdf").endsWith(".pdf"))

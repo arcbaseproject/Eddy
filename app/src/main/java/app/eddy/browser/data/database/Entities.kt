@@ -38,7 +38,26 @@ data class BookmarkFolder(
     val name: String,
     val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "0") override val position: Long = 0,
+    /** The folder this one sits in; [Bookmark.ROOT_FOLDER] for the top level. */
+    @ColumnInfo(defaultValue = "0") val parentId: Long = Bookmark.ROOT_FOLDER,
 ) : BookmarkItem
+
+/** [id] and every folder nested inside it, at any depth. */
+fun List<BookmarkFolder>.withDescendants(id: Long): Set<Long> {
+    val found = mutableSetOf(id)
+    var frontier = setOf(id)
+    while (frontier.isNotEmpty()) {
+        frontier = filter { it.parentId in frontier && found.add(it.id) }.map { it.id }.toSet()
+    }
+    return found
+}
+
+/** "Parent / Child" names from the top level down, for pickers. */
+fun List<BookmarkFolder>.path(id: Long): String {
+    val byId = associateBy { it.id }
+    val names = generateSequence(byId[id]) { byId[it.parentId] }.take(size).map { it.name }.toList()
+    return names.reversed().joinToString(" / ")
+}
 
 enum class DownloadStatus { QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELED }
 

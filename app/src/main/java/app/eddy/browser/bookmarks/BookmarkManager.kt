@@ -6,6 +6,7 @@ import app.eddy.browser.data.database.Bookmark
 import androidx.room.withTransaction
 import app.eddy.browser.data.database.EddyDatabase
 import app.eddy.browser.data.database.BookmarkFolder
+import app.eddy.browser.data.database.withDescendants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -29,13 +30,21 @@ class BookmarkManager(private val database: EddyDatabase, private val scope: Cor
 
     fun save(bookmark: Bookmark) { scope.launch { if (bookmark.id == 0L) dao.insert(bookmark) else dao.update(bookmark) } }
     fun delete(bookmark: Bookmark) { scope.launch { dao.delete(bookmark) } }
-    fun addFolder(name: String) { scope.launch { dao.insertFolder(BookmarkFolder(name = name)) } }
+    fun addFolder(name: String, parentId: Long = Bookmark.ROOT_FOLDER) {
+        scope.launch { dao.insertFolder(BookmarkFolder(name = name, parentId = parentId, position = dao.lastPosition() + 1)) }
+    }
     fun renameFolder(folder: BookmarkFolder, name: String) { scope.launch { dao.updateFolder(folder.copy(name = name)) } }
+    fun moveFolder(folder: BookmarkFolder, parentId: Long) { scope.launch { dao.updateFolder(folder.copy(parentId = parentId)) } }
 
+    /** Deletes the folder with every folder and bookmark inside it. */
     fun deleteFolder(folder: BookmarkFolder) {
         scope.launch {
-            dao.deleteInFolder(folder.id)
-            dao.deleteFolder(folder.id)
+            database.withTransaction {
+                dao.folders().first().withDescendants(folder.id).forEach {
+                    dao.deleteInFolder(it)
+                    dao.deleteFolder(it)
+                }
+            }
         }
     }
 
@@ -49,24 +58,29 @@ class BookmarkManager(private val database: EddyDatabase, private val scope: Cor
             fun link(b: Bookmark, indent: String) =
                 append("$indent<DT><A HREF=\"${b.url.escape()}\" ADD_DATE=\"${b.createdAt / 1000}\">${b.title.escape()}</A>\n")
             val byFolder = all.groupBy { it.folderId }
-            val root = folders + byFolder[Bookmark.ROOT_FOLDER].orEmpty()
-            for (f in root.sortedBy { it.position }) when (f) {
-                is Bookmark -> link(f, "    ")
-                is BookmarkFolder -> {
-                    append("    <DT><H3>${f.name.escape()}</H3>\n    <DL><p>\n")
-                    byFolder[f.id].orEmpty().forEach { link(it, "        ") }
-                    append("    </DL><p>\n")
+            val subfolders = folders.groupBy { it.parentId }
+            fun folder(id: Long, indent: String, seen: Set<Long>) {
+                for (item in (subfolders[id].orEmpty() + byFolder[id].orEmpty()).sortedBy { it.position }) when (item) {
+                    is Bookmark -> link(item, indent)
+                    // A folder that is somehow its own ancestor would recurse forever; write it once.
+                    is BookmarkFolder -> if (item.id !in seen) {
+                        append("$indent<DT><H3>${item.name.escape()}</H3>\n$indent<DL><p>\n")
+                        folder(item.id, "$indent    ", seen + item.id)
+                        append("$indent</DL><p>\n")
+                    }
                 }
             }
+            folder(Bookmark.ROOT_FOLDER, "    ", emptySet())
             append("</DL><p>\n")
         }
     }
 
-    /** Imports Netscape HTML; nested folders are flattened into one level. Returns the count added. */
+    /** Imports Netscape HTML, keeping nested folders and the file's order. Returns the count added. */
     suspend fun importHtml(html: String): Int = database.withTransaction {
         val token = Regex("<H3[^>]*>(.*?)</H3>|<A\\s[^>]*?HREF=\"([^\"]*)\"[^>]*>(.*?)</A>|</DL>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-        val existingFolders = dao.folders().first().associateBy { it.name }.toMutableMap()
-        // Each folder's own </DL> returns to the folder around it; nested folders become top-level ones.
+        // Keyed by parent and name, so importing the same file twice merges into the folders it made before.
+        val existingFolders = dao.folders().first().associateBy { it.parentId to it.name }.toMutableMap()
+        // Each folder's own </DL> returns to the folder around it.
         val open = ArrayDeque<Long>()
         var position = dao.lastPosition()
         var count = 0
@@ -79,13 +93,14 @@ class BookmarkManager(private val database: EddyDatabase, private val scope: Cor
                 }
                 m.value.startsWith("<H3", true) -> {
                     val name = folderName.unescape().trim().ifBlank { str(R.string.imported) }
-                    val folder = existingFolders[name]
-                    val ordered = (folder ?: BookmarkFolder(name = name)).copy(position = ++position)
+                    val parent = open.lastOrNull() ?: Bookmark.ROOT_FOLDER
+                    val folder = existingFolders[parent to name]
+                    val ordered = (folder ?: BookmarkFolder(name = name, parentId = parent)).copy(position = ++position)
                     val id = if (folder == null) dao.insertFolder(ordered) else {
                         dao.updateFolder(ordered)
                         folder.id
                     }
-                    existingFolders[name] = ordered.copy(id = id)
+                    existingFolders[parent to name] = ordered.copy(id = id)
                     open.addLast(id)
                 }
                 else -> open.removeLastOrNull()

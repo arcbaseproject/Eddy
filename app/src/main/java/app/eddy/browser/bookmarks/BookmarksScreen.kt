@@ -59,6 +59,10 @@ import app.eddy.browser.browser.BrowserViewModel
 import app.eddy.browser.browser.Screen
 import app.eddy.browser.data.database.Bookmark
 import app.eddy.browser.data.database.BookmarkFolder
+import app.eddy.browser.data.database.path
+import app.eddy.browser.data.database.withDescendants
+import app.eddy.browser.ui.components.ChoiceDialog
+import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
 import app.eddy.browser.ui.animation.rememberHaptics
 import app.eddy.browser.ui.components.ConfirmDialog
 import app.eddy.browser.ui.components.EmptyState
@@ -82,7 +86,10 @@ fun BookmarksScreen(vm: BrowserViewModel) {
     val all by vm.bookmarks.bookmarks.collectAsStateWithLifecycle(emptyList())
     val folders by vm.bookmarks.folders.collectAsStateWithLifecycle(emptyList())
     var query by remember { mutableStateOf("") }
-    var folder by remember { mutableStateOf<BookmarkFolder?>(null) }
+    // Kept as an id so a rename shows at once and a deleted folder falls back to the top level.
+    var folderId by remember { mutableStateOf(Bookmark.ROOT_FOLDER) }
+    val folder = folders.firstOrNull { it.id == folderId }
+    var moving by remember { mutableStateOf<BookmarkFolder?>(null) }
     var editing by remember { mutableStateOf<Bookmark?>(null) }
     var addingFolder by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf<BookmarkFolder?>(null) }
@@ -110,14 +117,15 @@ fun BookmarksScreen(vm: BrowserViewModel) {
         searching -> all.filter { it.title.contains(query, true) || it.url.contains(query, true) }
         else -> all.filter { it.folderId == (folder?.id ?: Bookmark.ROOT_FOLDER) }
     }
-    val shownFolders = if (searching || folder != null) emptyList() else folders
+    val shownFolders = if (searching) emptyList() else folders.filter { it.parentId == (folder?.id ?: Bookmark.ROOT_FOLDER) }
+    fun up() { folderId = folder?.parentId ?: Bookmark.ROOT_FOLDER }
 
-    // System Back leaves a folder the same way the toolbar arrow does, before leaving Bookmarks.
-    BackHandler(enabled = folder != null) { folder = null }
+    // System Back goes up one folder the same way the toolbar arrow does, before leaving Bookmarks.
+    BackHandler(enabled = folder != null) { up() }
 
     ScreenScaffold(
         title = folder?.name ?: str(R.string.bookmarks),
-        onBack = { if (folder != null) folder = null else vm.screen = Screen.BROWSER },
+        onBack = { if (folder != null) up() else vm.screen = Screen.BROWSER },
         actions = {
             EddyIconButton(Icons.Rounded.CreateNewFolder, str(R.string.new_folder), { addingFolder = true })
             Box {
@@ -142,7 +150,7 @@ fun BookmarksScreen(vm: BrowserViewModel) {
                         }
                     }) { item ->
                         when (item) {
-                            is BookmarkFolder -> FolderRow(item, all.count { it.folderId == item.id }, onOpen = { folder = item }, onRename = { renaming = item }, onDelete = { deletingFolder = item })
+                            is BookmarkFolder -> FolderRow(item, all.count { it.folderId == item.id }, onOpen = { folderId = item.id }, onRename = { renaming = item }, onMove = { moving = item }, onDelete = { deletingFolder = item })
                             is Bookmark -> BookmarkRow(vm, item, onEdit = { editing = item })
                         }
                     }
@@ -151,13 +159,19 @@ fun BookmarksScreen(vm: BrowserViewModel) {
         }
     }
 
-    if (addingFolder) TextInputDialog(str(R.string.new_folder), "", str(R.string.folder_name), str(R.string.create), onDismiss = { addingFolder = false }) { vm.bookmarks.addFolder(it); addingFolder = false }
+    if (addingFolder) TextInputDialog(str(R.string.new_folder), "", str(R.string.folder_name), str(R.string.create), onDismiss = { addingFolder = false }) { vm.bookmarks.addFolder(it, folder?.id ?: Bookmark.ROOT_FOLDER); addingFolder = false }
     renaming?.let { f -> TextInputDialog(str(R.string.rename_folder), f.name, str(R.string.folder_name), onDismiss = { renaming = null }) { vm.bookmarks.renameFolder(f, it); renaming = null } }
     deletingFolder?.let { f ->
         ConfirmDialog(str(R.string.delete_3, f.name), str(R.string.this_also_deletes_the_bookmarks_inside_i), str(R.string.delete_4), { deletingFolder = null }) {
             vm.bookmarks.deleteFolder(f)
             deletingFolder = null
         }
+    }
+    moving?.let { f ->
+        // A folder cannot go inside itself or one of its own subfolders.
+        val blocked = folders.withDescendants(f.id)
+        val targets = listOf(Bookmark.ROOT_FOLDER) + folders.filter { it.id !in blocked }.sortedBy { folders.path(it.id).lowercase() }.map { it.id }
+        ChoiceDialog(str(R.string.move_to_folder), targets, f.parentId, { if (it == Bookmark.ROOT_FOLDER) str(R.string.no_folder) else folders.path(it) }, { moving = null }, { vm.bookmarks.moveFolder(f, it) })
     }
     editing?.let { b -> BookmarkEditor(b, folders, onDismiss = { editing = null }) { vm.bookmarks.save(it); editing = null } }
 }
@@ -197,7 +211,7 @@ private fun BookmarkRow(vm: BrowserViewModel, b: Bookmark, onEdit: () -> Unit) {
 }
 
 @Composable
-private fun FolderRow(f: BookmarkFolder, count: Int, onOpen: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
+private fun FolderRow(f: BookmarkFolder, count: Int, onOpen: () -> Unit, onRename: () -> Unit, onMove: () -> Unit, onDelete: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
     Box {
         Row(
@@ -215,6 +229,7 @@ private fun FolderRow(f: BookmarkFolder, count: Int, onOpen: () -> Unit, onRenam
         }
         DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem(text = { Text(str(R.string.rename)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onRename() })
+            DropdownMenuItem(text = { Text(str(R.string.move_to_folder)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.DriveFileMove, null) }, onClick = { menu = false; onMove() })
             DropdownMenuItem(text = { Text(str(R.string.delete_folder)) }, leadingIcon = { Icon(Icons.Rounded.Delete, null) }, onClick = { menu = false; onDelete() })
         }
     }
@@ -238,10 +253,10 @@ private fun BookmarkEditor(b: Bookmark, folders: List<BookmarkFolder>, onDismiss
                 OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.title)) }, singleLine = true)
                 OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text(str(R.string.address)) }, singleLine = true, isError = !UrlUtils.isUrl(url))
                 Box {
-                    TextButton(onClick = { pick = true }) { Text(str(R.string.folder_label, folders.firstOrNull { it.id == folderId }?.name ?: str(R.string.none))) }
+                    TextButton(onClick = { pick = true }) { Text(str(R.string.folder_label, if (folders.any { it.id == folderId }) folders.path(folderId) else str(R.string.none))) }
                     DropdownMenu(pick, { pick = false }) {
                         DropdownMenuItem(text = { Text(str(R.string.none)) }, onClick = { folderId = Bookmark.ROOT_FOLDER; pick = false })
-                        folders.forEach { f -> DropdownMenuItem(text = { Text(f.name) }, onClick = { folderId = f.id; pick = false }) }
+                        folders.sortedBy { folders.path(it.id).lowercase() }.forEach { f -> DropdownMenuItem(text = { Text(folders.path(f.id)) }, onClick = { folderId = f.id; pick = false }) }
                     }
                 }
             }
